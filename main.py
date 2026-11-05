@@ -8,7 +8,6 @@ import time
 
 app = FastAPI(title="Plataforma Cuantitativa Cloud")
 
-# Habilitar CORS para que cualquier navegador pueda consultar
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,10 +17,6 @@ app.add_middleware(
 )
 
 def fetch_market_candles(symbol: str = "BTC-USD", interval: str = "1h"):
-    """
-    Descarga velas desde Coinbase Exchange (permitido en servidores de EE.UU.).
-    Incluye respaldo automático para evitar caídas.
-    """
     granularity_map = {
         "1m": 60,
         "5m": 300,
