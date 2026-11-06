@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>StratView-5 | TradingView + MT5 + Stratos Cloud</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 flex flex-col h-screen overflow-hidden">
+
+  <!-- Header Superior -->
+  <header class="h-14 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900 shrink-0">
+    <div class="flex items-center space-x-3">
+      <span class="text-emerald-400 font-bold text-lg tracking-wide">STRATVIEW-5</span>
+      <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded font-mono">Cloud Engine Live</span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <label class="text-xs text-gray-400">Temporalidad:</label>
+      <select id="timeframeSelect" class="bg-gray-800 border border-gray-700 text-sm rounded px-3 py-1 text-gray-200 outline-none">
+        <option value="1m">1m</option>
+        <option value="5m">5m</option>
+        <option value="15m">15m</option>
+        <option value="1h" selected>1h</option>
+        <option value="1d">1D</option>
+      </select>
+      <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-1.5 rounded transition shadow-lg shadow-emerald-900/30">
+        ⚡ Backtest de 1-Clic
+      </button>
+    </div>
+  </header>
+
+  <!-- Gráfica TradingView y Panel de Robustez -->
+  <div class="flex-1 flex overflow-hidden relative">
+    <div id="chart-container" class="flex-1 h-full bg-[#090d16] relative"></div>
+
+    <aside class="w-96 border-l border-gray-800 bg-gray-900 p-5 flex flex-col gap-4 overflow-y-auto shrink-0">
+      <div class="border-b border-gray-800 pb-3">
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Robustez Cuantitativa</h2>
+        <p class="text-xs text-gray-500">Métricas avanzadas Monte Carlo 2026</p>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
+          <p class="text-xs text-gray-400">Retorno Total</p>
+          <p id="res-return" class="text-lg font-bold text-emerald-400">--</p>
+        </div>
+        <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
+          <p class="text-xs text-gray-400">Profit Factor</p>
+          <p id="res-pf" class="text-lg font-bold text-gray-100">--</p>
+        </div>
+        <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
+          <p class="text-xs text-gray-400">Sharpe Ratio</p>
+          <p id="res-sharpe" class="text-lg font-bold text-gray-100">--</p>
+        </div>
+        <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
+          <p class="text-xs text-gray-400">Max DD (95% Conf)</p>
+          <p id="res-dd" class="text-lg font-bold text-rose-400">--</p>
+        </div>
+      </div>
+
+      <div class="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mt-2">
+        <div class="flex items-center space-x-2 mb-2">
+          <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></div>
+          <p class="text-xs font-semibold text-gray-300">Agente Cuantitativo IA</p>
+        </div>
+        <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
+          Haz clic en "⚡ Backtest de 1-Clic" para simular 1,000 iteraciones Monte Carlo en la nube.
+        </p>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const API_BASE_URL = "https://strat-view-5.onrender.com";
+    const container = document.getElementById('chart-container');
+
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth || 800,
+      height: container.clientHeight || 600,
+      layout: {
+        background: { type: 'solid', color: '#090d16' },
+        textColor: '#d1d4dc'
+      },
+      grid: {
+        vertLines: { color: '#1a2234' },
+        horzLines: { color: '#1a2234' }
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false
+      }
+    });
+
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#10b981',
+      downColor: '#ef4444',
+      borderUpColor: '#10b981',
+      borderDownColor: '#ef4444',
+      wickUpColor: '#10b981',
+      wickDownColor: '#ef4444'
+    });
+
+    async function loadCandles() {
+      const interval = document.getElementById('timeframeSelect').value;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/candles?symbol=BTC-USD&interval=${interval}`);
+        const json = await res.json();
+        
+        // Formatear velas asegurando compatibilidad con los nombres de campos
+        const rawList = json.data || json.datos || [];
+        const formatted = rawList.map(d => ({
+          time: Number(d.time || d.tiempo),
+          open: Number(d.open || d.apertura),
+          high: Number(d.high || d.máximo || d.maximo),
+          low: Number(d.low || d.mínimo || d.minimo),
+          close: Number(d.close || d.cierre)
+        })).filter(c => !isNaN(c.time) && !isNaN(c.close));
+
+        // Ordenar estrictamente de forma ascendente
+        formatted.sort((a, b) => a.time - b.time);
+
+        // Eliminar duplicados de fecha
+        const cleanCandles = [];
+        const seen = new Set();
+        for (const c of formatted) {
+          if (!seen.has(c.time)) {
+            seen.add(c.time);
+            cleanCandles.push(c);
+          }
+        }
+
+        candleSeries.setData(cleanCandles);
+        chart.timeScale().fitContent();
+      } catch (err) {
+        console.error("Error al cargar velas:", err);
+      }
+    }
+
+    async function runOneClickBacktest() {
+      const interval = document.getElementById('timeframeSelect').value;
+      document.getElementById('agent-verdict').innerText = "Simulando 1,000 iteraciones Monte Carlo en la nube...";
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: "BTC-USD", interval: interval, fast_ma: 9, slow_ma: 21 })
+        });
+        const data = await res.json();
+        
+        document.getElementById('res-return').innerText = `${data.summary.total_return_pct}%`;
+        document.getElementById('res-pf').innerText = data.summary.profit_factor;
+        document.getElementById('res-sharpe').innerText = data.summary.sharpe_ratio;
+        document.getElementById('res-dd').innerText = data.robustness_monte_carlo.max_drawdown_risk_95_conf;
+        document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno esperado mediano: ${data.robustness_monte_carlo.median_expected_return}`;
+      } catch (err) {
+        document.getElementById('agent-verdict').innerText = "Error de conexión con el motor en la nube.";
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      chart.resize(container.clientWidth, container.clientHeight);
+    });
+
+    document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
+    loadCandles();
+  </script>
+</body>
+</html>
