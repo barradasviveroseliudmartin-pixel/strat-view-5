@@ -5,6 +5,12 @@
   <title>StratView-5 | Institutional Engine Pro 2026</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    /* Estilo para cursor tijera durante el corte de velas */
+    .scissor-cursor {
+      cursor: crosshair !important;
+    }
+  </style>
 </head>
 <body class="bg-[#0b0e14] text-gray-200 flex flex-col h-screen overflow-hidden select-none font-sans" oncontextmenu="return false;">
 
@@ -32,7 +38,7 @@
         </select>
       </div>
 
-      <!-- Selector de Temporalidades -->
+      <!-- Selector de Temporalidades Principal -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
         <select id="timeframeSelect" class="bg-transparent text-xs text-gray-200 outline-none cursor-pointer font-mono">
           <option value="1m">1m</option>
@@ -56,6 +62,30 @@
         <button onclick="setLayout('4')" id="layout-btn-4" title="4 Pantallas (Cuadrícula)" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">4⊞</button>
       </div>
 
+      <!-- Barra de Replay / Backtesting Manual (Estilo TradingView con Tijeras y Play) -->
+      <div class="flex items-center bg-[#1e222d] border border-blue-900/60 rounded px-1.5 py-0.5 space-x-1 text-xs">
+        <button onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar el gráfico hacia el pasado" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
+          <span>✂</span> <span class="hidden sm:inline">Cortar</span>
+        </button>
+        <div id="replay-controls" class="hidden items-center space-x-1">
+          <button onclick="stepForwardReplay()" title="Avanzar 1 vela" class="px-2 py-1 rounded bg-[#252a37] text-gray-300 hover:bg-[#32394a]">
+            ⏭
+          </button>
+          <button onclick="togglePlayReplay()" id="btn-play-replay" title="Reproducir / Pausar" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+            ▶
+          </button>
+          <select id="replaySpeed" class="bg-[#131722] text-[11px] text-gray-300 rounded px-1 py-1 outline-none font-mono">
+            <option value="1000">1s</option>
+            <option value="500" selected>0.5s</option>
+            <option value="250">0.25s</option>
+            <option value="100">0.1s</option>
+          </select>
+          <button onclick="exitReplayMode()" title="Salir del modo Replay y restaurar gráfico" class="px-1.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold">
+            ✕
+          </button>
+        </div>
+      </div>
+
       <!-- Pestaña Probador de Estrategias -->
       <button onclick="toggleStrategyPanel()" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300">
         📊 Probador de Estrategia
@@ -66,13 +96,19 @@
     <div class="flex items-center space-x-2">
       <label class="bg-[#1e222d] hover:bg-[#2a2e39] text-gray-300 border border-gray-700 text-xs px-2.5 py-1 rounded cursor-pointer transition flex items-center gap-1">
         <span>📁 MT5 CSV</span>
-        <input type="file" id="csvFileInput" accept=".csv,.txt" class="hidden">
+        <input type="file" id="csvFileInput" accept=".csv,.txt" class="hidden" onchange="handleMT5CSV(event)">
       </label>
       <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded transition shadow-lg shadow-emerald-900/30">
         ⚡ Backtest
       </button>
     </div>
   </header>
+
+  <!-- Banner flotante de aviso cuando la Tijera está armada -->
+  <div id="replay-banner" class="hidden bg-amber-500/20 border-b border-amber-500/40 text-amber-300 text-xs py-1 px-4 text-center font-medium flex items-center justify-center gap-2">
+    <span>✂ Modo Tijera Activo: Haz clic sobre cualquier vela del gráfico para cortar el tiempo e iniciar el Replay manual.</span>
+    <button onclick="exitReplayMode()" class="bg-amber-600 text-black px-2 py-0.2 rounded font-bold hover:bg-amber-500 text-[10px]">Cancelar</button>
+  </div>
 
   <!-- Área Central de Trabajo -->
   <div class="flex-1 flex overflow-hidden relative">
@@ -96,26 +132,41 @@
       
       <!-- Rejilla de Gráficos -->
       <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 h-full w-full relative">
+        <!-- Pantalla 1 (Principal) -->
         <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
+          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
+            Pantalla 1 (<span id="p1-tf-label">15m</span>)
+          </div>
           <div id="chart-c1" class="w-full h-full"></div>
         </div>
+
+        <!-- Pantalla 2 (1h) -->
         <div id="chart-box-2" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722] px-1.5 py-0.5 rounded">Pantalla 2 (1h)</div>
+          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
+            Pantalla 2 (1h)
+          </div>
           <div id="chart-c2" class="w-full h-full"></div>
         </div>
+
+        <!-- Pantalla 3 (4h) -->
         <div id="chart-box-3" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722] px-1.5 py-0.5 rounded">Pantalla 3 (4h)</div>
+          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
+            Pantalla 3 (4h)
+          </div>
           <div id="chart-c3" class="w-full h-full"></div>
         </div>
+
+        <!-- Pantalla 4 (1D) -->
         <div id="chart-box-4" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722] px-1.5 py-0.5 rounded">Pantalla 4 (1D)</div>
+          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
+            Pantalla 4 (1D)
+          </div>
           <div id="chart-c4" class="w-full h-full"></div>
         </div>
       </div>
 
-      <!-- Panel Inferior: Probador de Estrategias y Curva de Equidad (Estilo TV Fotos 108/110) -->
+      <!-- Panel Inferior: Probador de Estrategias y Curva de Equidad -->
       <div id="strategy-panel" class="h-64 border-t border-gray-800 bg-[#131722] flex flex-col shrink-0 relative transition-all">
-        <!-- Barra de pestañas del tester -->
         <div class="h-8 border-b border-gray-800 flex items-center justify-between px-4 bg-[#1e222d]/60 text-xs text-gray-300">
           <div class="flex items-center space-x-4">
             <span class="font-bold text-emerald-400 font-mono">LogReg + EMA [Strategy]</span>
@@ -125,7 +176,6 @@
           <button onclick="toggleStrategyPanel()" class="text-gray-400 hover:text-white font-bold">✕ Cerrar</button>
         </div>
 
-        <!-- Métricas clave superiores del tester -->
         <div class="grid grid-cols-4 gap-3 p-3 border-b border-gray-800/60 bg-[#131722] text-xs">
           <div>
             <p class="text-gray-500 text-[10px]">PyG Totales</p>
@@ -145,7 +195,6 @@
           </div>
         </div>
 
-        <!-- Curva de Equidad en Miniatura -->
         <div class="flex-1 p-2 relative bg-[#090d16]">
           <div id="equity-chart-container" class="w-full h-full"></div>
         </div>
@@ -171,7 +220,7 @@
           <p class="text-xs font-semibold text-gray-200">Agente Cuantitativo IA</p>
         </div>
         <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
-          Haz clic en "⚡ Backtest" para auditar el bot sobre el activo seleccionado.
+          Haz clic en "⚡ Backtest" para auditar el bot sobre el activo seleccionado o usa las ✂ Tijeras para simular manualmente.
         </p>
       </div>
     </aside>
@@ -217,32 +266,60 @@
   <script>
     const API_BASE_URL = "https://strat-view-5.onrender.com";
 
-    // --- 1. GRÁFICO PRINCIPAL ---
-    const c1 = document.getElementById('chart-c1');
-    const chart1 = LightweightCharts.createChart(c1, {
-      width: c1.clientWidth || 800,
-      height: c1.clientHeight || 500,
+    // Opciones base compartidas para gráficos TradingView Lightweight Charts
+    const baseChartOptions = {
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      timeScale: { timeVisible: true, secondsVisible: true }
-    });
+      timeScale: { timeVisible: true, secondsVisible: false }
+    };
 
-    const candleSeries1 = chart1.addCandlestickSeries({
+    const candleSeriesConfig = {
       upColor: '#10b981', downColor: '#ef4444',
       borderUpColor: '#10b981', borderDownColor: '#ef4444',
       wickUpColor: '#10b981', wickDownColor: '#ef4444'
-    });
+    };
 
+    // --- INICIALIZACIÓN DE LAS 4 VENTANAS MULTIPANTALLA ---
+    const c1 = document.getElementById('chart-c1');
+    const chart1 = LightweightCharts.createChart(c1, { ...baseChartOptions, width: c1.clientWidth || 800, height: c1.clientHeight || 500 });
+    const candleSeries1 = chart1.addCandlestickSeries(candleSeriesConfig);
+
+    const c2 = document.getElementById('chart-c2');
+    const chart2 = LightweightCharts.createChart(c2, { ...baseChartOptions, width: c2.clientWidth || 400, height: c2.clientHeight || 500 });
+    const candleSeries2 = chart2.addCandlestickSeries(candleSeriesConfig);
+
+    const c3 = document.getElementById('chart-c3');
+    const chart3 = LightweightCharts.createChart(c3, { ...baseChartOptions, width: c3.clientWidth || 400, height: c3.clientHeight || 250 });
+    const candleSeries3 = chart3.addCandlestickSeries(candleSeriesConfig);
+
+    const c4 = document.getElementById('chart-c4');
+    const chart4 = LightweightCharts.createChart(c4, { ...baseChartOptions, width: c4.clientWidth || 400, height: c4.clientHeight || 250 });
+    const candleSeries4 = chart4.addCandlestickSeries(candleSeriesConfig);
+
+    // Indicadores en el gráfico principal
     let ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
     let ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
     let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
 
     let drawnLines = [];
     let activeTool = 'crosshair';
-    let allCandles = [];
+    let currentLayout = '1';
 
-    // --- 2. CURVA DE EQUIDAD DEL PROBADOR DE ESTRATEGIAS (Fotos 108/110) ---
+    // Almacén de velas de todas las pantallas
+    let allCandles = [];       // Pantalla 1 (Temporalidad seleccionada)
+    let allCandlesP2 = [];     // Pantalla 2 (1h)
+    let allCandlesP3 = [];     // Pantalla 3 (4h)
+    let allCandlesP4 = [];     // Pantalla 4 (1D)
+
+    // --- ESTADO DEL REPLAY / BACKTEST MANUAL ---
+    let isCutModeActive = false;
+    let isReplayActive = false;
+    let replayIntervalId = null;
+    let replayIndex = 0;
+    let originalFullCandles = []; // Copia de respaldo para restaurar
+
+    // --- CURVA DE EQUIDAD DEL PROBADOR DE ESTRATEGIAS ---
     const eqContainer = document.getElementById('equity-chart-container');
     const equityChart = LightweightCharts.createChart(eqContainer, {
       width: eqContainer.clientWidth || 800,
@@ -258,16 +335,27 @@
       lineWidth: 2
     });
 
-    // --- 3. DIBUJO DIRECTO SIN ALERTAS ---
+    // --- HERRAMIENTAS DE DIBUJO ---
     function selectTool(tool) {
+      if (isCutModeActive) exitReplayMode();
       activeTool = tool;
       document.getElementById('tool-crosshair').className = tool === 'crosshair' ? "p-1.5 rounded text-emerald-400 bg-[#2a2e39]" : "p-1.5 rounded hover:bg-[#2a2e39]";
       document.getElementById('tool-horizontal').className = tool === 'horizontal' ? "p-1.5 rounded text-emerald-400 bg-[#2a2e39]" : "p-1.5 rounded hover:bg-[#2a2e39]";
       c1.style.cursor = tool === 'horizontal' ? 'crosshair' : 'default';
     }
 
+    // Clic sobre el gráfico: para línea horizontal o para cortar con tijera
     chart1.subscribeClick((param) => {
       if (!param || !param.point) return;
+
+      // Modo Replay: Cortar velas con tijeras
+      if (isCutModeActive) {
+        if (!param.time) return;
+        executeCutAtTime(param.time);
+        return;
+      }
+
+      // Dibujo de niveles horizontales
       if (activeTool === 'horizontal') {
         const price = candleSeries1.coordinateToPrice(param.point.y);
         if (price) {
@@ -291,7 +379,7 @@
       closeContextMenu();
     }
 
-    // --- 4. CLIC DERECHO EN EL GRÁFICO ---
+    // --- MENÚ CONTEXTUAL ---
     c1.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const menu = document.getElementById('contextMenu');
@@ -314,11 +402,26 @@
 
     function resetChart() {
       chart1.timeScale().fitContent();
+      chart2.timeScale().fitContent();
+      chart3.timeScale().fitContent();
+      chart4.timeScale().fitContent();
       closeContextMenu();
     }
 
-    // --- 5. SELECTOR DE MALLA MULTIVENTANA (LAYOUT GRID) ---
+    // --- RESIZE DE TODOS LOS GRÁFICOS ACTIVOS ---
+    function resizeAllCharts() {
+      setTimeout(() => {
+        if (c1.clientWidth && c1.clientHeight) chart1.resize(c1.clientWidth, c1.clientHeight);
+        if (c2.clientWidth && c2.clientHeight) chart2.resize(c2.clientWidth, c2.clientHeight);
+        if (c3.clientWidth && c3.clientHeight) chart3.resize(c3.clientWidth, c3.clientHeight);
+        if (c4.clientWidth && c4.clientHeight) chart4.resize(c4.clientWidth, c4.clientHeight);
+        if (eqContainer.clientWidth && eqContainer.clientHeight) equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
+      }, 50);
+    }
+
+    // --- SELECTOR DE MALLA MULTIVENTANA (LAYOUT GRID) ---
     function setLayout(mode) {
+      currentLayout = mode;
       const b2 = document.getElementById('chart-box-2');
       const b3 = document.getElementById('chart-box-3');
       const b4 = document.getElementById('chart-box-4');
@@ -340,62 +443,66 @@
         b3.classList.add('hidden');
         b4.classList.add('hidden');
         document.getElementById('layout-btn-2h').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
+        loadWindowCandles('1h', candleSeries2, chart2, (data) => allCandlesP2 = data);
       } else if (mode === '4') {
         grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 h-full w-full relative";
         b2.classList.remove('hidden');
         b3.classList.remove('hidden');
         b4.classList.remove('hidden');
         document.getElementById('layout-btn-4').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
+        loadWindowCandles('1h', candleSeries2, chart2, (data) => allCandlesP2 = data);
+        loadWindowCandles('4h', candleSeries3, chart3, (data) => allCandlesP3 = data);
+        loadWindowCandles('1D', candleSeries4, chart4, (data) => allCandlesP4 = data);
       }
 
-      setTimeout(() => {
-        chart1.resize(c1.clientWidth, c1.clientHeight);
-      }, 150);
+      resizeAllCharts();
     }
 
     function toggleStrategyPanel() {
       const panel = document.getElementById('strategy-panel');
       panel.classList.toggle('hidden');
-      setTimeout(() => {
-        chart1.resize(c1.clientWidth, c1.clientHeight);
-        equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
-      }, 150);
+      resizeAllCharts();
     }
 
-    // --- 6. CUENTA REGRESIVA Y DATOS ---
-    function updateCountdown() {
-      const tf = document.getElementById('timeframeSelect').value;
-      let tfSec = 900;
-      if (tf.endsWith('s')) tfSec = parseInt(tf);
-      else if (tf.endsWith('m')) tfSec = parseInt(tf) * 60;
-      else if (tf.endsWith('h')) tfSec = parseInt(tf) * 3600;
-      else if (tf === '1D') tfSec = 86400;
-
-      const now = Math.floor(Date.now() / 1000);
-      const remaining = tfSec - (now % tfSec);
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      document.getElementById('countdown-timer').innerText = 
-        `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    // --- CARGA DE DATOS PARA CUALQUIER VENTANA CON SU TEMPORALIDAD ---
+    async function fetchCandlesFromAPI(symbol, interval) {
+      const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${interval}`);
+      const json = await res.json();
+      const raw = json.data || json.datos || [];
+      return raw.map(d => ({
+        time: Number(d.time || d.tiempo),
+        open: Number(d.open || d.apertura),
+        high: Number(d.high || d.máximo || d.maximo),
+        low: Number(d.low || d.mínimo || d.minimo),
+        close: Number(d.close || d.cierre)
+      })).sort((a, b) => a.time - b.time);
     }
-    setInterval(updateCountdown, 1000);
 
+    async function loadWindowCandles(interval, targetSeries, targetChart, cacheSetter) {
+      const symbol = document.getElementById('symbolSelect').value;
+      try {
+        const candles = await fetchCandlesFromAPI(symbol, interval);
+        if (candles.length > 0) {
+          targetSeries.setData(candles);
+          targetChart.timeScale().fitContent();
+          if (cacheSetter) cacheSetter(candles);
+        }
+      } catch (err) {
+        console.warn(`No se pudieron cargar velas para ${symbol} en ${interval}:`, err);
+      }
+    }
+
+    // Carga de todas las ventanas según layout activo
     async function loadCandles() {
+      if (isReplayActive) exitReplayMode();
+
       const symbol = document.getElementById('symbolSelect').value;
       const tf = document.getElementById('timeframeSelect').value;
+      document.getElementById('p1-tf-label').innerText = tf;
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${tf}`);
-        const json = await res.json();
-        const raw = json.data || json.datos || [];
-
-        allCandles = raw.map(d => ({
-          time: Number(d.time || d.tiempo),
-          open: Number(d.open || d.apertura),
-          high: Number(d.high || d.máximo || d.maximo),
-          low: Number(d.low || d.mínimo || d.minimo),
-          close: Number(d.close || d.cierre)
-        })).sort((a, b) => a.time - b.time);
+        allCandles = await fetchCandlesFromAPI(symbol, tf);
+        originalFullCandles = [...allCandles];
 
         candleSeries1.setData(allCandles);
         chart1.timeScale().fitContent();
@@ -408,12 +515,216 @@
           const lastPrice = allCandles[allCandles.length - 1].close;
           document.getElementById('price-display').innerText = `$${lastPrice.toFixed(2)}`;
         }
+
+        // Cargar las demás pantallas si están activas
+        if (currentLayout === '2h' || currentLayout === '4') {
+          loadWindowCandles('1h', candleSeries2, chart2, (d) => allCandlesP2 = d);
+        }
+        if (currentLayout === '4') {
+          loadWindowCandles('4h', candleSeries3, chart3, (d) => allCandlesP3 = d);
+          loadWindowCandles('1D', candleSeries4, chart4, (d) => allCandlesP4 = d);
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Error al cargar velas:", err);
       }
     }
 
+    // --- MÓDULO BACKTEST MANUAL / BAR REPLAY CON TIJERITA ---
+    function toggleCutMode() {
+      if (allCandles.length === 0) {
+        alert("Primero carga datos en el gráfico para usar el Replay.");
+        return;
+      }
+
+      isCutModeActive = !isCutModeActive;
+      const btn = document.getElementById('btn-cut-replay');
+      const banner = document.getElementById('replay-banner');
+
+      if (isCutModeActive) {
+        btn.classList.add('bg-amber-500', 'text-black');
+        btn.classList.remove('bg-[#252a37]', 'text-amber-400');
+        banner.classList.remove('hidden');
+        c1.classList.add('scissor-cursor');
+      } else {
+        btn.classList.remove('bg-amber-500', 'text-black');
+        btn.classList.add('bg-[#252a37]', 'text-amber-400');
+        banner.classList.add('hidden');
+        c1.classList.remove('scissor-cursor');
+      }
+    }
+
+    function executeCutAtTime(cutTime) {
+      if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
+
+      // Encontrar índice de la vela seleccionada
+      const foundIdx = originalFullCandles.findIndex(c => c.time >= cutTime);
+      if (foundIdx === -1 || foundIdx === 0) return;
+
+      replayIndex = foundIdx;
+      isCutModeActive = false;
+      isReplayActive = true;
+
+      // Actualizar UI
+      document.getElementById('replay-banner').classList.add('hidden');
+      document.getElementById('replay-controls').classList.remove('hidden');
+      document.getElementById('replay-controls').classList.add('flex');
+      document.getElementById('btn-cut-replay').classList.remove('bg-amber-500', 'text-black');
+      document.getElementById('btn-cut-replay').classList.add('bg-[#252a37]', 'text-amber-400');
+      c1.classList.remove('scissor-cursor');
+
+      // Aplicar corte: mostrar solo hasta la vela elegida
+      const sliced = originalFullCandles.slice(0, replayIndex + 1);
+      allCandles = sliced;
+      candleSeries1.setData(allCandles);
+
+      updateReplayIndicators();
+
+      document.getElementById('agent-verdict').innerText = 
+        `Modo Replay Manual Activo. Gráfico cortado en la vela #${replayIndex + 1} de ${originalFullCandles.length}. Presiona ▶ o ⏭ para avanzar.`;
+    }
+
+    function updateReplayIndicators() {
+      if (allCandles.length > 0) {
+        const lastCandle = allCandles[allCandles.length - 1];
+        document.getElementById('price-display').innerText = `$${lastCandle.close.toFixed(2)}`;
+
+        if (ema9) ema9.setData(calcEMA(allCandles, 9));
+        if (ema21) ema21.setData(calcEMA(allCandles, 21));
+        if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+      }
+    }
+
+    function stepForwardReplay() {
+      if (!isReplayActive || replayIndex >= originalFullCandles.length - 1) return;
+
+      replayIndex++;
+      const nextCandle = originalFullCandles[replayIndex];
+      allCandles.push(nextCandle);
+      candleSeries1.update(nextCandle);
+      updateReplayIndicators();
+    }
+
+    function togglePlayReplay() {
+      if (!isReplayActive) return;
+
+      const playBtn = document.getElementById('btn-play-replay');
+      if (replayIntervalId) {
+        // Pausar
+        clearInterval(replayIntervalId);
+        replayIntervalId = null;
+        playBtn.innerText = "▶";
+        playBtn.className = "px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold";
+      } else {
+        // Reproducir
+        playBtn.innerText = "⏸";
+        playBtn.className = "px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold";
+        const speed = parseInt(document.getElementById('replaySpeed').value) || 500;
+
+        replayIntervalId = setInterval(() => {
+          if (replayIndex >= originalFullCandles.length - 1) {
+            togglePlayReplay();
+            alert("Fin del historial de simulación alcanzado.");
+            return;
+          }
+          stepForwardReplay();
+        }, speed);
+      }
+    }
+
+    function exitReplayMode() {
+      if (replayIntervalId) {
+        clearInterval(replayIntervalId);
+        replayIntervalId = null;
+      }
+      isReplayActive = false;
+      isCutModeActive = false;
+
+      document.getElementById('replay-banner').classList.add('hidden');
+      document.getElementById('replay-controls').classList.add('hidden');
+      document.getElementById('replay-controls').classList.remove('flex');
+      document.getElementById('btn-play-replay').innerText = "▶";
+      c1.classList.remove('scissor-cursor');
+
+      // Restaurar dataset completo
+      if (originalFullCandles.length > 0) {
+        allCandles = [...originalFullCandles];
+        candleSeries1.setData(allCandles);
+        updateReplayIndicators();
+        chart1.timeScale().fitContent();
+      }
+
+      document.getElementById('agent-verdict').innerText = 
+        `Modo Replay finalizado. Datos en tiempo real restaurados.`;
+    }
+
+    // --- PARSER DE ARCHIVOS CSV DE METATRADER 5 ---
+    function handleMT5CSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        if (lines.length < 2) {
+          alert("El archivo CSV no contiene suficientes datos.");
+          return;
+        }
+
+        const parsed = [];
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(/[,\t;]/).map(item => item.trim().replace(/"/g, ''));
+          if (row.length < 5) continue;
+
+          // Admite formato: Fecha, Hora, Apertura, Máximo, Mínimo, Cierre o FechaHora combinada
+          let timeVal = 0;
+          let o = 0, h = 0, l = 0, c = 0;
+
+          if (row.length >= 6 && row[0].includes('.') || row[0].includes('-') || row[0].includes('/')) {
+            const dateStr = row[0].replace(/\./g, '-');
+            const timeStr = row[1];
+            timeVal = Math.floor(new Date(`${dateStr}T${timeStr}Z`).getTime() / 1000);
+            o = parseFloat(row[2]);
+            h = parseFloat(row[3]);
+            l = parseFloat(row[4]);
+            c = parseFloat(row[5]);
+          } else {
+            timeVal = Math.floor(new Date(row[0]).getTime() / 1000);
+            o = parseFloat(row[1]);
+            h = parseFloat(row[2]);
+            l = parseFloat(row[3]);
+            c = parseFloat(row[4]);
+          }
+
+          if (!isNaN(timeVal) && !isNaN(o) && !isNaN(h) && !isNaN(l) && !isNaN(c)) {
+            parsed.push({ time: timeVal, open: o, high: h, low: l, close: c });
+          }
+        }
+
+        if (parsed.length > 0) {
+          parsed.sort((a, b) => a.time - b.time);
+          allCandles = parsed;
+          originalFullCandles = [...parsed];
+          candleSeries1.setData(allCandles);
+          chart1.timeScale().fitContent();
+
+          if (ema9) ema9.setData(calcEMA(allCandles, 9));
+          if (ema21) ema21.setData(calcEMA(allCandles, 21));
+          if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+
+          document.getElementById('price-display').innerText = `$${allCandles[allCandles.length - 1].close.toFixed(2)}`;
+          document.getElementById('agent-verdict').innerText = 
+            `Historial MT5 cargado exitosamente: ${parsed.length} velas procesadas. Listo para cortar con tijera o simular.`;
+        } else {
+          alert("No se pudo interpretar el formato del CSV de MT5. Verifica las columnas.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // --- CÁLCULO DE MEDIAS MÓVILES ---
     function calcEMA(data, period) {
+      if (!data || data.length === 0) return [];
       const k = 2 / (period + 1);
       let ema = data[0].close;
       return data.map(d => {
@@ -445,11 +756,29 @@
       if (allCandles.length > 0) {
         if (ema9) ema9.setData(calcEMA(allCandles, 9));
         if (ema21) ema21.setData(calcEMA(allCandles, 21));
-        if (ema200) ema200.setData(calcEMA(allCandles, 200));
+        if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
       }
     }
 
-    // --- 7. BACKTEST CON GENERACIÓN DE CURVA DE EQUIDAD ---
+    // --- CUENTA REGRESIVA DE VELA ---
+    function updateCountdown() {
+      const tf = document.getElementById('timeframeSelect').value;
+      let tfSec = 900;
+      if (tf.endsWith('s')) tfSec = parseInt(tf);
+      else if (tf.endsWith('m')) tfSec = parseInt(tf) * 60;
+      else if (tf.endsWith('h')) tfSec = parseInt(tf) * 3600;
+      else if (tf === '1D') tfSec = 86400;
+
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = tfSec - (now % tfSec);
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      document.getElementById('countdown-timer').innerText = 
+        `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    setInterval(updateCountdown, 1000);
+
+    // --- BACKTEST CON MOTOR MONTE CARLO ---
     async function runOneClickBacktest() {
       const tf = document.getElementById('timeframeSelect').value;
       const symbol = document.getElementById('symbolSelect').value;
@@ -463,16 +792,14 @@
         });
         const data = await res.json();
 
-        // Actualizar panel inferior estilo TV
         document.getElementById('st-pyg').innerText = `${data.summary.total_return_pct}%`;
         document.getElementById('st-dd').innerText = `${data.robustness_monte_carlo.max_drawdown_risk_95_conf}`;
         document.getElementById('st-winrate').innerText = `${data.summary.win_rate_pct}%`;
         document.getElementById('st-pf').innerText = `${data.summary.profit_factor}`;
 
-        // Generar curva de equidad
         if (allCandles.length > 20) {
           let capital = 1000;
-          const eqPoints = allCandles.slice(0, 50).map((c, i) => {
+          const eqPoints = allCandles.slice(0, 50).map((c) => {
             capital += (Math.random() > 0.45 ? 1 : -1) * (Math.random() * 25);
             return { time: c.time, value: capital };
           });
@@ -480,20 +807,20 @@
           equityChart.timeScale().fitContent();
         }
 
-        document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
+        document.getElementById('agent-verdict').innerText = 
+          `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
       } catch (e) {
         document.getElementById('agent-verdict').innerText = "Error al conectar con la nube.";
       }
     }
 
-    window.addEventListener('resize', () => {
-      chart1.resize(c1.clientWidth, c1.clientHeight);
-      equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
-    });
+    // Manejador de cambio de resolución de ventana
+    window.addEventListener('resize', resizeAllCharts);
 
     document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
     document.getElementById('symbolSelect').addEventListener('change', loadCandles);
 
+    // Carga inicial
     loadCandles();
   </script>
 </body>
