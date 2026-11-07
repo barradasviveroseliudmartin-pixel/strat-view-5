@@ -2,78 +2,202 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>StratView-5 | TradingView + MT5 + Stratos Cloud</title>
+  <title>StratView-5 | Institutional Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Motor Oficial de Gráficos de TradingView -->
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 </head>
-<body class="bg-gray-950 text-gray-100 flex flex-col h-screen overflow-hidden">
+<body class="bg-gray-950 text-gray-100 flex flex-col h-screen overflow-hidden select-none">
 
-  <!-- Header Superior -->
-  <header class="h-14 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900 shrink-0">
+  <!-- Header Superior Profesional -->
+  <header class="h-14 border-b border-gray-800 flex items-center justify-between px-5 bg-gray-900 shrink-0">
     <div class="flex items-center space-x-3">
-      <span class="text-emerald-400 font-bold text-lg tracking-wide">STRATVIEW-5</span>
-      <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded font-mono">Cloud Engine Live</span>
+      <span class="text-emerald-400 font-extrabold text-lg tracking-wider">STRATVIEW-5</span>
+      <span id="live-indicator" class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 font-mono">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live WebSocket
+      </span>
+      <span id="db-counter" class="text-xs text-gray-400 font-mono bg-gray-800 px-2 py-0.5 rounded">
+        Velas en BD: 0
+      </span>
     </div>
-    <div class="flex items-center space-x-4">
-      <label class="text-xs text-gray-400">Temporalidad:</label>
-      <select id="timeframeSelect" class="bg-gray-800 border border-gray-700 text-sm rounded px-3 py-1 text-gray-200 outline-none">
-        <option value="1m">1m</option>
-        <option value="5m">5m</option>
-        <option value="15m">15m</option>
-        <option value="1h" selected>1h</option>
-        <option value="1d">1D</option>
-      </select>
-      <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-1.5 rounded transition shadow-lg shadow-emerald-900/30">
+
+    <!-- Selector de Temporalidades Completo (Segundos a Meses) -->
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center bg-gray-800 border border-gray-700 rounded px-2 py-1">
+        <span class="text-xs text-gray-400 mr-2 font-medium">TF:</span>
+        <select id="timeframeSelect" class="bg-transparent text-sm text-gray-200 outline-none cursor-pointer font-mono">
+          <optgroup label="Segundos">
+            <option value="1s">1s</option>
+            <option value="5s">5s</option>
+            <option value="15s">15s</option>
+            <option value="30s">30s</option>
+          </optgroup>
+          <optgroup label="Minutos">
+            <option value="1m">1m</option>
+            <option value="3m">3m</option>
+            <option value="5m">5m</option>
+            <option value="15m" selected>15m</option>
+            <option value="30m">30m</option>
+          </optgroup>
+          <optgroup label="Horas">
+            <option value="1h">1h</option>
+            <option value="2h">2h</option>
+            <option value="4h">4h</option>
+          </optgroup>
+          <optgroup label="Días y Meses">
+            <option value="1D">1D</option>
+            <option value="1W">1W</option>
+            <option value="1M">1M</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Botón Cargar CSV de MT5 -->
+      <label class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 text-xs px-3 py-1.5 rounded cursor-pointer transition flex items-center gap-1.5 font-medium">
+        <span>📁 Importar MT5 (.csv)</span>
+        <input type="file" id="csvFileInput" accept=".csv,.txt" class="hidden">
+      </label>
+
+      <!-- Botón de Backtest -->
+      <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-1.5 rounded transition shadow-lg shadow-emerald-900/30 flex items-center gap-1">
         ⚡ Backtest de 1-Clic
       </button>
     </div>
   </header>
 
-  <!-- Gráfica TradingView y Panel de Robustez -->
+  <!-- Área Principal: Gráfico TradingView + Panel Cuantitativo -->
   <div class="flex-1 flex overflow-hidden relative">
+    <!-- Contenedor del Gráfico TradingView -->
     <div id="chart-container" class="flex-1 h-full bg-[#090d16] relative"></div>
 
+    <!-- Panel Lateral de Robustez Cuantitativa (Estilo Stratos) -->
     <aside class="w-96 border-l border-gray-800 bg-gray-900 p-5 flex flex-col gap-4 overflow-y-auto shrink-0">
-      <div class="border-b border-gray-800 pb-3">
-        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Robustez Cuantitativa</h2>
-        <p class="text-xs text-gray-500">Métricas avanzadas Monte Carlo 2026</p>
+      <div class="border-b border-gray-800 pb-3 flex justify-between items-center">
+        <div>
+          <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Métricas de Robustez</h2>
+          <p class="text-xs text-gray-500">Simulación Cuantitativa 2026</p>
+        </div>
+        <span id="price-display" class="text-sm font-mono font-bold text-emerald-400">--.--</span>
       </div>
       
+      <!-- Cuadrícula de Métricas -->
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
           <p class="text-xs text-gray-400">Retorno Total</p>
-          <p id="res-return" class="text-lg font-bold text-emerald-400">--</p>
+          <p id="res-return" class="text-lg font-bold text-emerald-400 font-mono">--</p>
         </div>
         <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
           <p class="text-xs text-gray-400">Profit Factor</p>
-          <p id="res-pf" class="text-lg font-bold text-gray-100">--</p>
+          <p id="res-pf" class="text-lg font-bold text-gray-100 font-mono">--</p>
         </div>
         <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
           <p class="text-xs text-gray-400">Sharpe Ratio</p>
-          <p id="res-sharpe" class="text-lg font-bold text-gray-100">--</p>
+          <p id="res-sharpe" class="text-lg font-bold text-gray-100 font-mono">--</p>
         </div>
         <div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700">
           <p class="text-xs text-gray-400">Max DD (95% Conf)</p>
-          <p id="res-dd" class="text-lg font-bold text-rose-400">--</p>
+          <p id="res-dd" class="text-lg font-bold text-rose-400 font-mono">--</p>
         </div>
       </div>
 
+      <!-- Diagnóstico del Agente de IA Cuantitativo -->
       <div class="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mt-2">
         <div class="flex items-center space-x-2 mb-2">
           <div class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></div>
           <p class="text-xs font-semibold text-gray-300">Agente Cuantitativo IA</p>
         </div>
-        <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
-          Haz clic en "⚡ Backtest de 1-Clic" para simular 1,000 iteraciones Monte Carlo en la nube.
+        <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed font-sans">
+          Esperando datos para auditar la estrategia sobre el histórico cargado...
         </p>
+      </div>
+
+      <!-- Estado de la Base de Datos -->
+      <div class="bg-gray-950 p-3 rounded border border-gray-800 text-[11px] text-gray-400 font-mono">
+        <p class="text-gray-300 font-semibold mb-1">Estado de Ingesta:</p>
+        <p>• Motor: IndexedDB Local-Cloud Storage</p>
+        <p>• Buffer: Streaming por bloques (60 FPS)</p>
+        <p id="ingest-status">• Esperando carga o ticks en vivo...</p>
       </div>
     </aside>
   </div>
 
   <script>
     const API_BASE_URL = "https://strat-view-5.onrender.com";
-    const container = document.getElementById('chart-container');
 
+    // --- 1. MOTOR DE BASE DE DATOS LOCAL (IndexedDB) ---
+    let db;
+    const DB_NAME = "StratViewDB";
+    const DB_VERSION = 1;
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          db = e.target.result;
+          if (!db.objectStoreNames.contains("candles")) {
+            const store = db.createObjectStore("candles", { keyPath: "id" });
+            store.createIndex("by_tf_time", ["timeframe", "time"], { unique: true });
+          }
+        };
+        req.onsuccess = (e) => {
+          db = e.target.result;
+          updateDBCounter();
+          resolve(db);
+        };
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    async function saveCandlesToDB(timeframe, candles) {
+      if (!db) await initDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction("candles", "readwrite");
+        const store = tx.objectStore("candles");
+        for (const c of candles) {
+          store.put({
+            id: `${timeframe}_${c.time}`,
+            timeframe: timeframe,
+            time: c.time,
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume || 0
+          });
+        }
+        tx.oncomplete = () => {
+          updateDBCounter();
+          resolve();
+        };
+      });
+    }
+
+    async function getCandlesFromDB(timeframe) {
+      if (!db) await initDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction("candles", "readonly");
+        const store = tx.objectStore("candles");
+        const req = store.getAll();
+        req.onsuccess = () => {
+          const all = req.result
+            .filter(r => r.timeframe === timeframe)
+            .sort((a, b) => a.time - b.time);
+          resolve(all);
+        };
+      });
+    }
+
+    function updateDBCounter() {
+      if (!db) return;
+      const tx = db.transaction("candles", "readonly");
+      const req = tx.objectStore("candles").count();
+      req.onsuccess = () => {
+        document.getElementById('db-counter').innerText = `Velas en BD: ${req.result.toLocaleString()}`;
+      };
+    }
+
+    // --- 2. CONFIGURACIÓN DEL GRÁFICO TRADINGVIEW ---
+    const container = document.getElementById('chart-container');
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth || 800,
       height: container.clientHeight || 600,
@@ -82,12 +206,12 @@
         textColor: '#d1d4dc'
       },
       grid: {
-        vertLines: { color: '#1a2234' },
-        horzLines: { color: '#1a2234' }
+        vertLines: { color: '#161e2e' },
+        horzLines: { color: '#161e2e' }
       },
       timeScale: {
         timeVisible: true,
-        secondsVisible: false
+        secondsVisible: true
       }
     });
 
@@ -100,61 +224,196 @@
       wickDownColor: '#ef4444'
     });
 
-    async function loadCandles() {
-      const interval = document.getElementById('timeframeSelect').value;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/candles?symbol=BTC-USD&interval=${interval}`);
-        const json = await res.json();
-        
-        // Formatear velas asegurando compatibilidad con los nombres de campos
-        const rawList = json.data || json.datos || [];
-        const formatted = rawList.map(d => ({
-          time: Number(d.time || d.tiempo),
-          open: Number(d.open || d.apertura),
-          high: Number(d.high || d.máximo || d.maximo),
-          low: Number(d.low || d.mínimo || d.minimo),
-          close: Number(d.close || d.cierre)
-        })).filter(c => !isNaN(c.time) && !isNaN(c.close));
+    let currentCandle = null;
 
-        // Ordenar estrictamente de forma ascendente
-        formatted.sort((a, b) => a.time - b.time);
+    // --- 3. CONEXIÓN A WEBSOCKET EN VIVO (Ticks y Velas del Futuro) ---
+    function connectWebSocket() {
+      // Flujo de datos en tiempo real directo desde Coinbase WebSocket
+      const ws = new WebSocket("wss://ws-feed.exchange.coinbase.com");
 
-        // Eliminar duplicados de fecha
-        const cleanCandles = [];
-        const seen = new Set();
-        for (const c of formatted) {
-          if (!seen.has(c.time)) {
-            seen.add(c.time);
-            cleanCandles.push(c);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          type: "subscribe",
+          product_ids: ["BTC-USD"],
+          channels: ["ticker"]
+        }));
+        document.getElementById('ingest-status').innerText = "• WebSocket activo: Registrando velas del futuro...";
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "ticker" && msg.price) {
+          const price = parseFloat(msg.price);
+          document.getElementById('price-display').innerText = `$${price.toFixed(2)}`;
+
+          const now = Math.floor(Date.now() / 1000);
+          const tf = document.getElementById('timeframeSelect').value;
+
+          // Si no hay vela actual o ya pasó el periodo, iniciamos una nueva
+          if (!currentCandle || now - currentCandle.time >= getTimeframeSeconds(tf)) {
+            currentCandle = {
+              time: now,
+              open: price,
+              high: price,
+              low: price,
+              close: price
+            };
+          } else {
+            currentCandle.high = Math.max(currentCandle.high, price);
+            currentCandle.low = Math.min(currentCandle.low, price);
+            currentCandle.close = price;
+          }
+
+          candleSeries.update(currentCandle);
+          saveCandlesToDB(tf, [currentCandle]);
+        }
+      };
+
+      ws.onerror = () => {
+        document.getElementById('ingest-status').innerText = "• Reconectando WebSocket...";
+        setTimeout(connectWebSocket, 5000);
+      };
+    }
+
+    function getTimeframeSeconds(tf) {
+      if (tf.endsWith('s')) return parseInt(tf);
+      if (tf.endsWith('m')) return parseInt(tf) * 60;
+      if (tf.endsWith('h')) return parseInt(tf) * 3600;
+      if (tf === '1D') return 86400;
+      if (tf === '1W') return 604800;
+      if (tf === '1M') return 2592000;
+      return 60;
+    }
+
+    // --- 4. IMPORTADOR UNIVERSAL DE ARCHIVOS MT5 (.CSV) ---
+    document.getElementById('csvFileInput').addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      document.getElementById('ingest-status').innerText = `• Procesando archivo MT5: ${file.name}...`;
+
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        const text = evt.target.result;
+        const lines = text.split(/\r?\n/);
+        const parsedCandles = [];
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith('<') || line.startsWith('Date')) continue;
+
+          // Detectar separador (coma, punto y coma o tabulador de MT5)
+          const sep = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : ',');
+          const parts = line.split(sep).map(p => p.trim());
+
+          if (parts.length >= 5) {
+            // MT5 típicamente: Fecha, Hora, Apertura, Máximo, Mínimo, Cierre, Volumen
+            let timeUnix;
+            let open, high, low, close, vol = 0;
+
+            if (parts[0].includes(' ') || parts.length === 6) {
+              // Formato Fecha y Hora juntas
+              timeUnix = Math.floor(new Date(parts[0].replace(/\./g, '-')).getTime() / 1000);
+              open = parseFloat(parts[1]);
+              high = parseFloat(parts[2]);
+              low = parseFloat(parts[3]);
+              close = parseFloat(parts[4]);
+              vol = parseFloat(parts[5] || 0);
+            } else {
+              // Formato MT5 estándar: Date (parts[0]), Time (parts[1]), Open, High, Low, Close
+              const dateStr = parts[0].replace(/\./g, '-');
+              const timeStr = parts[1];
+              timeUnix = Math.floor(new Date(`${dateStr}T${timeStr}Z`).getTime() / 1000);
+              open = parseFloat(parts[2]);
+              high = parseFloat(parts[3]);
+              low = parseFloat(parts[4]);
+              close = parseFloat(parts[5]);
+              vol = parseFloat(parts[6] || 0);
+            }
+
+            if (!isNaN(timeUnix) && !isNaN(close)) {
+              parsedCandles.push({
+                time: timeUnix,
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                volume: vol
+              });
+            }
           }
         }
 
-        candleSeries.setData(cleanCandles);
+        if (parsedCandles.length > 0) {
+          // Ordenar cronológicamente
+          parsedCandles.sort((a, b) => a.time - b.time);
+          const tf = document.getElementById('timeframeSelect').value;
+
+          await saveCandlesToDB(tf, parsedCandles);
+          candleSeries.setData(parsedCandles);
+          chart.timeScale().fitContent();
+
+          document.getElementById('ingest-status').innerText = `• Éxito: ${parsedCandles.length.toLocaleString()} velas de MT5 importadas.`;
+        } else {
+          alert("El archivo no contenía formato válido de velas MT5.");
+        }
+      };
+
+      reader.readAsText(file);
+    });
+
+    // --- 5. CARGA DE VELAS DESDE SERVIDOR O BD ---
+    async function loadCandles() {
+      const tf = document.getElementById('timeframeSelect').value;
+      const cached = await getCandlesFromDB(tf);
+
+      if (cached.length > 0) {
+        candleSeries.setData(cached);
         chart.timeScale().fitContent();
-      } catch (err) {
-        console.error("Error al cargar velas:", err);
+        document.getElementById('ingest-status').innerText = `• Mostrando ${cached.length.toLocaleString()} velas desde IndexedDB.`;
+      } else {
+        // Si la base local está vacía, descargar las iniciales desde el backend de Render
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/candles?symbol=BTC-USD&interval=${tf}`);
+          const json = await res.json();
+          const raw = json.data || json.datos || [];
+          const clean = raw.map(d => ({
+            time: Number(d.time || d.tiempo),
+            open: Number(d.open || d.apertura),
+            high: Number(d.high || d.máximo || d.maximo),
+            low: Number(d.low || d.mínimo || d.minimo),
+            close: Number(d.close || d.cierre)
+          })).sort((a, b) => a.time - b.time);
+
+          await saveCandlesToDB(tf, clean);
+          candleSeries.setData(clean);
+          chart.timeScale().fitContent();
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
 
+    // --- 6. MOTOR DE BACKTEST CUANTITATIVO ---
     async function runOneClickBacktest() {
-      const interval = document.getElementById('timeframeSelect').value;
-      document.getElementById('agent-verdict').innerText = "Simulando 1,000 iteraciones Monte Carlo en la nube...";
+      const tf = document.getElementById('timeframeSelect').value;
+      document.getElementById('agent-verdict').innerText = "Ejecutando simulación Monte Carlo de 1,000 iteraciones en la nube...";
 
       try {
         const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: "BTC-USD", interval: interval, fast_ma: 9, slow_ma: 21 })
+          body: JSON.stringify({ symbol: "BTC-USD", interval: tf, fast_ma: 9, slow_ma: 21 })
         });
         const data = await res.json();
-        
+
         document.getElementById('res-return').innerText = `${data.summary.total_return_pct}%`;
         document.getElementById('res-pf').innerText = data.summary.profit_factor;
         document.getElementById('res-sharpe').innerText = data.summary.sharpe_ratio;
         document.getElementById('res-dd').innerText = data.robustness_monte_carlo.max_drawdown_risk_95_conf;
         document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno esperado mediano: ${data.robustness_monte_carlo.median_expected_return}`;
       } catch (err) {
-        document.getElementById('agent-verdict').innerText = "Error de conexión con el motor en la nube.";
+        document.getElementById('agent-verdict').innerText = "Error al conectar con el motor cuantitativo en la nube.";
       }
     }
 
@@ -163,7 +422,12 @@
     });
 
     document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
-    loadCandles();
+
+    // Inicializar todo
+    initDB().then(() => {
+      loadCandles();
+      connectWebSocket();
+    });
   </script>
 </body>
 </html>
