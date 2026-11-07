@@ -6,14 +6,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 </head>
-<body class="bg-[#0b0e14] text-gray-200 flex flex-col h-screen overflow-hidden select-none font-sans">
+<body class="bg-[#0b0e14] text-gray-200 flex flex-col h-screen overflow-hidden select-none font-sans" oncontextmenu="return false;">
 
   <!-- Header Superior Estilo TradingView -->
-  <header class="h-12 border-b border-gray-800 flex items-center justify-between px-3 bg-[#131722] shrink-0 z-20">
+  <header class="h-12 border-b border-gray-800 flex items-center justify-between px-3 bg-[#131722] shrink-0 z-30">
     <div class="flex items-center space-x-2">
       <span class="text-emerald-400 font-extrabold text-base tracking-wider mr-2">STRATVIEW-5</span>
 
-      <!-- Selector de Mercados Completo -->
+      <!-- Selector de Mercados -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
         <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer">
           <optgroup label="Criptomonedas">
@@ -67,27 +67,24 @@
         </select>
       </div>
 
-      <!-- Botón Menú Indicadores Oficiales -->
+      <!-- Menú Indicadores -->
       <button onclick="toggleIndicatorsModal()" class="flex items-center gap-1.5 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-3 py-1 rounded text-xs font-semibold transition text-gray-200">
         <span>fx</span> Indicadores
       </button>
 
       <!-- Botón Modo Replay (Cortar Gráfico) -->
-      <button id="replayBtn" onclick="toggleReplayMode()" class="flex items-center gap-1 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold transition text-gray-300">
-        ⏮ Replay
-      </button>
-      <button id="nextBarBtn" onclick="stepForwardReplay()" class="hidden bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold transition">
-        ▶ 1 Vela
+      <button id="replayBtn" onclick="activateReplayCutMode()" class="flex items-center gap-1 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold transition text-gray-300">
+        ✂ Replay (Cortar)
       </button>
 
-      <!-- Selector Multitarea de Pantallas -->
+      <!-- Selector de Pantallas (1 o 2) -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded p-0.5">
-        <button onclick="setGrid(1)" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
-        <button onclick="setGrid(2)" title="2 Pantallas" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2</button>
+        <button id="grid-1" onclick="setGrid(1)" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
+        <button id="grid-2" onclick="setGrid(2)" title="2 Pantallas" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2</button>
       </div>
     </div>
 
-    <!-- Indicador en Vivo y Backtest -->
+    <!-- Acciones Derecha -->
     <div class="flex items-center space-x-3">
       <label class="bg-[#1e222d] hover:bg-[#2a2e39] text-gray-300 border border-gray-700 text-xs px-2.5 py-1 rounded cursor-pointer transition flex items-center gap-1">
         <span>📁 Importar MT5</span>
@@ -99,46 +96,56 @@
     </div>
   </header>
 
-  <!-- Cuerpo de la Plataforma -->
+  <!-- Barra Flotante de Control de Replay (Aparece al cortar) -->
+  <div id="replayToolbar" class="hidden absolute top-14 left-1/2 transform -translate-x-1/2 bg-[#1e222d] border border-amber-500/80 shadow-2xl rounded-lg px-4 py-2 z-40 flex items-center gap-3">
+    <span class="text-xs font-bold text-amber-400 font-mono">MODO REPLAY</span>
+    <button onclick="toggleReplayPlay()" id="replayPlayBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-bold transition">
+      ▶ Play
+    </button>
+    <button onclick="stepForwardReplay()" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded text-xs font-bold transition">
+      ⏭ 1 Vela
+    </button>
+    <button onclick="exitReplayMode()" class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1 rounded text-xs font-bold transition">
+      ✕ Salir
+    </button>
+  </div>
+
+  <!-- Contenedor Principal de la Plataforma -->
   <div class="flex-1 flex overflow-hidden relative">
 
-    <!-- Barra de Herramientas de Dibujo Lateral (Estilo TradingView) -->
-    <aside class="w-11 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-3 space-y-3 shrink-0 z-10 text-gray-400">
-      <button onclick="setTool('crosshair')" title="Cruz / Cursor" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39] text-emerald-400">
+    <!-- Barra de Herramientas de Dibujo Lateral Izquierda -->
+    <aside class="w-11 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-3 space-y-3 shrink-0 z-20 text-gray-400">
+      <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="tool-btn p-1.5 rounded text-emerald-400 bg-[#2a2e39]">
         ✛
       </button>
-      <button onclick="setTool('trendline')" title="Línea de Tendencia" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
-        ╱
-      </button>
-      <button onclick="setTool('horizontal')" title="Nivel Horizontal" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
+      <button onclick="selectTool('horizontal')" id="tool-horizontal" title="Línea Horizontal (Clic en el gráfico)" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
         ―
       </button>
-      <button onclick="setTool('fibonacci')" title="Fibonacci" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
-        ≡
+      <button onclick="selectTool('trendline')" id="tool-trendline" title="Línea de Tendencia" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
+        ╱
       </button>
-      <button onclick="setTool('ruler')" title="Regla de Pips" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
+      <button onclick="selectTool('ruler')" id="tool-ruler" title="Regla de Pips" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
         📐
       </button>
       <div class="w-6 border-b border-gray-800"></div>
-      <button onclick="clearDrawings()" title="Borrar Dibujos" class="p-1.5 rounded hover:bg-rose-950/50 hover:text-rose-400">
+      <button onclick="clearAllDrawings()" title="Borrar Todos los Dibujos" class="p-1.5 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">
         🗑
       </button>
     </aside>
 
-    <!-- Área de Gráficos (1 o 2 pantallas) -->
+    <!-- Área de Gráficos (Workspace para 1 o 2 pantallas) -->
     <div id="workspace" class="flex-1 flex h-full bg-[#090d16] relative overflow-hidden">
-      <!-- Pantalla 1 -->
-      <div id="chart-panel-1" class="flex-1 flex flex-col h-full border-r border-gray-800/50 relative">
+      
+      <!-- Pantalla 1 (Principal) -->
+      <div id="chart-panel-1" class="flex-1 flex flex-col h-full border-r border-gray-800/40 relative">
         <div id="chart-container-1" class="flex-1 w-full relative"></div>
-        <div id="rsi-container" class="h-32 w-full border-t border-gray-800 hidden bg-[#06080e] relative">
-          <div class="absolute top-1 left-2 text-[10px] font-mono text-purple-400 font-bold z-10">RSI (14)</div>
-        </div>
       </div>
 
-      <!-- Pantalla 2 (Multitarea opcional) -->
-      <div id="chart-panel-2" class="flex-1 flex flex-col h-full relative hidden">
-        <div class="h-7 bg-[#131722] border-b border-gray-800 flex items-center px-2 text-[11px] text-gray-400 font-mono">
-          Pantalla 2 - Vista Secundaria (4h)
+      <!-- Pantalla 2 (Secundaria para multipantalla) -->
+      <div id="chart-panel-2" class="flex-1 flex flex-col h-full relative hidden border-l border-gray-800">
+        <div class="h-6 bg-[#131722] border-b border-gray-800 flex items-center justify-between px-2 text-[10px] text-gray-400 font-mono">
+          <span>Pantalla 2 (Visor de Temporalidad Mayor)</span>
+          <span class="text-emerald-400">4h</span>
         </div>
         <div id="chart-container-2" class="flex-1 w-full relative"></div>
       </div>
@@ -200,7 +207,21 @@
     </aside>
   </div>
 
-  <!-- Modal Flotante de Indicadores Técnicos Oficiales -->
+  <!-- Menú Contextual de Clic Derecho (Estilo TradingView) -->
+  <div id="contextMenu" class="hidden fixed bg-[#1e222d] border border-gray-700 rounded-lg shadow-2xl py-1.5 w-56 z-50 text-xs">
+    <div class="px-3 py-1 text-gray-400 font-bold border-b border-gray-700 text-[10px] uppercase">Opciones del Gráfico</div>
+    <button onclick="removeAllIndicators()" class="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2 text-gray-200">
+      <span>✕</span> Eliminar Todos los Indicadores
+    </button>
+    <button onclick="clearAllDrawings()" class="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2 text-gray-200">
+      <span>🗑</span> Eliminar Todos los Dibujos
+    </button>
+    <button onclick="resetChart()" class="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2 text-gray-200">
+      <span>🔄</span> Restablecer Escala del Gráfico
+    </button>
+  </div>
+
+  <!-- Modal de Indicadores -->
   <div id="indicatorsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
       <div class="p-3 border-b border-gray-700 flex justify-between items-center bg-[#131722]">
@@ -218,15 +239,7 @@
         </label>
         <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
           <span>EMA 200 (Tendencia Mayor)</span>
-          <input type="checkbox" id="check-ema200" onchange="toggleIndicator('ema200')">
-        </label>
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>Bandas de Bollinger (20, 2)</span>
-          <input type="checkbox" id="check-bb" onchange="toggleIndicator('bb')">
-        </label>
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>RSI (Índice de Fuerza Relativa 14)</span>
-          <input type="checkbox" id="check-rsi" onchange="toggleIndicator('rsi')">
+          <input type="checkbox" id="check-ema200" checked onchange="toggleIndicator('ema200')">
         </label>
       </div>
     </div>
@@ -242,6 +255,7 @@
       height: container1.clientHeight || 500,
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
       timeScale: { timeVisible: true, secondsVisible: true }
     });
 
@@ -254,15 +268,197 @@
     // Indicadores
     let ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
     let ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
-    let ema200 = null;
-    let bbUpper = null, bbLower = null;
-    let rsiChart = null, rsiSeries = null;
+    let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
+
+    // Líneas dibujadas por el usuario
+    let drawnPriceLines = [];
+    let activeTool = 'crosshair';
+
+    // Gráfico Secundario (Pantalla 2)
+    let chart2 = null, candleSeries2 = null;
 
     let allCandles = [];
     let isReplay = false;
+    let replayCutWaiting = false;
     let replayIndex = 0;
+    let replayInterval = null;
 
-    // --- 2. CUENTA REGRESIVA DE VELA (COUNTDOWN) ---
+    // --- 2. HERRAMIENTAS DE DIBUJO DIRECTO SOBRE EL GRÁFICO ---
+    function selectTool(tool) {
+      activeTool = tool;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('bg-[#2a2e39]', 'text-emerald-400'));
+      const activeBtn = document.getElementById(`tool-${tool}`);
+      if (activeBtn) activeBtn.classList.add('bg-[#2a2e39]', 'text-emerald-400');
+
+      if (tool === 'horizontal') {
+        container1.style.cursor = 'crosshair';
+      } else {
+        container1.style.cursor = 'default';
+      }
+    }
+
+    // Al hacer clic en el gráfico con la herramienta seleccionada
+    chart1.subscribeClick((param) => {
+      if (!param || !param.point) return;
+
+      // Si estamos en modo de cortar Replay
+      if (replayCutWaiting && param.time) {
+        executeReplayCutAt(param.time);
+        return;
+      }
+
+      // Si la herramienta es línea horizontal: trazamos una línea de precio real en el gráfico
+      if (activeTool === 'horizontal') {
+        const price = candleSeries1.coordinateToPrice(param.point.y);
+        if (price) {
+          const line = candleSeries1.createPriceLine({
+            price: price,
+            color: '#38bdf8',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid,
+            axisLabelVisible: true,
+            title: `Nivel: ${price.toFixed(2)}`
+          });
+          drawnPriceLines.push(line);
+          selectTool('crosshair'); // Regresa al cursor normal
+        }
+      }
+    });
+
+    function clearAllDrawings() {
+      drawnPriceLines.forEach(line => candleSeries1.removePriceLine(line));
+      drawnPriceLines = [];
+      closeContextMenu();
+    }
+
+    // --- 3. MENÚ CONTEXTUAL DE CLIC DERECHO ESTILO TRADINGVIEW ---
+    container1.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const menu = document.getElementById('contextMenu');
+      menu.style.top = `${e.clientY}px`;
+      menu.style.left = `${e.clientX}px`;
+      menu.classList.remove('hidden');
+    });
+
+    window.addEventListener('click', () => {
+      closeContextMenu();
+    });
+
+    function closeContextMenu() {
+      document.getElementById('contextMenu').classList.add('hidden');
+    }
+
+    function removeAllIndicators() {
+      if (ema9) { chart1.removeSeries(ema9); ema9 = null; document.getElementById('check-ema9').checked = false; }
+      if (ema21) { chart1.removeSeries(ema21); ema21 = null; document.getElementById('check-ema21').checked = false; }
+      if (ema200) { chart1.removeSeries(ema200); ema200 = null; document.getElementById('check-ema200').checked = false; }
+      closeContextMenu();
+    }
+
+    function resetChart() {
+      chart1.timeScale().fitContent();
+      closeContextMenu();
+    }
+
+    // --- 4. REPLAY AVANZADO (CORTAR EN CUALQUIER VELA DEL PASADO) ---
+    function activateReplayCutMode() {
+      if (allCandles.length < 10) return;
+      replayCutWaiting = true;
+      document.getElementById('replayBtn').innerText = "✂ Clic en una vela para cortar";
+      document.getElementById('replayBtn').classList.add('bg-amber-600', 'text-white');
+      container1.style.cursor = 'crosshair';
+    }
+
+    function executeReplayCutAt(targetTime) {
+      replayCutWaiting = false;
+      isReplay = true;
+      container1.style.cursor = 'default';
+
+      // Encuentra la vela exacta donde se hizo clic
+      replayIndex = allCandles.findIndex(c => c.time >= targetTime);
+      if (replayIndex === -1) replayIndex = Math.floor(allCandles.length * 0.5);
+
+      candleSeries1.setData(allCandles.slice(0, replayIndex));
+      updateAllIndicators(allCandles.slice(0, replayIndex));
+
+      document.getElementById('replayBtn').innerText = "⏮ Replay Activo";
+      document.getElementById('replayToolbar').classList.remove('hidden');
+    }
+
+    function toggleReplayPlay() {
+      const btn = document.getElementById('replayPlayBtn');
+      if (replayInterval) {
+        clearInterval(replayInterval);
+        replayInterval = null;
+        btn.innerText = "▶ Play";
+      } else {
+        btn.innerText = "⏸ Pausa";
+        replayInterval = setInterval(() => {
+          stepForwardReplay();
+        }, 500); // Avanza 1 vela cada medio segundo
+      }
+    }
+
+    function stepForwardReplay() {
+      if (replayIndex < allCandles.length) {
+        replayIndex++;
+        candleSeries1.setData(allCandles.slice(0, replayIndex));
+        updateAllIndicators(allCandles.slice(0, replayIndex));
+      } else {
+        if (replayInterval) clearInterval(replayInterval);
+      }
+    }
+
+    function exitReplayMode() {
+      isReplay = false;
+      replayCutWaiting = false;
+      if (replayInterval) clearInterval(replayInterval);
+      document.getElementById('replayToolbar').classList.add('hidden');
+      document.getElementById('replayBtn').innerText = "✂ Replay (Cortar)";
+      document.getElementById('replayBtn').classList.remove('bg-amber-600', 'text-white');
+      candleSeries1.setData(allCandles);
+      updateAllIndicators(allCandles);
+      chart1.timeScale().fitContent();
+    }
+
+    // --- 5. MULTIPANTALLA (1 O 2 GRÁFICOS) ---
+    function setGrid(num) {
+      const p2 = document.getElementById('chart-panel-2');
+      const b1 = document.getElementById('grid-1');
+      const b2 = document.getElementById('grid-2');
+
+      if (num === 2) {
+        p2.classList.remove('hidden');
+        b2.classList.add('bg-gray-700', 'text-white');
+        b1.classList.remove('bg-gray-700', 'text-white');
+
+        if (!chart2) {
+          const c2 = document.getElementById('chart-container-2');
+          chart2 = LightweightCharts.createChart(c2, {
+            width: c2.clientWidth || 400,
+            height: c2.clientHeight || 500,
+            layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
+            grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
+            timeScale: { timeVisible: true }
+          });
+          candleSeries2 = chart2.addCandlestickSeries({
+            upColor: '#10b981', downColor: '#ef4444'
+          });
+        }
+        if (candleSeries2) candleSeries2.setData(allCandles);
+      } else {
+        p2.classList.add('hidden');
+        b1.classList.add('bg-gray-700', 'text-white');
+        b2.classList.remove('bg-gray-700', 'text-white');
+      }
+
+      setTimeout(() => {
+        chart1.resize(container1.clientWidth, container1.clientHeight);
+        if (chart2) chart2.resize(document.getElementById('chart-container-2').clientWidth, document.getElementById('chart-container-2').clientHeight);
+      }, 100);
+    }
+
+    // --- 6. RELOJ DE CIERRE DE VELA ---
     function updateCountdown() {
       const tf = document.getElementById('timeframeSelect').value;
       let tfSec = 900;
@@ -280,7 +476,7 @@
     }
     setInterval(updateCountdown, 1000);
 
-    // --- 3. CARGA DE VELAS Y WEBSOCKET ---
+    // --- 7. CARGA DE VELAS Y WEBSOCKET ---
     async function loadCandles() {
       const symbol = document.getElementById('symbolSelect').value;
       const tf = document.getElementById('timeframeSelect').value;
@@ -341,16 +537,11 @@
       }
     }
 
-    // --- 4. INDICADORES ---
     function updateAllIndicators(candles) {
       if (candles.length < 25) return;
       if (ema9) ema9.setData(calcEMA(candles, 9));
       if (ema21) ema21.setData(calcEMA(candles, 21));
       if (ema200) ema200.setData(calcEMA(candles, 200));
-      if (rsiSeries) {
-        const rsiData = calcRSI(candles, 14);
-        rsiSeries.setData(rsiData);
-      }
     }
 
     function calcEMA(data, period) {
@@ -360,24 +551,6 @@
         ema = d.close * k + ema * (1 - k);
         return { time: d.time, value: ema };
       });
-    }
-
-    function calcRSI(data, period) {
-      const results = [];
-      let gains = 0, losses = 0;
-      for (let i = 1; i <= period; i++) {
-        const diff = data[i].close - data[i - 1].close;
-        if (diff >= 0) gains += diff; else losses -= diff;
-      }
-      let avgGain = gains / period, avgLoss = losses / period;
-      for (let i = period + 1; i < data.length; i++) {
-        const diff = data[i].close - data[i - 1].close;
-        avgGain = (avgGain * (period - 1) + (diff > 0 ? diff : 0)) / period;
-        avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
-        const rs = avgGain / (avgLoss === 0 ? 1 : avgLoss);
-        results.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
-      }
-      return results;
     }
 
     function toggleIndicator(type) {
@@ -396,77 +569,11 @@
         if (checked && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
         else if (!checked && ema200) { chart1.removeSeries(ema200); ema200 = null; }
       }
-      if (type === 'rsi') {
-        const checked = document.getElementById('check-rsi').checked;
-        const cont = document.getElementById('rsi-container');
-        if (checked) {
-          cont.classList.remove('hidden');
-          if (!rsiChart) {
-            rsiChart = LightweightCharts.createChart(cont, {
-              width: cont.clientWidth, height: 128,
-              layout: { background: { type: 'solid', color: '#06080e' }, textColor: '#94a3b8' },
-              grid: { vertLines: { color: '#0f172a' }, horzLines: { color: '#0f172a' } },
-              timeScale: { visible: false }
-            });
-            rsiSeries = rsiChart.addLineSeries({ color: '#a855f7', lineWidth: 2 });
-          }
-        } else {
-          cont.classList.add('hidden');
-        }
-      }
       updateAllIndicators(allCandles);
     }
 
     function toggleIndicatorsModal() {
       document.getElementById('indicatorsModal').classList.toggle('hidden');
-    }
-
-    // --- 5. REPLAY / CORTE DE GRÁFICO ---
-    function toggleReplayMode() {
-      if (allCandles.length < 50) return;
-      isReplay = !isReplay;
-      const replayBtn = document.getElementById('replayBtn');
-      const nextBtn = document.getElementById('nextBarBtn');
-
-      if (isReplay) {
-        replayIndex = Math.floor(allCandles.length * 0.7); // Corta al 70% del historial
-        candleSeries1.setData(allCandles.slice(0, replayIndex));
-        replayBtn.classList.add('bg-amber-600', 'text-white');
-        nextBtn.classList.remove('hidden');
-      } else {
-        candleSeries1.setData(allCandles);
-        replayBtn.classList.remove('bg-amber-600', 'text-white');
-        nextBtn.classList.add('hidden');
-      }
-    }
-
-    function stepForwardReplay() {
-      if (replayIndex < allCandles.length) {
-        replayIndex++;
-        candleSeries1.setData(allCandles.slice(0, replayIndex));
-        updateAllIndicators(allCandles.slice(0, replayIndex));
-      }
-    }
-
-    // --- 6. MULTIPANTALLAS (1 o 2 GRÁFICOS) ---
-    function setGrid(num) {
-      const p2 = document.getElementById('chart-panel-2');
-      if (num === 2) {
-        p2.classList.remove('hidden');
-      } else {
-        p2.classList.add('hidden');
-      }
-      setTimeout(() => {
-        chart1.resize(container1.clientWidth, container1.clientHeight);
-      }, 100);
-    }
-
-    // --- 7. HERRAMIENTAS DE DIBUJO ---
-    function setTool(tool) {
-      alert(`Herramienta seleccionada: ${tool}. Haz clic y arrastra en el gráfico para trazar.`);
-    }
-    function clearDrawings() {
-      alert("Dibujos limpiados del lienzo.");
     }
 
     // --- 8. BACKTEST ---
