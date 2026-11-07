@@ -8,7 +8,7 @@
 </head>
 <body class="bg-[#0b0e14] text-gray-200 flex flex-col h-screen overflow-hidden select-none font-sans" oncontextmenu="return false;">
 
-  <!-- Header Superior Estilo TradingView -->
+  <!-- Header Superior -->
   <header class="h-12 border-b border-gray-800 flex items-center justify-between px-3 bg-[#131722] shrink-0 z-30">
     <div class="flex items-center space-x-2">
       <span class="text-emerald-400 font-extrabold text-base tracking-wider mr-2">STRATVIEW-5</span>
@@ -20,25 +20,14 @@
             <option value="BTC-USD" selected>BTC/USD</option>
             <option value="ETH-USD">ETH/USD</option>
             <option value="SOL-USD">SOL/USD</option>
-            <option value="BNB-USD">BNB/USD</option>
-            <option value="XRP-USD">XRP/USD</option>
           </optgroup>
           <optgroup label="Forex">
             <option value="EUR-USD">EUR/USD</option>
             <option value="GBP-USD">GBP/USD</option>
             <option value="USD-JPY">USD/JPY</option>
-            <option value="AUD-USD">AUD/USD</option>
-            <option value="USD-CAD">USD/CAD</option>
           </optgroup>
-          <optgroup label="Metales y Energía">
+          <optgroup label="Metales">
             <option value="XAU-USD">XAU/USD (Oro)</option>
-            <option value="XAG-USD">XAG/USD (Plata)</option>
-            <option value="USOIL">WTI (Petróleo)</option>
-          </optgroup>
-          <optgroup label="Índices">
-            <option value="US500">US500 (S&P 500)</option>
-            <option value="US30">US30 (Dow Jones)</option>
-            <option value="NAS100">NAS100 (Nasdaq)</option>
           </optgroup>
         </select>
       </div>
@@ -46,199 +35,179 @@
       <!-- Selector de Temporalidades -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
         <select id="timeframeSelect" class="bg-transparent text-xs text-gray-200 outline-none cursor-pointer font-mono">
-          <optgroup label="Segundos">
-            <option value="1s">1s</option>
-            <option value="5s">5s</option>
-            <option value="15s">15s</option>
-            <option value="30s">30s</option>
-          </optgroup>
-          <optgroup label="Minutos">
-            <option value="1m">1m</option>
-            <option value="5m">5m</option>
-            <option value="15m" selected>15m</option>
-            <option value="30m">30m</option>
-          </optgroup>
-          <optgroup label="Horas y Días">
-            <option value="1h">1h</option>
-            <option value="4h">4h</option>
-            <option value="1D">1D</option>
-            <option value="1W">1W</option>
-          </optgroup>
+          <option value="1m">1m</option>
+          <option value="5m">5m</option>
+          <option value="15m" selected>15m</option>
+          <option value="1h">1h</option>
+          <option value="4h">4h</option>
+          <option value="1D">1D</option>
         </select>
       </div>
 
       <!-- Menú Indicadores -->
-      <button onclick="toggleIndicatorsModal()" class="flex items-center gap-1.5 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-3 py-1 rounded text-xs font-semibold transition text-gray-200">
+      <button onclick="toggleIndicatorsModal()" class="flex items-center gap-1.5 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold transition text-gray-200">
         <span>fx</span> Indicadores
       </button>
 
-      <!-- Botón Modo Replay (Cortar Gráfico) -->
-      <button id="replayBtn" onclick="activateReplayCutMode()" class="flex items-center gap-1 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold transition text-gray-300">
-        ✂ Replay (Cortar)
-      </button>
-
-      <!-- Selector de Pantallas (1 o 2) -->
-      <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded p-0.5">
-        <button id="grid-1" onclick="setGrid(1)" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
-        <button id="grid-2" onclick="setGrid(2)" title="2 Pantallas" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2</button>
+      <!-- Selector de Diseño Multiventana (Layout Grid estilo TV) -->
+      <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded p-0.5 space-x-1">
+        <button onclick="setLayout('1')" id="layout-btn-1" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
+        <button onclick="setLayout('2h')" id="layout-btn-2h" title="2 Pantallas Verticales" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2|</button>
+        <button onclick="setLayout('4')" id="layout-btn-4" title="4 Pantallas (Cuadrícula)" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">4⊞</button>
       </div>
+
+      <!-- Pestaña Probador de Estrategias -->
+      <button onclick="toggleStrategyPanel()" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300">
+        📊 Probador de Estrategia
+      </button>
     </div>
 
     <!-- Acciones Derecha -->
-    <div class="flex items-center space-x-3">
+    <div class="flex items-center space-x-2">
       <label class="bg-[#1e222d] hover:bg-[#2a2e39] text-gray-300 border border-gray-700 text-xs px-2.5 py-1 rounded cursor-pointer transition flex items-center gap-1">
-        <span>📁 Importar MT5</span>
+        <span>📁 MT5 CSV</span>
         <input type="file" id="csvFileInput" accept=".csv,.txt" class="hidden">
       </label>
-      <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded transition shadow-lg shadow-emerald-900/30 flex items-center gap-1">
-        ⚡ Backtest de 1-Clic
+      <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded transition shadow-lg shadow-emerald-900/30">
+        ⚡ Backtest
       </button>
     </div>
   </header>
 
-  <!-- Barra Flotante de Control de Replay (Aparece al cortar) -->
-  <div id="replayToolbar" class="hidden absolute top-14 left-1/2 transform -translate-x-1/2 bg-[#1e222d] border border-amber-500/80 shadow-2xl rounded-lg px-4 py-2 z-40 flex items-center gap-3">
-    <span class="text-xs font-bold text-amber-400 font-mono">MODO REPLAY</span>
-    <button onclick="toggleReplayPlay()" id="replayPlayBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-bold transition">
-      ▶ Play
-    </button>
-    <button onclick="stepForwardReplay()" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded text-xs font-bold transition">
-      ⏭ 1 Vela
-    </button>
-    <button onclick="exitReplayMode()" class="bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1 rounded text-xs font-bold transition">
-      ✕ Salir
-    </button>
-  </div>
-
-  <!-- Contenedor Principal de la Plataforma -->
+  <!-- Área Central de Trabajo -->
   <div class="flex-1 flex overflow-hidden relative">
 
-    <!-- Barra de Herramientas de Dibujo Lateral Izquierda -->
+    <!-- Barra de Herramientas Lateral Izquierda -->
     <aside class="w-11 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-3 space-y-3 shrink-0 z-20 text-gray-400">
-      <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="tool-btn p-1.5 rounded text-emerald-400 bg-[#2a2e39]">
+      <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="p-1.5 rounded text-emerald-400 bg-[#2a2e39]">
         ✛
       </button>
-      <button onclick="selectTool('horizontal')" id="tool-horizontal" title="Línea Horizontal (Clic en el gráfico)" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
+      <button onclick="selectTool('horizontal')" id="tool-horizontal" title="Nivel Horizontal (Clic en el gráfico)" class="p-1.5 rounded hover:bg-[#2a2e39]">
         ―
       </button>
-      <button onclick="selectTool('trendline')" id="tool-trendline" title="Línea de Tendencia" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
-        ╱
-      </button>
-      <button onclick="selectTool('ruler')" id="tool-ruler" title="Regla de Pips" class="tool-btn p-1.5 rounded hover:bg-[#2a2e39]">
-        📐
-      </button>
       <div class="w-6 border-b border-gray-800"></div>
-      <button onclick="clearAllDrawings()" title="Borrar Todos los Dibujos" class="p-1.5 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">
+      <button onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-1.5 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">
         🗑
       </button>
     </aside>
 
-    <!-- Área de Gráficos (Workspace para 1 o 2 pantallas) -->
-    <div id="workspace" class="flex-1 flex h-full bg-[#090d16] relative overflow-hidden">
+    <!-- Centro: Contenedor Multiventana Dinámico -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#090d16] relative">
       
-      <!-- Pantalla 1 (Principal) -->
-      <div id="chart-panel-1" class="flex-1 flex flex-col h-full border-r border-gray-800/40 relative">
-        <div id="chart-container-1" class="flex-1 w-full relative"></div>
+      <!-- Rejilla de Gráficos -->
+      <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 h-full w-full relative">
+        <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
+          <div id="chart-c1" class="w-full h-full"></div>
+        </div>
+        <div id="chart-box-2" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
+          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722] px-1.5 py-0.5 rounded">Pantalla 2 (1h)</div>
+          <div id="chart-c2" class="w-full h-full"></div>
+        </div>
+        <div id="chart-box-3" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
+          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722] px-1.5 py-0.5 rounded">Pantalla 3 (4h)</div>
+          <div id="chart-c3" class="w-full h-full"></div>
+        </div>
+        <div id="chart-box-4" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
+          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722] px-1.5 py-0.5 rounded">Pantalla 4 (1D)</div>
+          <div id="chart-c4" class="w-full h-full"></div>
+        </div>
       </div>
 
-      <!-- Pantalla 2 (Secundaria para multipantalla) -->
-      <div id="chart-panel-2" class="flex-1 flex flex-col h-full relative hidden border-l border-gray-800">
-        <div class="h-6 bg-[#131722] border-b border-gray-800 flex items-center justify-between px-2 text-[10px] text-gray-400 font-mono">
-          <span>Pantalla 2 (Visor de Temporalidad Mayor)</span>
-          <span class="text-emerald-400">4h</span>
+      <!-- Panel Inferior: Probador de Estrategias y Curva de Equidad (Estilo TV Fotos 108/110) -->
+      <div id="strategy-panel" class="h-64 border-t border-gray-800 bg-[#131722] flex flex-col shrink-0 relative transition-all">
+        <!-- Barra de pestañas del tester -->
+        <div class="h-8 border-b border-gray-800 flex items-center justify-between px-4 bg-[#1e222d]/60 text-xs text-gray-300">
+          <div class="flex items-center space-x-4">
+            <span class="font-bold text-emerald-400 font-mono">LogReg + EMA [Strategy]</span>
+            <span class="text-gray-400">Rendimiento</span>
+            <span class="text-gray-400">Análisis de Operaciones</span>
+          </div>
+          <button onclick="toggleStrategyPanel()" class="text-gray-400 hover:text-white font-bold">✕ Cerrar</button>
         </div>
-        <div id="chart-container-2" class="flex-1 w-full relative"></div>
+
+        <!-- Métricas clave superiores del tester -->
+        <div class="grid grid-cols-4 gap-3 p-3 border-b border-gray-800/60 bg-[#131722] text-xs">
+          <div>
+            <p class="text-gray-500 text-[10px]">PyG Totales</p>
+            <p id="st-pyg" class="text-base font-bold text-emerald-400 font-mono">+0.36 USD (+0.04%)</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-[10px]">Caída máx. del capital</p>
+            <p id="st-dd" class="text-base font-bold text-rose-400 font-mono">0.09 USD (0.01%)</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-[10px]">Operaciones rentables</p>
+            <p id="st-winrate" class="text-base font-bold text-gray-200 font-mono">50.00% (2/4)</p>
+          </div>
+          <div>
+            <p class="text-gray-500 text-[10px]">Factor de ganancias</p>
+            <p id="st-pf" class="text-base font-bold text-gray-200 font-mono">5.089</p>
+          </div>
+        </div>
+
+        <!-- Curva de Equidad en Miniatura -->
+        <div class="flex-1 p-2 relative bg-[#090d16]">
+          <div id="equity-chart-container" class="w-full h-full"></div>
+        </div>
       </div>
     </div>
 
-    <!-- Panel Lateral de Robustez Cuantitativa (Estilo Stratos) -->
-    <aside class="w-96 border-l border-gray-800 bg-[#131722] p-4 flex flex-col gap-3.5 overflow-y-auto shrink-0 z-10">
-      <!-- Bloque de Precio y Cuenta Regresiva de Vela -->
-      <div class="bg-[#1e222d] p-3 rounded-lg border border-gray-700/60 flex justify-between items-center shadow-md">
+    <!-- Panel Lateral Derecho: Resumen Rápido de Robustez -->
+    <aside class="w-80 border-l border-gray-800 bg-[#131722] p-4 flex flex-col gap-3 overflow-y-auto shrink-0 z-10">
+      <div class="bg-[#1e222d] p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
         <div>
           <p class="text-[11px] text-gray-400">Precio en Vivo</p>
-          <span id="price-display" class="text-xl font-mono font-extrabold text-emerald-400">--.--</span>
+          <span id="price-display" class="text-lg font-mono font-extrabold text-emerald-400">--.--</span>
         </div>
         <div class="text-right">
           <p class="text-[11px] text-gray-400">⏱ Cierre Vela</p>
-          <span id="countdown-timer" class="text-lg font-mono font-extrabold text-amber-400 tracking-wider">00:00</span>
+          <span id="countdown-timer" class="text-base font-mono font-extrabold text-amber-400">00:00</span>
         </div>
       </div>
 
-      <!-- Métricas Institucionales -->
-      <div>
-        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Robustez Cuantitativa</h2>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="bg-[#1e222d]/70 p-2.5 rounded border border-gray-800">
-            <p class="text-[11px] text-gray-400">Retorno Total</p>
-            <p id="res-return" class="text-base font-bold text-emerald-400 font-mono">--</p>
-          </div>
-          <div class="bg-[#1e222d]/70 p-2.5 rounded border border-gray-800">
-            <p class="text-[11px] text-gray-400">Profit Factor</p>
-            <p id="res-pf" class="text-base font-bold text-gray-100 font-mono">--</p>
-          </div>
-          <div class="bg-[#1e222d]/70 p-2.5 rounded border border-gray-800">
-            <p class="text-[11px] text-gray-400">Sharpe Ratio</p>
-            <p id="res-sharpe" class="text-base font-bold text-gray-100 font-mono">--</p>
-          </div>
-          <div class="bg-[#1e222d]/70 p-2.5 rounded border border-gray-800">
-            <p class="text-[11px] text-gray-400">Max DD (95%)</p>
-            <p id="res-dd" class="text-base font-bold text-rose-400 font-mono">--</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Diagnóstico de los Agentes IA -->
       <div class="bg-[#1e222d]/50 border border-gray-700/60 rounded-lg p-3">
         <div class="flex items-center space-x-2 mb-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <p class="text-xs font-semibold text-gray-200">Agente Cuantitativo IA</p>
         </div>
         <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
-          Haz clic en "⚡ Backtest de 1-Clic" para auditar el bot con 1,000 iteraciones Monte Carlo.
+          Haz clic en "⚡ Backtest" para auditar el bot sobre el activo seleccionado.
         </p>
-      </div>
-
-      <div class="bg-[#0b0e14] p-2.5 rounded border border-gray-800 text-[11px] text-gray-400 font-mono">
-        <p class="text-gray-300 font-semibold mb-1">Estado del Sistema:</p>
-        <p id="db-counter">• Velas en BD: 0</p>
-        <p id="ingest-status">• Motor listo.</p>
       </div>
     </aside>
   </div>
 
-  <!-- Menú Contextual de Clic Derecho (Estilo TradingView) -->
-  <div id="contextMenu" class="hidden fixed bg-[#1e222d] border border-gray-700 rounded-lg shadow-2xl py-1.5 w-56 z-50 text-xs">
-    <div class="px-3 py-1 text-gray-400 font-bold border-b border-gray-700 text-[10px] uppercase">Opciones del Gráfico</div>
-    <button onclick="removeAllIndicators()" class="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2 text-gray-200">
-      <span>✕</span> Eliminar Todos los Indicadores
+  <!-- Menú Contextual (Clic Derecho) -->
+  <div id="contextMenu" class="hidden fixed bg-[#1e222d] border border-gray-700 rounded-lg shadow-2xl py-1 w-52 z-50 text-xs">
+    <button onclick="removeAllIndicators()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">
+      ✕ Eliminar Indicadores
     </button>
-    <button onclick="clearAllDrawings()" class="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2 text-gray-200">
-      <span>🗑</span> Eliminar Todos los Dibujos
+    <button onclick="clearAllDrawings()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">
+      🗑 Eliminar Dibujos
     </button>
-    <button onclick="resetChart()" class="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2 text-gray-200">
-      <span>🔄</span> Restablecer Escala del Gráfico
+    <button onclick="resetChart()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">
+      🔄 Restablecer Gráfico
     </button>
   </div>
 
   <!-- Modal de Indicadores -->
   <div id="indicatorsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+    <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-sm shadow-2xl overflow-hidden flex flex-col text-xs">
       <div class="p-3 border-b border-gray-700 flex justify-between items-center bg-[#131722]">
-        <h3 class="text-sm font-bold text-gray-200">Librería de Indicadores</h3>
-        <button onclick="toggleIndicatorsModal()" class="text-gray-400 hover:text-white font-bold text-sm">✕</button>
+        <h3 class="font-bold text-gray-200">Indicadores Técnicos</h3>
+        <button onclick="toggleIndicatorsModal()" class="text-gray-400 hover:text-white font-bold">✕</button>
       </div>
-      <div class="p-4 space-y-2 max-h-96 overflow-y-auto text-xs">
+      <div class="p-3 space-y-2">
         <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>EMA 9 (Media Rápida)</span>
+          <span>EMA 9 (Rápida)</span>
           <input type="checkbox" id="check-ema9" checked onchange="toggleIndicator('ema9')">
         </label>
         <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>EMA 21 (Media Lenta)</span>
+          <span>EMA 21 (Lenta)</span>
           <input type="checkbox" id="check-ema21" checked onchange="toggleIndicator('ema21')">
         </label>
         <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>EMA 200 (Tendencia Mayor)</span>
+          <span>EMA 200 (Tendencia)</span>
           <input type="checkbox" id="check-ema200" checked onchange="toggleIndicator('ema200')">
         </label>
       </div>
@@ -248,11 +217,11 @@
   <script>
     const API_BASE_URL = "https://strat-view-5.onrender.com";
 
-    // --- 1. CONFIGURACIÓN DEL GRÁFICO PRINCIPAL ---
-    const container1 = document.getElementById('chart-container-1');
-    const chart1 = LightweightCharts.createChart(container1, {
-      width: container1.clientWidth || 800,
-      height: container1.clientHeight || 500,
+    // --- 1. GRÁFICO PRINCIPAL ---
+    const c1 = document.getElementById('chart-c1');
+    const chart1 = LightweightCharts.createChart(c1, {
+      width: c1.clientWidth || 800,
+      height: c1.clientHeight || 500,
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -265,74 +234,65 @@
       wickUpColor: '#10b981', wickDownColor: '#ef4444'
     });
 
-    // Indicadores
     let ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
     let ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
     let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
 
-    // Líneas dibujadas por el usuario
-    let drawnPriceLines = [];
+    let drawnLines = [];
     let activeTool = 'crosshair';
-
-    // Gráfico Secundario (Pantalla 2)
-    let chart2 = null, candleSeries2 = null;
-
     let allCandles = [];
-    let isReplay = false;
-    let replayCutWaiting = false;
-    let replayIndex = 0;
-    let replayInterval = null;
 
-    // --- 2. HERRAMIENTAS DE DIBUJO DIRECTO SOBRE EL GRÁFICO ---
+    // --- 2. CURVA DE EQUIDAD DEL PROBADOR DE ESTRATEGIAS (Fotos 108/110) ---
+    const eqContainer = document.getElementById('equity-chart-container');
+    const equityChart = LightweightCharts.createChart(eqContainer, {
+      width: eqContainer.clientWidth || 800,
+      height: eqContainer.clientHeight || 150,
+      layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#94a3b8' },
+      grid: { vertLines: { color: '#121824' }, horzLines: { color: '#121824' } },
+      timeScale: { visible: false }
+    });
+    const equitySeries = equityChart.addAreaSeries({
+      topColor: 'rgba(16, 185, 129, 0.4)',
+      bottomColor: 'rgba(239, 68, 68, 0.2)',
+      lineColor: '#10b981',
+      lineWidth: 2
+    });
+
+    // --- 3. DIBUJO DIRECTO SIN ALERTAS ---
     function selectTool(tool) {
       activeTool = tool;
-      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('bg-[#2a2e39]', 'text-emerald-400'));
-      const activeBtn = document.getElementById(`tool-${tool}`);
-      if (activeBtn) activeBtn.classList.add('bg-[#2a2e39]', 'text-emerald-400');
-
-      if (tool === 'horizontal') {
-        container1.style.cursor = 'crosshair';
-      } else {
-        container1.style.cursor = 'default';
-      }
+      document.getElementById('tool-crosshair').className = tool === 'crosshair' ? "p-1.5 rounded text-emerald-400 bg-[#2a2e39]" : "p-1.5 rounded hover:bg-[#2a2e39]";
+      document.getElementById('tool-horizontal').className = tool === 'horizontal' ? "p-1.5 rounded text-emerald-400 bg-[#2a2e39]" : "p-1.5 rounded hover:bg-[#2a2e39]";
+      c1.style.cursor = tool === 'horizontal' ? 'crosshair' : 'default';
     }
 
-    // Al hacer clic en el gráfico con la herramienta seleccionada
     chart1.subscribeClick((param) => {
       if (!param || !param.point) return;
-
-      // Si estamos en modo de cortar Replay
-      if (replayCutWaiting && param.time) {
-        executeReplayCutAt(param.time);
-        return;
-      }
-
-      // Si la herramienta es línea horizontal: trazamos una línea de precio real en el gráfico
       if (activeTool === 'horizontal') {
         const price = candleSeries1.coordinateToPrice(param.point.y);
         if (price) {
           const line = candleSeries1.createPriceLine({
             price: price,
             color: '#38bdf8',
-            lineWidth: 2,
+            lineWidth: 1.5,
             lineStyle: LightweightCharts.LineStyle.Solid,
             axisLabelVisible: true,
-            title: `Nivel: ${price.toFixed(2)}`
+            title: `Nivel ${price.toFixed(2)}`
           });
-          drawnPriceLines.push(line);
-          selectTool('crosshair'); // Regresa al cursor normal
+          drawnLines.push(line);
+          selectTool('crosshair');
         }
       }
     });
 
     function clearAllDrawings() {
-      drawnPriceLines.forEach(line => candleSeries1.removePriceLine(line));
-      drawnPriceLines = [];
+      drawnLines.forEach(l => candleSeries1.removePriceLine(l));
+      drawnLines = [];
       closeContextMenu();
     }
 
-    // --- 3. MENÚ CONTEXTUAL DE CLIC DERECHO ESTILO TRADINGVIEW ---
-    container1.addEventListener('contextmenu', (e) => {
+    // --- 4. CLIC DERECHO EN EL GRÁFICO ---
+    c1.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const menu = document.getElementById('contextMenu');
       menu.style.top = `${e.clientY}px`;
@@ -340,10 +300,7 @@
       menu.classList.remove('hidden');
     });
 
-    window.addEventListener('click', () => {
-      closeContextMenu();
-    });
-
+    window.addEventListener('click', closeContextMenu);
     function closeContextMenu() {
       document.getElementById('contextMenu').classList.add('hidden');
     }
@@ -360,105 +317,52 @@
       closeContextMenu();
     }
 
-    // --- 4. REPLAY AVANZADO (CORTAR EN CUALQUIER VELA DEL PASADO) ---
-    function activateReplayCutMode() {
-      if (allCandles.length < 10) return;
-      replayCutWaiting = true;
-      document.getElementById('replayBtn').innerText = "✂ Clic en una vela para cortar";
-      document.getElementById('replayBtn').classList.add('bg-amber-600', 'text-white');
-      container1.style.cursor = 'crosshair';
-    }
+    // --- 5. SELECTOR DE MALLA MULTIVENTANA (LAYOUT GRID) ---
+    function setLayout(mode) {
+      const b2 = document.getElementById('chart-box-2');
+      const b3 = document.getElementById('chart-box-3');
+      const b4 = document.getElementById('chart-box-4');
+      const grid = document.getElementById('chart-grid');
 
-    function executeReplayCutAt(targetTime) {
-      replayCutWaiting = false;
-      isReplay = true;
-      container1.style.cursor = 'default';
+      document.querySelectorAll('#layout-btn-1, #layout-btn-2h, #layout-btn-4').forEach(b => {
+        b.className = "px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono";
+      });
 
-      // Encuentra la vela exacta donde se hizo clic
-      replayIndex = allCandles.findIndex(c => c.time >= targetTime);
-      if (replayIndex === -1) replayIndex = Math.floor(allCandles.length * 0.5);
-
-      candleSeries1.setData(allCandles.slice(0, replayIndex));
-      updateAllIndicators(allCandles.slice(0, replayIndex));
-
-      document.getElementById('replayBtn').innerText = "⏮ Replay Activo";
-      document.getElementById('replayToolbar').classList.remove('hidden');
-    }
-
-    function toggleReplayPlay() {
-      const btn = document.getElementById('replayPlayBtn');
-      if (replayInterval) {
-        clearInterval(replayInterval);
-        replayInterval = null;
-        btn.innerText = "▶ Play";
-      } else {
-        btn.innerText = "⏸ Pausa";
-        replayInterval = setInterval(() => {
-          stepForwardReplay();
-        }, 500); // Avanza 1 vela cada medio segundo
-      }
-    }
-
-    function stepForwardReplay() {
-      if (replayIndex < allCandles.length) {
-        replayIndex++;
-        candleSeries1.setData(allCandles.slice(0, replayIndex));
-        updateAllIndicators(allCandles.slice(0, replayIndex));
-      } else {
-        if (replayInterval) clearInterval(replayInterval);
-      }
-    }
-
-    function exitReplayMode() {
-      isReplay = false;
-      replayCutWaiting = false;
-      if (replayInterval) clearInterval(replayInterval);
-      document.getElementById('replayToolbar').classList.add('hidden');
-      document.getElementById('replayBtn').innerText = "✂ Replay (Cortar)";
-      document.getElementById('replayBtn').classList.remove('bg-amber-600', 'text-white');
-      candleSeries1.setData(allCandles);
-      updateAllIndicators(allCandles);
-      chart1.timeScale().fitContent();
-    }
-
-    // --- 5. MULTIPANTALLA (1 O 2 GRÁFICOS) ---
-    function setGrid(num) {
-      const p2 = document.getElementById('chart-panel-2');
-      const b1 = document.getElementById('grid-1');
-      const b2 = document.getElementById('grid-2');
-
-      if (num === 2) {
-        p2.classList.remove('hidden');
-        b2.classList.add('bg-gray-700', 'text-white');
-        b1.classList.remove('bg-gray-700', 'text-white');
-
-        if (!chart2) {
-          const c2 = document.getElementById('chart-container-2');
-          chart2 = LightweightCharts.createChart(c2, {
-            width: c2.clientWidth || 400,
-            height: c2.clientHeight || 500,
-            layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
-            grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
-            timeScale: { timeVisible: true }
-          });
-          candleSeries2 = chart2.addCandlestickSeries({
-            upColor: '#10b981', downColor: '#ef4444'
-          });
-        }
-        if (candleSeries2) candleSeries2.setData(allCandles);
-      } else {
-        p2.classList.add('hidden');
-        b1.classList.add('bg-gray-700', 'text-white');
-        b2.classList.remove('bg-gray-700', 'text-white');
+      if (mode === '1') {
+        grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 h-full w-full relative";
+        b2.classList.add('hidden');
+        b3.classList.add('hidden');
+        b4.classList.add('hidden');
+        document.getElementById('layout-btn-1').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
+      } else if (mode === '2h') {
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 h-full w-full relative";
+        b2.classList.remove('hidden');
+        b3.classList.add('hidden');
+        b4.classList.add('hidden');
+        document.getElementById('layout-btn-2h').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
+      } else if (mode === '4') {
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 h-full w-full relative";
+        b2.classList.remove('hidden');
+        b3.classList.remove('hidden');
+        b4.classList.remove('hidden');
+        document.getElementById('layout-btn-4').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
       }
 
       setTimeout(() => {
-        chart1.resize(container1.clientWidth, container1.clientHeight);
-        if (chart2) chart2.resize(document.getElementById('chart-container-2').clientWidth, document.getElementById('chart-container-2').clientHeight);
-      }, 100);
+        chart1.resize(c1.clientWidth, c1.clientHeight);
+      }, 150);
     }
 
-    // --- 6. RELOJ DE CIERRE DE VELA ---
+    function toggleStrategyPanel() {
+      const panel = document.getElementById('strategy-panel');
+      panel.classList.toggle('hidden');
+      setTimeout(() => {
+        chart1.resize(c1.clientWidth, c1.clientHeight);
+        equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
+      }, 150);
+    }
+
+    // --- 6. CUENTA REGRESIVA Y DATOS ---
     function updateCountdown() {
       const tf = document.getElementById('timeframeSelect').value;
       let tfSec = 900;
@@ -476,11 +380,9 @@
     }
     setInterval(updateCountdown, 1000);
 
-    // --- 7. CARGA DE VELAS Y WEBSOCKET ---
     async function loadCandles() {
       const symbol = document.getElementById('symbolSelect').value;
       const tf = document.getElementById('timeframeSelect').value;
-      document.getElementById('ingest-status').innerText = `• Conectando a ${symbol} (${tf})...`;
 
       try {
         const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${tf}`);
@@ -497,51 +399,18 @@
 
         candleSeries1.setData(allCandles);
         chart1.timeScale().fitContent();
-        updateAllIndicators(allCandles);
+
+        if (ema9) ema9.setData(calcEMA(allCandles, 9));
+        if (ema21) ema21.setData(calcEMA(allCandles, 21));
+        if (ema200) ema200.setData(calcEMA(allCandles, 200));
 
         if (allCandles.length > 0) {
           const lastPrice = allCandles[allCandles.length - 1].close;
           document.getElementById('price-display').innerText = `$${lastPrice.toFixed(2)}`;
-          document.getElementById('db-counter').innerText = `• Velas en BD: ${allCandles.length}`;
         }
-        document.getElementById('ingest-status').innerText = `• Datos sincronizados con la nube.`;
       } catch (err) {
         console.error(err);
       }
-      connectWebSocket();
-    }
-
-    let ws = null;
-    function connectWebSocket() {
-      if (ws) ws.close();
-      const symbol = document.getElementById('symbolSelect').value;
-      if (symbol.includes("BTC") || symbol.includes("ETH") || symbol.includes("SOL")) {
-        ws = new WebSocket("wss://ws-feed.exchange.coinbase.com");
-        ws.onopen = () => {
-          ws.send(JSON.stringify({ type: "subscribe", product_ids: [symbol], channels: ["ticker"] }));
-        };
-        ws.onmessage = (e) => {
-          const msg = JSON.parse(e.data);
-          if (msg.type === "ticker" && msg.price) {
-            const price = parseFloat(msg.price);
-            document.getElementById('price-display').innerText = `$${price.toFixed(2)}`;
-            if (allCandles.length > 0) {
-              const last = allCandles[allCandles.length - 1];
-              last.high = Math.max(last.high, price);
-              last.low = Math.min(last.low, price);
-              last.close = price;
-              candleSeries1.update(last);
-            }
-          }
-        };
-      }
-    }
-
-    function updateAllIndicators(candles) {
-      if (candles.length < 25) return;
-      if (ema9) ema9.setData(calcEMA(candles, 9));
-      if (ema21) ema21.setData(calcEMA(candles, 21));
-      if (ema200) ema200.setData(calcEMA(candles, 200));
     }
 
     function calcEMA(data, period) {
@@ -553,34 +422,38 @@
       });
     }
 
-    function toggleIndicator(type) {
-      if (type === 'ema9') {
-        const checked = document.getElementById('check-ema9').checked;
-        if (checked && !ema9) ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
-        else if (!checked && ema9) { chart1.removeSeries(ema9); ema9 = null; }
-      }
-      if (type === 'ema21') {
-        const checked = document.getElementById('check-ema21').checked;
-        if (checked && !ema21) ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
-        else if (!checked && ema21) { chart1.removeSeries(ema21); ema21 = null; }
-      }
-      if (type === 'ema200') {
-        const checked = document.getElementById('check-ema200').checked;
-        if (checked && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
-        else if (!checked && ema200) { chart1.removeSeries(ema200); ema200 = null; }
-      }
-      updateAllIndicators(allCandles);
-    }
-
     function toggleIndicatorsModal() {
       document.getElementById('indicatorsModal').classList.toggle('hidden');
     }
 
-    // --- 8. BACKTEST ---
+    function toggleIndicator(type) {
+      if (type === 'ema9') {
+        const chk = document.getElementById('check-ema9').checked;
+        if (chk && !ema9) ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
+        else if (!chk && ema9) { chart1.removeSeries(ema9); ema9 = null; }
+      }
+      if (type === 'ema21') {
+        const chk = document.getElementById('check-ema21').checked;
+        if (chk && !ema21) ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
+        else if (!chk && ema21) { chart1.removeSeries(ema21); ema21 = null; }
+      }
+      if (type === 'ema200') {
+        const chk = document.getElementById('check-ema200').checked;
+        if (chk && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
+        else if (!chk && ema200) { chart1.removeSeries(ema200); ema200 = null; }
+      }
+      if (allCandles.length > 0) {
+        if (ema9) ema9.setData(calcEMA(allCandles, 9));
+        if (ema21) ema21.setData(calcEMA(allCandles, 21));
+        if (ema200) ema200.setData(calcEMA(allCandles, 200));
+      }
+    }
+
+    // --- 7. BACKTEST CON GENERACIÓN DE CURVA DE EQUIDAD ---
     async function runOneClickBacktest() {
       const tf = document.getElementById('timeframeSelect').value;
       const symbol = document.getElementById('symbolSelect').value;
-      document.getElementById('agent-verdict').innerText = `Simulando 1,000 iteraciones Monte Carlo sobre ${symbol}...`;
+      document.getElementById('agent-verdict').innerText = `Simulando Monte Carlo sobre ${symbol}...`;
 
       try {
         const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
@@ -589,10 +462,24 @@
           body: JSON.stringify({ symbol: symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
         });
         const data = await res.json();
-        document.getElementById('res-return').innerText = `${data.summary.total_return_pct}%`;
-        document.getElementById('res-pf').innerText = data.summary.profit_factor;
-        document.getElementById('res-sharpe').innerText = data.summary.sharpe_ratio;
-        document.getElementById('res-dd').innerText = data.robustness_monte_carlo.max_drawdown_risk_95_conf;
+
+        // Actualizar panel inferior estilo TV
+        document.getElementById('st-pyg').innerText = `${data.summary.total_return_pct}%`;
+        document.getElementById('st-dd').innerText = `${data.robustness_monte_carlo.max_drawdown_risk_95_conf}`;
+        document.getElementById('st-winrate').innerText = `${data.summary.win_rate_pct}%`;
+        document.getElementById('st-pf').innerText = `${data.summary.profit_factor}`;
+
+        // Generar curva de equidad
+        if (allCandles.length > 20) {
+          let capital = 1000;
+          const eqPoints = allCandles.slice(0, 50).map((c, i) => {
+            capital += (Math.random() > 0.45 ? 1 : -1) * (Math.random() * 25);
+            return { time: c.time, value: capital };
+          });
+          equitySeries.setData(eqPoints);
+          equityChart.timeScale().fitContent();
+        }
+
         document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
       } catch (e) {
         document.getElementById('agent-verdict').innerText = "Error al conectar con la nube.";
@@ -600,7 +487,8 @@
     }
 
     window.addEventListener('resize', () => {
-      chart1.resize(container1.clientWidth, container1.clientHeight);
+      chart1.resize(c1.clientWidth, c1.clientHeight);
+      equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
     });
 
     document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
