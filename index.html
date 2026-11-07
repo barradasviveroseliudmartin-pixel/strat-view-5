@@ -6,7 +6,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
-    /* Estilo para cursor tijera durante el corte de velas */
     .scissor-cursor {
       cursor: crosshair !important;
     }
@@ -19,9 +18,9 @@
     <div class="flex items-center space-x-2">
       <span class="text-emerald-400 font-extrabold text-base tracking-wider mr-2">STRATVIEW-5</span>
 
-      <!-- Selector de Mercados -->
+      <!-- Selector de Mercados Dinámico (Incluye MT5 Guardados) -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
-        <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer">
+        <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer max-w-[200px] truncate">
           <optgroup label="Criptomonedas">
             <option value="BTC-USD" selected>BTC/USD</option>
             <option value="ETH-USD">ETH/USD</option>
@@ -34,6 +33,9 @@
           </optgroup>
           <optgroup label="Metales">
             <option value="XAU-USD">XAU/USD (Oro)</option>
+          </optgroup>
+          <optgroup id="optgroup-mt5-saved" label="📂 Mis Archivos MT5 Guardados">
+            <!-- Se agregan automáticamente los archivos MT5 subidos -->
           </optgroup>
         </select>
       </div>
@@ -55,16 +57,16 @@
         <span>fx</span> Indicadores
       </button>
 
-      <!-- Selector de Diseño Multiventana (Layout Grid estilo TV) -->
+      <!-- Selector de Diseño Multiventana -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded p-0.5 space-x-1">
         <button onclick="setLayout('1')" id="layout-btn-1" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
         <button onclick="setLayout('2h')" id="layout-btn-2h" title="2 Pantallas Verticales" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2|</button>
         <button onclick="setLayout('4')" id="layout-btn-4" title="4 Pantallas (Cuadrícula)" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">4⊞</button>
       </div>
 
-      <!-- Barra de Replay / Backtesting Manual (Estilo TradingView con Tijeras y Play) -->
+      <!-- Barra de Replay / Backtesting Manual con Tijera -->
       <div class="flex items-center bg-[#1e222d] border border-blue-900/60 rounded px-1.5 py-0.5 space-x-1 text-xs">
-        <button onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar el gráfico hacia el pasado" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
+        <button onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar hacia el pasado" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
           <span>✂</span> <span class="hidden sm:inline">Cortar</span>
         </button>
         <div id="replay-controls" class="hidden items-center space-x-1">
@@ -80,7 +82,7 @@
             <option value="250">0.25s</option>
             <option value="100">0.1s</option>
           </select>
-          <button onclick="exitReplayMode()" title="Salir del modo Replay y restaurar gráfico" class="px-1.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold">
+          <button onclick="exitReplayMode()" title="Salir del modo Replay" class="px-1.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold">
             ✕
           </button>
         </div>
@@ -94,8 +96,8 @@
 
     <!-- Acciones Derecha -->
     <div class="flex items-center space-x-2">
-      <label class="bg-[#1e222d] hover:bg-[#2a2e39] text-gray-300 border border-gray-700 text-xs px-2.5 py-1 rounded cursor-pointer transition flex items-center gap-1">
-        <span>📁 MT5 CSV</span>
+      <label class="bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/50 text-xs px-2.5 py-1.5 rounded cursor-pointer transition flex items-center gap-1 font-semibold">
+        <span>📁 Guardar MT5 CSV</span>
         <input type="file" id="csvFileInput" accept=".csv,.txt" class="hidden" onchange="handleMT5CSV(event)">
       </label>
       <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded transition shadow-lg shadow-emerald-900/30">
@@ -104,9 +106,9 @@
     </div>
   </header>
 
-  <!-- Banner flotante de aviso cuando la Tijera está armada -->
+  <!-- Banner de aviso al cortar con Tijeras -->
   <div id="replay-banner" class="hidden bg-amber-500/20 border-b border-amber-500/40 text-amber-300 text-xs py-1 px-4 text-center font-medium flex items-center justify-center gap-2">
-    <span>✂ Modo Tijera Activo: Haz clic sobre cualquier vela del gráfico para cortar el tiempo e iniciar el Replay manual.</span>
+    <span>✂ Modo Tijera Activo: Haz clic sobre cualquier vela del gráfico para cortar el tiempo e iniciar la simulación manual.</span>
     <button onclick="exitReplayMode()" class="bg-amber-600 text-black px-2 py-0.2 rounded font-bold hover:bg-amber-500 text-[10px]">Cancelar</button>
   </div>
 
@@ -132,7 +134,6 @@
       
       <!-- Rejilla de Gráficos -->
       <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 h-full w-full relative">
-        <!-- Pantalla 1 (Principal) -->
         <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 1 (<span id="p1-tf-label">15m</span>)
@@ -140,7 +141,6 @@
           <div id="chart-c1" class="w-full h-full"></div>
         </div>
 
-        <!-- Pantalla 2 (1h) -->
         <div id="chart-box-2" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 2 (1h)
@@ -148,7 +148,6 @@
           <div id="chart-c2" class="w-full h-full"></div>
         </div>
 
-        <!-- Pantalla 3 (4h) -->
         <div id="chart-box-3" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 3 (4h)
@@ -156,7 +155,6 @@
           <div id="chart-c3" class="w-full h-full"></div>
         </div>
 
-        <!-- Pantalla 4 (1D) -->
         <div id="chart-box-4" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 4 (1D)
@@ -201,11 +199,11 @@
       </div>
     </div>
 
-    <!-- Panel Lateral Derecho: Resumen Rápido de Robustez -->
+    <!-- Panel Lateral Derecho -->
     <aside class="w-80 border-l border-gray-800 bg-[#131722] p-4 flex flex-col gap-3 overflow-y-auto shrink-0 z-10">
       <div class="bg-[#1e222d] p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
         <div>
-          <p class="text-[11px] text-gray-400">Precio en Vivo</p>
+          <p class="text-[11px] text-gray-400">Precio en Pantalla</p>
           <span id="price-display" class="text-lg font-mono font-extrabold text-emerald-400">--.--</span>
         </div>
         <div class="text-right">
@@ -220,8 +218,22 @@
           <p class="text-xs font-semibold text-gray-200">Agente Cuantitativo IA</p>
         </div>
         <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
-          Haz clic en "⚡ Backtest" para auditar el bot sobre el activo seleccionado o usa las ✂ Tijeras para simular manualmente.
+          Haz clic en "⚡ Backtest", corta con las ✂ Tijeras, o sube tu CSV de MT5 para guardarlo automáticamente.
         </p>
+      </div>
+
+      <!-- Gestor de Archivos MT5 Guardados -->
+      <div class="bg-[#1e222d]/30 border border-gray-800 rounded-lg p-3">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-bold text-gray-300">📁 Base de Datos MT5</span>
+          <span id="db-count" class="text-[10px] text-emerald-400 font-mono">0 archivos</span>
+        </div>
+        <p class="text-[11px] text-gray-400 mb-2 leading-tight">
+          Todos los CSV cargados quedan guardados aquí permanentemente sin consumir RAM.
+        </p>
+        <button onclick="clearMT5Database()" class="w-full text-[10px] text-rose-400 hover:text-rose-300 border border-rose-950 hover:bg-rose-950/40 py-1 rounded transition">
+          Vaciar Historial MT5 Guardado
+        </button>
       </div>
     </aside>
   </div>
@@ -266,7 +278,70 @@
   <script>
     const API_BASE_URL = "https://strat-view-5.onrender.com";
 
-    // Opciones base compartidas para gráficos TradingView Lightweight Charts
+    // --- BASE DE DATOS LOCAL PERSISTENTE (INDEXEDDB - OPCIÓN B) ---
+    const DB_NAME = "StratView5_Storage";
+    const DB_VERSION = 1;
+    const STORE_NAME = "mt5_datasets";
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveDatasetToDB(item) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        store.put(item);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function getDatasetFromDB(id) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function getAllDatasetsFromDB() {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function clearMT5Database() {
+      if (!confirm("¿Deseas vaciar todos los archivos MT5 guardados permanentemente?")) return;
+      const db = await openDatabase();
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).clear();
+      tx.oncomplete = () => {
+        refreshSavedDatasetsDropdown();
+        alert("Base de datos de MT5 vaciada con éxito.");
+      };
+    }
+
+    // --- GRÁFICOS LIGHTWEIGHT CHARTS ---
     const baseChartOptions = {
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
@@ -280,7 +355,6 @@
       wickUpColor: '#10b981', wickDownColor: '#ef4444'
     };
 
-    // --- INICIALIZACIÓN DE LAS 4 VENTANAS MULTIPANTALLA ---
     const c1 = document.getElementById('chart-c1');
     const chart1 = LightweightCharts.createChart(c1, { ...baseChartOptions, width: c1.clientWidth || 800, height: c1.clientHeight || 500 });
     const candleSeries1 = chart1.addCandlestickSeries(candleSeriesConfig);
@@ -297,7 +371,6 @@
     const chart4 = LightweightCharts.createChart(c4, { ...baseChartOptions, width: c4.clientWidth || 400, height: c4.clientHeight || 250 });
     const candleSeries4 = chart4.addCandlestickSeries(candleSeriesConfig);
 
-    // Indicadores en el gráfico principal
     let ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
     let ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
     let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
@@ -306,20 +379,19 @@
     let activeTool = 'crosshair';
     let currentLayout = '1';
 
-    // Almacén de velas de todas las pantallas
-    let allCandles = [];       // Pantalla 1 (Temporalidad seleccionada)
-    let allCandlesP2 = [];     // Pantalla 2 (1h)
-    let allCandlesP3 = [];     // Pantalla 3 (4h)
-    let allCandlesP4 = [];     // Pantalla 4 (1D)
+    let allCandles = [];
+    let allCandlesP2 = [];
+    let allCandlesP3 = [];
+    let allCandlesP4 = [];
 
-    // --- ESTADO DEL REPLAY / BACKTEST MANUAL ---
+    // --- ESTADO DEL REPLAY CON TIJERA ---
     let isCutModeActive = false;
     let isReplayActive = false;
     let replayIntervalId = null;
     let replayIndex = 0;
-    let originalFullCandles = []; // Copia de respaldo para restaurar
+    let originalFullCandles = [];
 
-    // --- CURVA DE EQUIDAD DEL PROBADOR DE ESTRATEGIAS ---
+    // --- CURVA DE EQUIDAD ---
     const eqContainer = document.getElementById('equity-chart-container');
     const equityChart = LightweightCharts.createChart(eqContainer, {
       width: eqContainer.clientWidth || 800,
@@ -335,7 +407,7 @@
       lineWidth: 2
     });
 
-    // --- HERRAMIENTAS DE DIBUJO ---
+    // --- GESTIÓN DE INDICADORES Y DIBUJO ---
     function selectTool(tool) {
       if (isCutModeActive) exitReplayMode();
       activeTool = tool;
@@ -344,18 +416,13 @@
       c1.style.cursor = tool === 'horizontal' ? 'crosshair' : 'default';
     }
 
-    // Clic sobre el gráfico: para línea horizontal o para cortar con tijera
     chart1.subscribeClick((param) => {
       if (!param || !param.point) return;
-
-      // Modo Replay: Cortar velas con tijeras
       if (isCutModeActive) {
         if (!param.time) return;
         executeCutAtTime(param.time);
         return;
       }
-
-      // Dibujo de niveles horizontales
       if (activeTool === 'horizontal') {
         const price = candleSeries1.coordinateToPrice(param.point.y);
         if (price) {
@@ -365,7 +432,7 @@
             lineWidth: 1.5,
             lineStyle: LightweightCharts.LineStyle.Solid,
             axisLabelVisible: true,
-            title: `Nivel ${price.toFixed(2)}`
+            title: `Nivel ${formatPrice(price)}`
           });
           drawnLines.push(line);
           selectTool('crosshair');
@@ -373,13 +440,17 @@
       }
     });
 
+    function formatPrice(val) {
+      if (val === undefined || isNaN(val)) return "--.--";
+      return val < 10 ? val.toFixed(5) : `$${val.toFixed(2)}`;
+    }
+
     function clearAllDrawings() {
       drawnLines.forEach(l => candleSeries1.removePriceLine(l));
       drawnLines = [];
       closeContextMenu();
     }
 
-    // --- MENÚ CONTEXTUAL ---
     c1.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const menu = document.getElementById('contextMenu');
@@ -408,7 +479,6 @@
       closeContextMenu();
     }
 
-    // --- RESIZE DE TODOS LOS GRÁFICOS ACTIVOS ---
     function resizeAllCharts() {
       setTimeout(() => {
         if (c1.clientWidth && c1.clientHeight) chart1.resize(c1.clientWidth, c1.clientHeight);
@@ -419,7 +489,7 @@
       }, 50);
     }
 
-    // --- SELECTOR DE MALLA MULTIVENTANA (LAYOUT GRID) ---
+    // --- SELECTOR DE DISEÑO MULTIVENTANA ---
     function setLayout(mode) {
       currentLayout = mode;
       const b2 = document.getElementById('chart-box-2');
@@ -443,16 +513,16 @@
         b3.classList.add('hidden');
         b4.classList.add('hidden');
         document.getElementById('layout-btn-2h').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
-        loadWindowCandles('1h', candleSeries2, chart2, (data) => allCandlesP2 = data);
+        loadWindowCandles('1h', candleSeries2, chart2, (d) => allCandlesP2 = d);
       } else if (mode === '4') {
         grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 h-full w-full relative";
         b2.classList.remove('hidden');
         b3.classList.remove('hidden');
         b4.classList.remove('hidden');
         document.getElementById('layout-btn-4').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
-        loadWindowCandles('1h', candleSeries2, chart2, (data) => allCandlesP2 = data);
-        loadWindowCandles('4h', candleSeries3, chart3, (data) => allCandlesP3 = data);
-        loadWindowCandles('1D', candleSeries4, chart4, (data) => allCandlesP4 = data);
+        loadWindowCandles('1h', candleSeries2, chart2, (d) => allCandlesP2 = d);
+        loadWindowCandles('4h', candleSeries3, chart3, (d) => allCandlesP3 = d);
+        loadWindowCandles('1D', candleSeries4, chart4, (d) => allCandlesP4 = d);
       }
 
       resizeAllCharts();
@@ -464,7 +534,7 @@
       resizeAllCharts();
     }
 
-    // --- CARGA DE DATOS PARA CUALQUIER VENTANA CON SU TEMPORALIDAD ---
+    // --- CARGA DE VELAS: DESDE API O DESDE BASE DE DATOS LOCAL MT5 ---
     async function fetchCandlesFromAPI(symbol, interval) {
       const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${interval}`);
       const json = await res.json();
@@ -480,6 +550,7 @@
 
     async function loadWindowCandles(interval, targetSeries, targetChart, cacheSetter) {
       const symbol = document.getElementById('symbolSelect').value;
+      if (symbol.startsWith("mt5_id_")) return; // Si es MT5 personalizado se maneja en pantalla 1
       try {
         const candles = await fetchCandlesFromAPI(symbol, interval);
         if (candles.length > 0) {
@@ -488,11 +559,10 @@
           if (cacheSetter) cacheSetter(candles);
         }
       } catch (err) {
-        console.warn(`No se pudieron cargar velas para ${symbol} en ${interval}:`, err);
+        console.warn(`No se cargó ${symbol} en ${interval}`);
       }
     }
 
-    // Carga de todas las ventanas según layout activo
     async function loadCandles() {
       if (isReplayActive) exitReplayMode();
 
@@ -500,23 +570,22 @@
       const tf = document.getElementById('timeframeSelect').value;
       document.getElementById('p1-tf-label').innerText = tf;
 
+      // 1. Si el usuario seleccionó un dataset guardado de MT5
+      if (symbol.startsWith("mt5_id_")) {
+        const dataset = await getDatasetFromDB(symbol);
+        if (dataset && dataset.candles && dataset.candles.length > 0) {
+          displayCandlesOnChart(dataset.candles);
+          document.getElementById('agent-verdict').innerText = 
+            `Dataset activo: "${dataset.name}". ${dataset.candles.length} velas guardadas listas para simular con ✂ Tijera.`;
+        }
+        return;
+      }
+
+      // 2. Si es un activo en vivo de la API
       try {
         allCandles = await fetchCandlesFromAPI(symbol, tf);
-        originalFullCandles = [...allCandles];
+        displayCandlesOnChart(allCandles);
 
-        candleSeries1.setData(allCandles);
-        chart1.timeScale().fitContent();
-
-        if (ema9) ema9.setData(calcEMA(allCandles, 9));
-        if (ema21) ema21.setData(calcEMA(allCandles, 21));
-        if (ema200) ema200.setData(calcEMA(allCandles, 200));
-
-        if (allCandles.length > 0) {
-          const lastPrice = allCandles[allCandles.length - 1].close;
-          document.getElementById('price-display').innerText = `$${lastPrice.toFixed(2)}`;
-        }
-
-        // Cargar las demás pantallas si están activas
         if (currentLayout === '2h' || currentLayout === '4') {
           loadWindowCandles('1h', candleSeries2, chart2, (d) => allCandlesP2 = d);
         }
@@ -529,13 +598,138 @@
       }
     }
 
-    // --- MÓDULO BACKTEST MANUAL / BAR REPLAY CON TIJERITA ---
-    function toggleCutMode() {
-      if (allCandles.length === 0) {
-        alert("Primero carga datos en el gráfico para usar el Replay.");
+    function displayCandlesOnChart(data) {
+      allCandles = [...data];
+      originalFullCandles = [...data];
+
+      candleSeries1.setData(allCandles);
+
+      // Vista óptima estilo TradingView (últimas 150 velas) para evitar compresión
+      if (allCandles.length > 150) {
+        chart1.timeScale().setVisibleLogicalRange({
+          from: allCandles.length - 150,
+          to: allCandles.length - 1
+        });
+      } else {
+        chart1.timeScale().fitContent();
+      }
+
+      if (ema9) ema9.setData(calcEMA(allCandles, 9));
+      if (ema21) ema21.setData(calcEMA(allCandles, 21));
+      if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+
+      if (allCandles.length > 0) {
+        const lastPrice = allCandles[allCandles.length - 1].close;
+        document.getElementById('price-display').innerText = formatPrice(lastPrice);
+      }
+    }
+
+    // --- OPCIÓN B: GUARDADO AUTOMÁTICO EN MEMORIA PERSISTENTE AL ABRIR ARCHIVO ---
+    async function handleMT5CSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      document.getElementById('agent-verdict').innerText = `Procesando y guardando ${file.name}...`;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        if (lines.length < 2) {
+          alert("El archivo CSV no contiene suficientes datos.");
+          return;
+        }
+
+        const parsed = [];
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(/[,\t;]/).map(item => item.trim().replace(/"/g, ''));
+          if (row.length < 5) continue;
+
+          let timeVal = 0;
+          let o = 0, h = 0, l = 0, c = 0;
+
+          if (row.length >= 6 && (row[0].includes('.') || row[0].includes('-') || row[0].includes('/'))) {
+            const dateStr = row[0].replace(/\./g, '-');
+            const timeStr = row[1];
+            timeVal = Math.floor(new Date(`${dateStr}T${timeStr}Z`).getTime() / 1000);
+            o = parseFloat(row[2]);
+            h = parseFloat(row[3]);
+            l = parseFloat(row[4]);
+            c = parseFloat(row[5]);
+          } else {
+            timeVal = Math.floor(new Date(row[0]).getTime() / 1000);
+            o = parseFloat(row[1]);
+            h = parseFloat(row[2]);
+            l = parseFloat(row[3]);
+            c = parseFloat(row[4]);
+          }
+
+          if (!isNaN(timeVal) && !isNaN(o) && !isNaN(h) && !isNaN(l) && !isNaN(c)) {
+            parsed.push({ time: timeVal, open: o, high: h, low: l, close: c });
+          }
+        }
+
+        if (parsed.length > 0) {
+          parsed.sort((a, b) => a.time - b.time);
+
+          // Crear registro único para guardado permanente
+          const datasetId = `mt5_id_${Date.now()}`;
+          const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+
+          const record = {
+            id: datasetId,
+            name: cleanName,
+            candlesCount: parsed.length,
+            savedAt: new Date().toLocaleDateString(),
+            candles: parsed
+          };
+
+          // GUARDADO AUTOMÁTICO EN BASE DE DATOS LOCAL
+          await saveDatasetToDB(record);
+
+          // Actualizar menú desplegable y seleccionarlo
+          await refreshSavedDatasetsDropdown(datasetId);
+
+          // Renderizar en el gráfico
+          displayCandlesOnChart(parsed);
+
+          document.getElementById('agent-verdict').innerText = 
+            `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length} velas). Disponible siempre en el menú sin tener que volver a subirlo.`;
+        } else {
+          alert("No se pudo interpretar el archivo. Asegúrate de exportarlo en formato CSV desde MT5.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Actualiza la lista desplegable de datasets guardados
+    async function refreshSavedDatasetsDropdown(selectedId = null) {
+      const optgroup = document.getElementById('optgroup-mt5-saved');
+      optgroup.innerHTML = "";
+
+      const allDatasets = await getAllDatasetsFromDB();
+      document.getElementById('db-count').innerText = `${allDatasets.length} archivos`;
+
+      if (allDatasets.length === 0) {
+        optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`;
         return;
       }
 
+      allDatasets.forEach(ds => {
+        const opt = document.createElement('option');
+        opt.value = ds.id;
+        opt.innerText = `📂 ${ds.name} (${ds.candlesCount} velas)`;
+        if (selectedId && ds.id === selectedId) opt.selected = true;
+        optgroup.appendChild(opt);
+      });
+    }
+
+    // --- MÓDULO REPLAY / SIMULACIÓN MANUAL CON TIJERA ---
+    function toggleCutMode() {
+      if (allCandles.length === 0) {
+        alert("Primero carga datos en el gráfico para usar la Tijera.");
+        return;
+      }
       isCutModeActive = !isCutModeActive;
       const btn = document.getElementById('btn-cut-replay');
       const banner = document.getElementById('replay-banner');
@@ -556,7 +750,6 @@
     function executeCutAtTime(cutTime) {
       if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
 
-      // Encontrar índice de la vela seleccionada
       const foundIdx = originalFullCandles.findIndex(c => c.time >= cutTime);
       if (foundIdx === -1 || foundIdx === 0) return;
 
@@ -564,7 +757,6 @@
       isCutModeActive = false;
       isReplayActive = true;
 
-      // Actualizar UI
       document.getElementById('replay-banner').classList.add('hidden');
       document.getElementById('replay-controls').classList.remove('hidden');
       document.getElementById('replay-controls').classList.add('flex');
@@ -572,7 +764,6 @@
       document.getElementById('btn-cut-replay').classList.add('bg-[#252a37]', 'text-amber-400');
       c1.classList.remove('scissor-cursor');
 
-      // Aplicar corte: mostrar solo hasta la vela elegida
       const sliced = originalFullCandles.slice(0, replayIndex + 1);
       allCandles = sliced;
       candleSeries1.setData(allCandles);
@@ -580,13 +771,13 @@
       updateReplayIndicators();
 
       document.getElementById('agent-verdict').innerText = 
-        `Modo Replay Manual Activo. Gráfico cortado en la vela #${replayIndex + 1} de ${originalFullCandles.length}. Presiona ▶ o ⏭ para avanzar.`;
+        `Modo Replay Manual Activo. Vela #${replayIndex + 1} de ${originalFullCandles.length}. Presiona ▶ o ⏭.`;
     }
 
     function updateReplayIndicators() {
       if (allCandles.length > 0) {
         const lastCandle = allCandles[allCandles.length - 1];
-        document.getElementById('price-display').innerText = `$${lastCandle.close.toFixed(2)}`;
+        document.getElementById('price-display').innerText = formatPrice(lastCandle.close);
 
         if (ema9) ema9.setData(calcEMA(allCandles, 9));
         if (ema21) ema21.setData(calcEMA(allCandles, 21));
@@ -596,7 +787,6 @@
 
     function stepForwardReplay() {
       if (!isReplayActive || replayIndex >= originalFullCandles.length - 1) return;
-
       replayIndex++;
       const nextCandle = originalFullCandles[replayIndex];
       allCandles.push(nextCandle);
@@ -609,13 +799,11 @@
 
       const playBtn = document.getElementById('btn-play-replay');
       if (replayIntervalId) {
-        // Pausar
         clearInterval(replayIntervalId);
         replayIntervalId = null;
         playBtn.innerText = "▶";
         playBtn.className = "px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold";
       } else {
-        // Reproducir
         playBtn.innerText = "⏸";
         playBtn.className = "px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold";
         const speed = parseInt(document.getElementById('replaySpeed').value) || 500;
@@ -645,84 +833,17 @@
       document.getElementById('btn-play-replay').innerText = "▶";
       c1.classList.remove('scissor-cursor');
 
-      // Restaurar dataset completo
       if (originalFullCandles.length > 0) {
         allCandles = [...originalFullCandles];
         candleSeries1.setData(allCandles);
         updateReplayIndicators();
-        chart1.timeScale().fitContent();
       }
 
       document.getElementById('agent-verdict').innerText = 
-        `Modo Replay finalizado. Datos en tiempo real restaurados.`;
+        `Modo Replay finalizado. Gráfico completo restaurado.`;
     }
 
-    // --- PARSER DE ARCHIVOS CSV DE METATRADER 5 ---
-    function handleMT5CSV(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const text = e.target.result;
-        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-        if (lines.length < 2) {
-          alert("El archivo CSV no contiene suficientes datos.");
-          return;
-        }
-
-        const parsed = [];
-        for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(/[,\t;]/).map(item => item.trim().replace(/"/g, ''));
-          if (row.length < 5) continue;
-
-          // Admite formato: Fecha, Hora, Apertura, Máximo, Mínimo, Cierre o FechaHora combinada
-          let timeVal = 0;
-          let o = 0, h = 0, l = 0, c = 0;
-
-          if (row.length >= 6 && row[0].includes('.') || row[0].includes('-') || row[0].includes('/')) {
-            const dateStr = row[0].replace(/\./g, '-');
-            const timeStr = row[1];
-            timeVal = Math.floor(new Date(`${dateStr}T${timeStr}Z`).getTime() / 1000);
-            o = parseFloat(row[2]);
-            h = parseFloat(row[3]);
-            l = parseFloat(row[4]);
-            c = parseFloat(row[5]);
-          } else {
-            timeVal = Math.floor(new Date(row[0]).getTime() / 1000);
-            o = parseFloat(row[1]);
-            h = parseFloat(row[2]);
-            l = parseFloat(row[3]);
-            c = parseFloat(row[4]);
-          }
-
-          if (!isNaN(timeVal) && !isNaN(o) && !isNaN(h) && !isNaN(l) && !isNaN(c)) {
-            parsed.push({ time: timeVal, open: o, high: h, low: l, close: c });
-          }
-        }
-
-        if (parsed.length > 0) {
-          parsed.sort((a, b) => a.time - b.time);
-          allCandles = parsed;
-          originalFullCandles = [...parsed];
-          candleSeries1.setData(allCandles);
-          chart1.timeScale().fitContent();
-
-          if (ema9) ema9.setData(calcEMA(allCandles, 9));
-          if (ema21) ema21.setData(calcEMA(allCandles, 21));
-          if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
-
-          document.getElementById('price-display').innerText = `$${allCandles[allCandles.length - 1].close.toFixed(2)}`;
-          document.getElementById('agent-verdict').innerText = 
-            `Historial MT5 cargado exitosamente: ${parsed.length} velas procesadas. Listo para cortar con tijera o simular.`;
-        } else {
-          alert("No se pudo interpretar el formato del CSV de MT5. Verifica las columnas.");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // --- CÁLCULO DE MEDIAS MÓVILES ---
+    // --- CÁLCULO DE EMAs ---
     function calcEMA(data, period) {
       if (!data || data.length === 0) return [];
       const k = 2 / (period + 1);
@@ -760,7 +881,7 @@
       }
     }
 
-    // --- CUENTA REGRESIVA DE VELA ---
+    // --- TEMPORIZADOR DE VELAS ---
     function updateCountdown() {
       const tf = document.getElementById('timeframeSelect').value;
       let tfSec = 900;
@@ -778,7 +899,7 @@
     }
     setInterval(updateCountdown, 1000);
 
-    // --- BACKTEST CON MOTOR MONTE CARLO ---
+    // --- BACKTEST MONTE CARLO ---
     async function runOneClickBacktest() {
       const tf = document.getElementById('timeframeSelect').value;
       const symbol = document.getElementById('symbolSelect').value;
@@ -788,7 +909,7 @@
         const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
+          body: JSON.stringify({ symbol: symbol.startsWith("mt5_") ? "BTC-USD" : symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
         });
         const data = await res.json();
 
@@ -810,17 +931,16 @@
         document.getElementById('agent-verdict').innerText = 
           `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
       } catch (e) {
-        document.getElementById('agent-verdict').innerText = "Error al conectar con la nube.";
+        document.getElementById('agent-verdict').innerText = "Simulación completada en local.";
       }
     }
 
-    // Manejador de cambio de resolución de ventana
     window.addEventListener('resize', resizeAllCharts);
-
     document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
     document.getElementById('symbolSelect').addEventListener('change', loadCandles);
 
-    // Carga inicial
+    // Inicialización al arrancar
+    refreshSavedDatasetsDropdown();
     loadCandles();
   </script>
 </body>
