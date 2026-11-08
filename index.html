@@ -1,7 +1,15 @@
+---
+
+### 📄 CÓDIGO COMPLETO ACTUALIZADO (`index.html`)
+
+Copia y pega este código completo en tu `index.html`:
+
+```html
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" translate="no" class="notranslate">
 <head>
   <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
   <title>StratView-5 | Institutional Engine Pro 2026</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -35,6 +43,68 @@
     #stratscript-editor::-webkit-scrollbar-track,
     #ide-console-logs::-webkit-scrollbar-track {
       background: #090d16;
+    }
+
+    /* Splitters / Divisores Arrastrables Estilo TradingView (Arriba/Abajo y Lados) */
+    .resizer-h {
+      height: 6px;
+      background: #131722;
+      border-top: 1px solid #1e293b;
+      border-bottom: 1px solid #1e293b;
+      cursor: ns-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 35;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .resizer-h:hover, .resizer-h.active {
+      background: #0284c7;
+    }
+    .resizer-h::after {
+      content: "⇅";
+      font-size: 9px;
+      color: #94a3b8;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .resizer-v {
+      width: 6px;
+      background: #131722;
+      border-left: 1px solid #1e293b;
+      border-right: 1px solid #1e293b;
+      cursor: ew-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 35;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .resizer-v:hover, .resizer-v.active {
+      background: #0284c7;
+    }
+    .resizer-v::after {
+      content: "⇄";
+      font-size: 9px;
+      color: #94a3b8;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    /* Modo Maximizado a Pantalla Completa para cualquier ventana */
+    .sv5-window-fullscreen {
+      position: fixed !important;
+      top: 48px !important;
+      left: 48px !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: calc(100vw - 48px) !important;
+      height: calc(100vh - 48px) !important;
+      z-index: 80 !important;
+      background: #090d16 !important;
     }
   </style>
 </head>
@@ -142,7 +212,7 @@
     <button onclick="exitReplayMode()" class="bg-amber-600 text-black px-2 py-0.2 rounded font-bold hover:bg-amber-500 text-[10px]">Cancelar</button>
   </div>
 
-  <div class="flex-1 flex overflow-hidden relative">
+  <div id="main-workspace" class="flex-1 flex overflow-hidden relative">
     <!-- BARRA DE HERRAMIENTAS DE DIBUJO LATERAL -->
     <aside class="w-12 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-2 space-y-2 shrink-0 z-20 text-gray-400">
       <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="p-2 rounded text-emerald-400 bg-[#2a2e39]">✛</button>
@@ -154,16 +224,27 @@
       <button onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-2 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">🗑</button>
     </aside>
 
-    <!-- Área de Gráficos -->
-    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#090d16] relative">
-      <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 h-full w-full relative">
+    <!-- Área Central (Gráficos + Subpaneles + Panel Inferior) -->
+    <div id="center-column" class="flex-1 flex flex-col h-full overflow-hidden bg-[#090d16] relative min-w-[300px]">
+      
+      <!-- MALLA DE GRÁFICOS (1, 2 o 4 PANTALLAS) -->
+      <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]">
+        
         <!-- PANTALLA 1 -->
         <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
-          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
             Pantalla 1 (<span id="p1-tf-label">15m</span>)
           </div>
-          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-amber-500/80 text-amber-400 shadow pointer-events-none flex items-center gap-1">
-            <span>⏱</span> <span id="tv-countdown-p1">00:00</span>
+          <!-- Segundero + Controles de Ventana Esquina Superior Derecha -->
+          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+            <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-amber-500/80 text-amber-400 shadow pointer-events-none flex items-center gap-1">
+              <span>⏱</span> <span id="tv-countdown-p1">00:00</span>
+            </div>
+            <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
+              <button onclick="setWindowSize('chart-box-1', 'min')" title="Minimizar / Reducir Gráfico" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button onclick="setWindowSize('chart-box-1', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button onclick="setWindowSize('chart-box-1', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+            </div>
           </div>
           <canvas id="canvas-overlay" class="drawing-canvas w-full h-full"></canvas>
           <div id="chart-c1" class="w-full h-full"></div>
@@ -171,54 +252,101 @@
 
         <!-- PANTALLA 2 (1h) -->
         <div id="chart-box-2" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">Pantalla 2 (1h)</div>
-          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-sky-500/80 text-sky-400 shadow pointer-events-none flex items-center gap-1">
-            <span>⏱ 1h:</span> <span id="tv-countdown-p2">00:00</span>
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
+            Pantalla 2 (1h)
+          </div>
+          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+            <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-sky-500/80 text-sky-400 shadow pointer-events-none flex items-center gap-1">
+              <span>⏱ 1h:</span> <span id="tv-countdown-p2">00:00</span>
+            </div>
+            <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
+              <button onclick="setWindowSize('chart-box-2', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button onclick="setWindowSize('chart-box-2', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button onclick="setWindowSize('chart-box-2', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+            </div>
           </div>
           <div id="chart-c2" class="w-full h-full"></div>
         </div>
 
         <!-- PANTALLA 3 (4h) -->
         <div id="chart-box-3" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">Pantalla 3 (4h)</div>
-          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-purple-500/80 text-purple-400 shadow pointer-events-none flex items-center gap-1">
-            <span>⏱ 4h:</span> <span id="tv-countdown-p3">00:00:00</span>
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
+            Pantalla 3 (4h)
+          </div>
+          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+            <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-purple-500/80 text-purple-400 shadow pointer-events-none flex items-center gap-1">
+              <span>⏱ 4h:</span> <span id="tv-countdown-p3">00:00:00</span>
+            </div>
+            <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
+              <button onclick="setWindowSize('chart-box-3', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button onclick="setWindowSize('chart-box-3', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button onclick="setWindowSize('chart-box-3', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+            </div>
           </div>
           <div id="chart-c3" class="w-full h-full"></div>
         </div>
 
         <!-- PANTALLA 4 (1D) -->
         <div id="chart-box-4" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">Pantalla 4 (1D)</div>
-          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-emerald-500/80 text-emerald-400 shadow pointer-events-none flex items-center gap-1">
-            <span>⏱ 1D:</span> <span id="tv-countdown-p4">00:00:00</span>
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
+            Pantalla 4 (1D)
+          </div>
+          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+            <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-emerald-500/80 text-emerald-400 shadow pointer-events-none flex items-center gap-1">
+              <span>⏱ 1D:</span> <span id="tv-countdown-p4">00:00:00</span>
+            </div>
+            <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
+              <button onclick="setWindowSize('chart-box-4', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button onclick="setWindowSize('chart-box-4', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button onclick="setWindowSize('chart-box-4', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+            </div>
           </div>
           <div id="chart-c4" class="w-full h-full"></div>
         </div>
       </div>
 
-      <!-- Subpaneles RSI & MACD -->
-      <div id="rsi-subpanel" class="h-28 border-t border-gray-800 bg-[#0c1017] hidden relative">
-        <div class="absolute top-1 left-3 z-10 text-[10px] font-mono font-bold text-amber-400 bg-[#131722] px-1.5 py-0.5 rounded border border-gray-700">
+      <!-- Divisor arrastrable RSI -->
+      <div id="resizer-rsi" class="resizer-h hidden" title="Arrastra arriba o abajo para redimensionar RSI"></div>
+
+      <!-- Subpanel RSI -->
+      <div id="rsi-subpanel" class="h-28 bg-[#0c1017] hidden relative shrink-0">
+        <div class="absolute top-1 left-3 z-20 text-[10px] font-mono font-bold text-amber-400 bg-[#131722]/90 px-1.5 py-0.5 rounded border border-gray-700 pointer-events-none">
           RSI (14) - [Sobrecompra 70 | Sobreventa 30]
+        </div>
+        <div class="absolute top-1 right-16 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
+          <button onclick="setSubpanelHeight('rsi-subpanel', 45)" title="Minimizar RSI" class="hover:text-amber-400 px-1 font-bold">_</button>
+          <button onclick="setSubpanelHeight('rsi-subpanel', 115)" title="Tamaño Medio RSI" class="hover:text-sky-400 px-1 font-bold">❐</button>
+          <button onclick="setSubpanelHeight('rsi-subpanel', 240)" title="Expandir RSI" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
         </div>
         <div id="chart-rsi" class="w-full h-full"></div>
       </div>
 
-      <div id="macd-subpanel" class="h-28 border-t border-gray-800 bg-[#0c1017] hidden relative">
-        <div class="absolute top-1 left-3 z-10 text-[10px] font-mono font-bold text-sky-400 bg-[#131722] px-1.5 py-0.5 rounded border border-gray-700">
+      <!-- Divisor arrastrable MACD -->
+      <div id="resizer-macd" class="resizer-h hidden" title="Arrastra arriba o abajo para redimensionar MACD"></div>
+
+      <!-- Subpanel MACD -->
+      <div id="macd-subpanel" class="h-28 bg-[#0c1017] hidden relative shrink-0">
+        <div class="absolute top-1 left-3 z-20 text-[10px] font-mono font-bold text-sky-400 bg-[#131722]/90 px-1.5 py-0.5 rounded border border-gray-700 pointer-events-none">
           MACD (12, 26, 9)
+        </div>
+        <div class="absolute top-1 right-16 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
+          <button onclick="setSubpanelHeight('macd-subpanel', 45)" title="Minimizar MACD" class="hover:text-amber-400 px-1 font-bold">_</button>
+          <button onclick="setSubpanelHeight('macd-subpanel', 115)" title="Tamaño Medio MACD" class="hover:text-sky-400 px-1 font-bold">❐</button>
+          <button onclick="setSubpanelHeight('macd-subpanel', 240)" title="Expandir MACD" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
         </div>
         <div id="chart-macd" class="w-full h-full"></div>
       </div>
 
+      <!-- DIVISOR HORIZONTAL ARRASTRABLE (FLECHITA ARRIBA / ABAJO) ENTRE GRÁFICO Y PROBADOR/IDE -->
+      <div id="resizer-bottom" class="resizer-h" title="Arrastra hacia arriba o hacia abajo para agrandar el Gráfico o el Probador/Editor"></div>
+
       <!-- ======================================================================
            PANEL INFERIOR UNIFICADO: PROBADOR DE ESTRATEGIA + MÓDULO 3 (IDE)
            ====================================================================== -->
-      <div id="strategy-panel" class="h-72 border-t border-gray-800 bg-[#131722] flex flex-col shrink-0 relative transition-all">
+      <div id="strategy-panel" class="h-72 bg-[#131722] flex flex-col shrink-0 relative">
         
-        <!-- Cabecera de Pestañas del Panel Inferior -->
-        <div class="h-9 border-b border-gray-800 flex items-center justify-between px-3 bg-[#1e222d]/80 text-xs text-gray-300 select-none">
+        <!-- Cabecera de Pestañas del Panel Inferior + Botones Minimizar/Medio/Completa -->
+        <div class="h-9 border-b border-gray-800 flex items-center justify-between px-3 bg-[#1e222d]/80 text-xs text-gray-300 select-none shrink-0">
           <div class="flex items-center space-x-2">
             <button onclick="switchBottomSubTab('performance')" id="subtab-btn-perf" class="px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition">
               📊 Probador de Estrategia & Curva
@@ -229,20 +357,27 @@
             </button>
           </div>
 
-          <!-- Estado del Validador de Sintaxis en Tiempo Real (3.3) -->
-          <div class="flex items-center space-x-3">
+          <!-- Estado del Validador de Sintaxis en Tiempo Real (3.3) + Controles de Ventana -->
+          <div class="flex items-center space-x-2">
             <div id="syntax-status-badge" class="flex items-center gap-1.5 text-[11px] font-mono bg-[#131722] px-2.5 py-0.5 rounded border border-gray-700">
               <span id="syntax-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span id="syntax-text" class="text-emerald-400">Sintaxis OK (0 errores)</span>
+              <span id="syntax-text" class="text-emerald-400">Sintaxis Válida (0 errores)</span>
             </div>
-            <button onclick="toggleBottomPanelHeight()" title="Expandir / Contraer altura" class="text-gray-400 hover:text-white px-1.5 font-bold">⇅</button>
-            <button onclick="toggleStrategyPanel()" class="text-gray-400 hover:text-rose-400 font-bold">✕ Cerrar</button>
+
+            <!-- Botones estilo TradingView: Minimizar, Medio, Pantalla Completa, Cerrar -->
+            <div class="flex items-center bg-[#131722] border border-gray-700 rounded px-1.5 py-0.5 space-x-1.5 text-xs">
+              <button onclick="setBottomPanelMode('min')" title="Minimizar barra inferior" class="text-gray-400 hover:text-amber-400 px-1 font-bold">_</button>
+              <button onclick="setBottomPanelMode('mid')" title="Tamaño Medio (50%)" class="text-gray-400 hover:text-sky-400 px-1 font-bold">❐</button>
+              <button onclick="setBottomPanelMode('max')" title="Pantalla Completa (Maximizar)" class="text-gray-400 hover:text-emerald-400 px-1 font-bold">⛶</button>
+              <span class="text-gray-700">|</span>
+              <button onclick="toggleStrategyPanel()" title="Ocultar Panel" class="text-gray-400 hover:text-rose-400 px-1 font-bold">✕</button>
+            </div>
           </div>
         </div>
 
         <!-- SUB-VISTA 1: RENDIMIENTO Y CURVA DE CAPITAL -->
         <div id="subview-performance" class="flex-1 flex flex-col overflow-hidden">
-          <div class="grid grid-cols-4 gap-3 p-2.5 border-b border-gray-800/60 bg-[#131722] text-xs">
+          <div class="grid grid-cols-4 gap-3 p-2.5 border-b border-gray-800/60 bg-[#131722] text-xs shrink-0">
             <div><p class="text-gray-500 text-[10px]">PyG Totales</p><p id="st-pyg" class="text-sm font-bold text-emerald-400 font-mono">+0.36 USD (+0.04%)</p></div>
             <div><p class="text-gray-500 text-[10px]">Caída máx. del capital (Drawdown)</p><p id="st-dd" class="text-sm font-bold text-rose-400 font-mono">0.09 USD (0.01%)</p></div>
             <div><p class="text-gray-500 text-[10px]">Operaciones rentables (Win Rate)</p><p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">50.00% (2/4)</p></div>
@@ -258,7 +393,7 @@
         <div id="subview-ide" class="hidden flex-1 flex flex-col overflow-hidden bg-[#0b0e14]">
           
           <!-- 3.2 Barra de Inputs Institucionales (TP, SL, Trailing Stop, Loteo, Gestión de Riesgo) -->
-          <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
             <div class="flex items-center space-x-2">
               <span class="text-sky-400 font-bold uppercase tracking-wider">Bot:</span>
               <select id="ide-preset-select" onchange="loadStrategyPreset(this.value)" class="bg-[#1e222d] text-gray-200 border border-gray-700 rounded px-2 py-0.5 outline-none focus:border-sky-500 font-semibold">
@@ -268,7 +403,7 @@
               </select>
             </div>
 
-            <!-- Parámetros de Gestión de Riesgo e Inputs (Sincronizados con el motor) -->
+            <!-- Parámetros de Gestión de Riesgo e Inputs -->
             <div class="flex items-center space-x-3 font-mono">
               <label class="flex items-center gap-1 text-gray-300" title="Take Profit en puntos/pips (0 = desactivado)">
                 <span class="text-emerald-400 font-bold">TP:</span>
@@ -306,10 +441,10 @@
             </div>
           </div>
 
-          <!-- Cuerpo Dividido: Editor de Código (Izquierda) + Consola/Auditor de Señales (Derecha) -->
-          <div class="flex-1 flex overflow-hidden">
+          <!-- Cuerpo Dividido: Editor de Código (Izquierda) + Divisor Vertical + Consola (Derecha) -->
+          <div id="ide-split-container" class="flex-1 flex overflow-hidden">
             <!-- Editor con numeración de líneas -->
-            <div class="w-3/5 border-r border-gray-800 flex flex-col bg-[#090d16] relative">
+            <div id="ide-editor-pane" class="w-3/5 flex flex-col bg-[#090d16] relative min-w-[220px]">
               <div class="flex-1 flex overflow-hidden relative">
                 <div id="ide-line-numbers" class="sv5-code-font w-10 py-2.5 bg-[#131722] text-gray-600 text-right pr-2 select-none overflow-hidden border-r border-gray-800">
                   1
@@ -319,21 +454,24 @@
                           onscroll="syncEditorScroll()"
                           class="sv5-code-font flex-1 bg-transparent text-gray-200 p-2.5 w-full h-full overflow-y-auto whitespace-pre"></textarea>
               </div>
-              <div class="h-5 bg-[#131722] border-t border-gray-800 px-3 flex items-center justify-between text-[10px] text-gray-400 font-mono">
-                <span>API: <b class="text-sky-400">ema(p)</b>, <b class="text-sky-400">sma(p)</b>, <b class="text-sky-400">rsi(p)</b>, <b class="text-sky-400">bb(p,m)</b>, <b class="text-emerald-400">strategy.entry("BUY", LONG)</b>, <b class="text-amber-400">OrderSend()</b></span>
+              <div class="h-5 bg-[#131722] border-t border-gray-800 px-3 flex items-center justify-between text-[10px] text-gray-400 font-mono shrink-0">
+                <span>API: <b class="text-sky-400">ema(p)</b>, <b class="text-sky-400">sma(p)</b>, <b class="text-sky-400">rsi(p)</b>, <b class="text-sky-400">bb(p,m)</b>, <b class="text-emerald-400">strategy.entry(i, LONG)</b>, <b class="text-amber-400">OrderSend()</b></span>
                 <span id="ide-cursor-pos">Línea 1</span>
               </div>
             </div>
 
+            <!-- Divisor Vertical Arrastrable entre Editor de Código y Consola -->
+            <div id="resizer-ide-inner" class="resizer-v" title="Arrastra hacia los lados para ajustar ancho del Editor / Consola"></div>
+
             <!-- Consola de Ejecución y Depuración de Operaciones -->
-            <div class="w-2/5 flex flex-col bg-[#0b0e14]">
-              <div class="grid grid-cols-4 gap-1.5 p-2 bg-[#131722]/70 border-b border-gray-800 text-center font-mono">
+            <div id="ide-console-pane" class="flex-1 flex flex-col bg-[#0b0e14] min-w-[200px]">
+              <div class="grid grid-cols-4 gap-1.5 p-2 bg-[#131722]/70 border-b border-gray-800 text-center font-mono shrink-0">
                 <div class="bg-[#090d16] p-1 rounded border border-gray-800">
-                  <div class="text-[9px] text-gray-500">TRADES</div>
+                  <div class="text-[9px] text-gray-500">OPERACIONES</div>
                   <div id="ide-stat-trades" class="text-xs font-bold text-white">0</div>
                 </div>
                 <div class="bg-[#090d16] p-1 rounded border border-gray-800">
-                  <div class="text-[9px] text-emerald-400">LONG / SHORT</div>
+                  <div class="text-[9px] text-emerald-400">COMPRA / VENTA</div>
                   <div id="ide-stat-ls" class="text-xs font-bold text-emerald-400">0 / 0</div>
                 </div>
                 <div class="bg-[#090d16] p-1 rounded border border-gray-800">
@@ -356,8 +494,20 @@
       </div>
     </div>
 
-    <!-- Panel Lateral Derecho -->
-    <aside class="w-80 border-l border-gray-800 bg-[#131722] p-4 flex flex-col gap-3 overflow-y-auto shrink-0 z-10">
+    <!-- DIVISOR VERTICAL ARRASTRABLE (FLECHITA HACIA LOS LADOS) ENTRE GRÁFICOS Y PANEL DERECHO -->
+    <div id="resizer-right" class="resizer-v" title="Arrastra hacia la izquierda o derecha para redimensionar el panel lateral"></div>
+
+    <!-- Panel Lateral Derecho con Controles de Ventana -->
+    <aside id="right-sidebar" class="w-80 bg-[#131722] p-3 flex flex-col gap-3 overflow-y-auto shrink-0 z-10 relative">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-1.5">
+        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Panel de Control</span>
+        <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
+          <button onclick="setRightSidebarSize('min')" title="Minimizar Panel Derecho" class="hover:text-amber-400 px-1 font-bold">_</button>
+          <button onclick="setRightSidebarSize('mid')" title="Ancho Normal" class="hover:text-sky-400 px-1 font-bold">❐</button>
+          <button onclick="setRightSidebarSize('max')" title="Ancho Expandido" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+        </div>
+      </div>
+
       <div class="bg-[#1e222d] p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
         <div>
           <p class="text-[11px] text-gray-400">Precio en Pantalla</p>
@@ -404,7 +554,7 @@
       <p class="text-gray-400">Selecciona el momento del pasado que deseas simular:</p>
       <div>
         <label class="block text-gray-400 mb-1">Fecha y Hora:</label>
-        <input type="datetime-local" id="jumpDateTimeInput" value="2021-01-04T00:00" min="2021-01-01T00:00" max="2026-11-07T23:59" class="w-full bg-[#131722] border border-gray-700 rounded p-2 text-white font-mono text-sm outline-none focus:border-emerald-500">
+        <input type="datetime-local" id="jumpDateTimeInput" value="2022-01-04T00:00" min="2021-01-01T00:00" max="2026-11-07T23:59" class="w-full bg-[#131722] border border-gray-700 rounded p-2 text-white font-mono text-sm outline-none focus:border-emerald-500">
       </div>
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeJumpToDateModal()" class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">Cancelar</button>
@@ -548,7 +698,8 @@
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      timeScale: { timeVisible: true, secondsVisible: false }
+      rightPriceScale: { minimumWidth: 75 },
+      timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 12 }
     };
 
     const candleSeriesConfig = {
@@ -578,30 +729,60 @@
     let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
     let bbUpper = null, bbBasis = null, bbLower = null;
 
-    // Subpaneles RSI & MACD
+    // Subpaneles RSI & MACD con escala de precio de igual ancho (75px) para alineación vertical exacta
     const rsiCont = document.getElementById('chart-rsi');
-    const chartRSI = LightweightCharts.createChart(rsiCont, { ...baseChartOptions, width: rsiCont.clientWidth || 800, height: 110, timeScale: { visible: false } });
+    const chartRSI = LightweightCharts.createChart(rsiCont, {
+      ...baseChartOptions,
+      width: rsiCont.clientWidth || 800,
+      height: 110,
+      rightPriceScale: { minimumWidth: 75 },
+      timeScale: { visible: false, rightOffset: 12 }
+    });
     const rsiSeries = chartRSI.addLineSeries({ color: '#f59e0b', lineWidth: 2, title: 'RSI 14' });
     rsiSeries.createPriceLine({ price: 70, color: '#ef4444', lineStyle: LightweightCharts.LineStyle.Dotted, title: '70' });
     rsiSeries.createPriceLine({ price: 30, color: '#10b981', lineStyle: LightweightCharts.LineStyle.Dotted, title: '30' });
 
     const macdCont = document.getElementById('chart-macd');
-    const chartMACD = LightweightCharts.createChart(macdCont, { ...baseChartOptions, width: macdCont.clientWidth || 800, height: 110, timeScale: { visible: false } });
+    const chartMACD = LightweightCharts.createChart(macdCont, {
+      ...baseChartOptions,
+      width: macdCont.clientWidth || 800,
+      height: 110,
+      rightPriceScale: { minimumWidth: 75 },
+      timeScale: { visible: false, rightOffset: 12 }
+    });
     const macdHistSeries = chartMACD.addHistogramSeries({ color: '#10b981', title: 'Hist' });
     const macdLineSeries = chartMACD.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'MACD' });
     const macdSignalSeries = chartMACD.addLineSeries({ color: '#ef4444', lineWidth: 1.5, title: 'Signal' });
+
+    // --- SINCRONIZACIÓN AUTOMÁTICA DE ESCALA DE TIEMPO (PRECIO <-> RSI <-> MACD) ---
+    let isSyncingTimeScales = false;
+    function syncTimeScale(sourceChart, targetCharts) {
+      sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (isSyncingTimeScales || !range) return;
+        isSyncingTimeScales = true;
+        targetCharts.forEach(tc => {
+          try { tc.timeScale().setVisibleLogicalRange(range); } catch (e) {}
+        });
+        isSyncingTimeScales = false;
+      });
+    }
+    syncTimeScale(chart1, [chartRSI, chartMACD]);
+    syncTimeScale(chartRSI, [chart1, chartMACD]);
+    syncTimeScale(chartMACD, [chart1, chartRSI]);
 
     let drawnLines = [];
     let activeTool = 'crosshair';
     let currentLayout = '1';
 
-    let allCandles = [];
-    let originalFullCandles = []; // Historial de millones de velas
+    let rawMT5Candles = [];       // Dataset bruto completo (ej. 2.1 millones de velas M1)
+    let originalFullCandles = []; // Velas en la temporalidad seleccionada de Pantalla 1
+    let allCandles = [];          // Buffer activo en Pantalla 1 (hasta 20,000 velas)
 
     let isCutModeActive = false;
     let isReplayActive = false;
     let replayIntervalId = null;
     let replayIndex = 0;
+    let currentReplayTimestamp = 0;
 
     // Estado activo del bot del Módulo 3 para sincronizar en Bar Replay
     let isBotActiveOnChart = false;
@@ -617,6 +798,59 @@
     });
     const equitySeries = equityChart.addAreaSeries({ topColor: 'rgba(16, 185, 129, 0.4)', bottomColor: 'rgba(239, 68, 68, 0.2)', lineColor: '#10b981', lineWidth: 2 });
 
+    // --- MOTOR AGREGADOR DE TEMPORALIDADES OHLC (1m, 5m, 15m, 1h, 4h, 1D) PARA ARCHIVOS MT5 ---
+    function getIntervalSeconds(tf) {
+      if (tf === '1m') return 60;
+      if (tf === '5m') return 300;
+      if (tf === '15m') return 900;
+      if (tf === '1h') return 3600;
+      if (tf === '4h') return 14400;
+      if (tf === '1D') return 86400;
+      return 900;
+    }
+
+    function aggregateCandlesToTimeframe(sourceCandles, tf, maxTimestamp = Infinity) {
+      if (!sourceCandles || sourceCandles.length === 0) return [];
+      const tfSec = getIntervalSeconds(tf);
+
+      // Encontrar hasta qué índice llegar usando búsqueda binaria si hay un corte de fecha activo
+      let endLimit = sourceCandles.length - 1;
+      if (maxTimestamp < Infinity) {
+        endLimit = binarySearchCandleIndex(sourceCandles, maxTimestamp);
+      }
+
+      // Tomar suficientes velas base para construir hasta MAX_CHART_BUFFER velas de la temporalidad objetivo
+      const approxBaseNeeded = Math.min(endLimit + 1, MAX_CHART_BUFFER * Math.max(1, Math.floor(tfSec / 60)));
+      const startIndex = Math.max(0, endLimit - approxBaseNeeded + 1);
+
+      const result = [];
+      let currentBucket = null;
+
+      for (let i = startIndex; i <= endLimit; i++) {
+        const c = sourceCandles[i];
+        if (c.time > maxTimestamp) break;
+        const bucketTime = Math.floor(c.time / tfSec) * tfSec;
+
+        if (!currentBucket || currentBucket.time !== bucketTime) {
+          if (currentBucket) result.push(currentBucket);
+          currentBucket = {
+            time: bucketTime,
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close
+          };
+        } else {
+          if (c.high > currentBucket.high) currentBucket.high = c.high;
+          if (c.low < currentBucket.low) currentBucket.low = c.low;
+          currentBucket.close = c.close;
+        }
+      }
+      if (currentBucket) result.push(currentBucket);
+
+      return result.length > MAX_CHART_BUFFER ? result.slice(result.length - MAX_CHART_BUFFER) : result;
+    }
+
     // --- SEGUNDERO DINÁMICO EN LAS 4 PANTALLAS ---
     function formatTimeRemaining(seconds) {
       const h = Math.floor(seconds / 3600);
@@ -629,13 +863,7 @@
     function updateAllCandleCountdowns() {
       const now = Math.floor(Date.now() / 1000);
       const tf1 = document.getElementById('timeframeSelect').value;
-      let tfSec1 = 900;
-      if (tf1 === '1m') tfSec1 = 60;
-      else if (tf1 === '5m') tfSec1 = 300;
-      else if (tf1 === '15m') tfSec1 = 900;
-      else if (tf1 === '1h') tfSec1 = 3600;
-      else if (tf1 === '4h') tfSec1 = 14400;
-      else if (tf1 === '1D') tfSec1 = 86400;
+      const tfSec1 = getIntervalSeconds(tf1);
 
       const rem1 = tfSec1 - (now % tfSec1);
       const rem2 = 3600 - (now % 3600);
@@ -666,20 +894,11 @@
       return Math.max(0, Math.min(data.length - 1, low));
     }
 
-    function executeJumpToDate() {
-      const inputVal = document.getElementById('jumpDateTimeInput').value;
-      if (!inputVal) return;
-
-      const targetTimestamp = Math.floor(new Date(inputVal).getTime() / 1000);
-      const sourceData = originalFullCandles.length > 0 ? originalFullCandles : allCandles;
-      if (sourceData.length === 0) return;
-
-      if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
-
-      const cutIdx = binarySearchCandleIndex(originalFullCandles, targetTimestamp);
+    function applyCutAtIndex(cutIdx) {
       replayIndex = cutIdx;
       isReplayActive = true;
       isCutModeActive = false;
+      currentReplayTimestamp = originalFullCandles[replayIndex].time;
 
       closeJumpToDateModal();
       document.getElementById('replay-banner').classList.add('hidden');
@@ -688,21 +907,41 @@
       document.getElementById('btn-cut-replay').classList.remove('bg-amber-500', 'text-black');
       c1.classList.remove('scissor-cursor');
 
-      // Ventana optimizada de hasta MAX_CHART_BUFFER velas
       const startIdx = Math.max(0, replayIndex - MAX_CHART_BUFFER + 1);
       allCandles = originalFullCandles.slice(startIdx, replayIndex + 1);
       candleSeries1.setData(allCandles);
 
-      chart1.timeScale().setVisibleLogicalRange({
-        from: Math.max(0, allCandles.length - 150),
-        to: allCandles.length - 1
-      });
-
       updateReplayIndicators();
 
-      const cutDateStr = new Date(originalFullCandles[replayIndex].time * 1000).toLocaleString();
+      // Sincronizar exactamente el rango lógico de Precio, RSI y MACD en el punto de corte
+      const logicalRange = {
+        from: Math.max(0, allCandles.length - 120),
+        to: allCandles.length - 1
+      };
+      chart1.timeScale().setVisibleLogicalRange(logicalRange);
+      chartRSI.timeScale().setVisibleLogicalRange(logicalRange);
+      chartMACD.timeScale().setVisibleLogicalRange(logicalRange);
+
+      // Si hay multiventana activa (2 o 4 pantallas), recortar también las pantallas 2, 3 y 4 en la misma fecha
+      refreshSecondaryWindows();
+
+      const cutDateStr = new Date(currentReplayTimestamp * 1000).toLocaleString();
       document.getElementById('agent-verdict').innerText = 
-        `Gráfico recortado en: ${cutDateStr}. Presiona ▶ para simular hacia adelante.`;
+        `Gráfico e indicadores recortados en: ${cutDateStr}. Presiona ▶ para simular hacia adelante.`;
+    }
+
+    function executeJumpToDate() {
+      const inputVal = document.getElementById('jumpDateTimeInput').value;
+      if (!inputVal) return;
+
+      const targetTimestamp = Math.floor(new Date(inputVal).getTime() / 1000);
+      if (originalFullCandles.length === 0 && allCandles.length > 0) {
+        originalFullCandles = [...allCandles];
+      }
+      if (originalFullCandles.length === 0) return;
+
+      const cutIdx = binarySearchCandleIndex(originalFullCandles, targetTimestamp);
+      applyCutAtIndex(cutIdx);
     }
 
     // --- CANVAS DE DIBUJO ---
@@ -844,12 +1083,152 @@
         if (c3.clientWidth && c3.clientHeight) chart3.resize(c3.clientWidth, c3.clientHeight);
         if (c4.clientWidth && c4.clientHeight) chart4.resize(c4.clientWidth, c4.clientHeight);
         if (eqContainer.clientWidth && eqContainer.clientHeight) equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
-        if (rsiCont.clientWidth) chartRSI.resize(rsiCont.clientWidth, 110);
-        if (macdCont.clientWidth) chartMACD.resize(macdCont.clientWidth, 110);
+        if (rsiCont.clientWidth && rsiCont.clientHeight) chartRSI.resize(rsiCont.clientWidth, rsiCont.clientHeight);
+        if (macdCont.clientWidth && macdCont.clientHeight) chartMACD.resize(macdCont.clientWidth, macdCont.clientHeight);
         resizeCanvas();
-      }, 50);
+      }, 30);
     }
 
+    // --- CONTROLES DE VENTANA (MINIMIZAR _ / MEDIO ❐ / PANTALLA COMPLETA ⛶) ---
+    function setWindowSize(boxId, mode) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+
+      if (mode === 'max') {
+        box.classList.toggle('sv5-window-fullscreen');
+      } else if (mode === 'mid') {
+        box.classList.remove('sv5-window-fullscreen');
+        document.getElementById('strategy-panel').style.height = '18rem';
+      } else if (mode === 'min') {
+        box.classList.remove('sv5-window-fullscreen');
+        if (boxId === 'chart-box-1') {
+          // Minimizar gráfico equivale a darle más espacio al panel inferior
+          document.getElementById('strategy-panel').classList.remove('hidden');
+          document.getElementById('strategy-panel').style.height = '62vh';
+        } else {
+          setLayout('1');
+        }
+      }
+      resizeAllCharts();
+    }
+
+    function setSubpanelHeight(panelId, heightPx) {
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+      panel.style.height = `${heightPx}px`;
+      resizeAllCharts();
+    }
+
+    function setBottomPanelMode(mode) {
+      const panel = document.getElementById('strategy-panel');
+      panel.classList.remove('hidden', 'sv5-window-fullscreen');
+
+      if (mode === 'min') {
+        panel.style.height = '36px';
+      } else if (mode === 'mid') {
+        panel.style.height = '45vh';
+      } else if (mode === 'max') {
+        panel.classList.add('sv5-window-fullscreen');
+        panel.style.height = '';
+      }
+      resizeAllCharts();
+    }
+
+    function setRightSidebarSize(mode) {
+      const sidebar = document.getElementById('right-sidebar');
+      if (mode === 'min') sidebar.style.width = '180px';
+      else if (mode === 'mid') sidebar.style.width = '320px';
+      else if (mode === 'max') sidebar.style.width = '480px';
+      resizeAllCharts();
+    }
+
+    // --- DIVISORES ARRASTRABLES CON EL MOUSE (ARRIBA/ABAJO Y LADOS) ---
+    function initDraggableSplitters() {
+      // 1. Divisor Horizontal: Gráfico Principal <-> Panel Inferior (Probador/IDE)
+      const resBottom = document.getElementById('resizer-bottom');
+      const stratPanel = document.getElementById('strategy-panel');
+      setupHorizontalResizer(resBottom, stratPanel, true);
+
+      // 2. Divisor Horizontal: RSI
+      const resRsi = document.getElementById('resizer-rsi');
+      const rsiPanel = document.getElementById('rsi-subpanel');
+      setupHorizontalResizer(resRsi, rsiPanel, true);
+
+      // 3. Divisor Horizontal: MACD
+      const resMacd = document.getElementById('resizer-macd');
+      const macdPanel = document.getElementById('macd-subpanel');
+      setupHorizontalResizer(resMacd, macdPanel, true);
+
+      // 4. Divisor Vertical: Área de Gráficos <-> Panel Lateral Derecho
+      const resRight = document.getElementById('resizer-right');
+      const rightSidebar = document.getElementById('right-sidebar');
+      setupVerticalResizer(resRight, rightSidebar, true);
+
+      // 5. Divisor Vertical Interno del IDE: Editor de Código <-> Consola de Logs
+      const resIdeInner = document.getElementById('resizer-ide-inner');
+      const ideEditorPane = document.getElementById('ide-editor-pane');
+      setupVerticalResizer(resIdeInner, ideEditorPane, false);
+    }
+
+    function setupHorizontalResizer(resizerEl, targetPanel, invertDelta) {
+      if (!resizerEl || !targetPanel) return;
+      let startY = 0, startHeight = 0;
+
+      resizerEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        targetPanel.classList.remove('hidden', 'sv5-window-fullscreen');
+        startY = e.clientY;
+        startHeight = targetPanel.getBoundingClientRect().height;
+        resizerEl.classList.add('active');
+
+        const onMouseMove = (ev) => {
+          const dy = ev.clientY - startY;
+          const newH = Math.max(36, Math.min(window.innerHeight - 140, invertDelta ? startHeight - dy : startHeight + dy));
+          targetPanel.style.height = `${newH}px`;
+          resizeAllCharts();
+        };
+
+        const onMouseUp = () => {
+          resizerEl.classList.remove('active');
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    function setupVerticalResizer(resizerEl, targetPane, invertDelta) {
+      if (!resizerEl || !targetPane) return;
+      let startX = 0, startWidth = 0;
+
+      resizerEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startX = e.clientX;
+        startWidth = targetPane.getBoundingClientRect().width;
+        resizerEl.classList.add('active');
+
+        const onMouseMove = (ev) => {
+          const dx = ev.clientX - startX;
+          const newW = Math.max(160, Math.min(window.innerWidth - 280, invertDelta ? startWidth - dx : startWidth + dx));
+          targetPane.style.width = `${newW}px`;
+          targetPane.style.flex = 'none';
+          resizeAllCharts();
+        };
+
+        const onMouseUp = () => {
+          resizerEl.classList.remove('active');
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+    }
+
+    // --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) CON SOPORTE TOTAL PARA ARCHIVOS MT5 Y API ---
     function setLayout(mode) {
       currentLayout = mode;
       const b2 = document.getElementById('chart-box-2');
@@ -862,37 +1241,37 @@
       });
 
       if (mode === '1') {
-        grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 h-full w-full relative";
+        grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
         b2.classList.add('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
         document.getElementById('layout-btn-1').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
       } else if (mode === '2h') {
-        grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 h-full w-full relative";
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
         b2.classList.remove('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
         document.getElementById('layout-btn-2h').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
-        loadWindowCandles('1h', candleSeries2, chart2);
       } else if (mode === '4') {
-        grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 h-full w-full relative";
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 w-full relative min-h-[120px]";
         b2.classList.remove('hidden'); b3.classList.remove('hidden'); b4.classList.remove('hidden');
         document.getElementById('layout-btn-4').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
+      }
+      refreshSecondaryWindows();
+      resizeAllCharts();
+    }
+
+    function refreshSecondaryWindows() {
+      if (currentLayout === '2h') {
+        loadWindowCandles('1h', candleSeries2, chart2);
+      } else if (currentLayout === '4') {
         loadWindowCandles('1h', candleSeries2, chart2);
         loadWindowCandles('4h', candleSeries3, chart3);
         loadWindowCandles('1D', candleSeries4, chart4);
       }
-      resizeAllCharts();
     }
 
     // --- GESTIÓN DEL PANEL INFERIOR (PROBADOR + MÓDULO 3 IDE) ---
-    let isBottomPanelTall = false;
-
     function toggleStrategyPanel() {
-      document.getElementById('strategy-panel').classList.toggle('hidden');
-      resizeAllCharts();
-    }
-
-    function toggleBottomPanelHeight() {
       const panel = document.getElementById('strategy-panel');
-      isBottomPanelTall = !isBottomPanelTall;
-      panel.style.height = isBottomPanelTall ? '55vh' : '18rem';
+      panel.classList.remove('sv5-window-fullscreen');
+      panel.classList.toggle('hidden');
       resizeAllCharts();
     }
 
@@ -900,6 +1279,9 @@
       const panel = document.getElementById('strategy-panel');
       if (panel.classList.contains('hidden')) {
         panel.classList.remove('hidden');
+      }
+      if (panel.clientHeight < 100) {
+        panel.style.height = '18rem';
       }
       switchBottomSubTab(tabName);
       resizeAllCharts();
@@ -940,9 +1322,27 @@
 
     async function loadWindowCandles(interval, targetSeries, targetChart) {
       const symbol = document.getElementById('symbolSelect').value;
-      if (symbol.startsWith("mt5_id_")) return;
+      const cutLimit = isReplayActive && currentReplayTimestamp > 0 ? currentReplayTimestamp : Infinity;
+
+      // Si es un archivo MT5 local (o si tenemos velas base en memoria), construir la temporalidad automáticamente
+      const baseSource = rawMT5Candles.length > 0 ? rawMT5Candles : originalFullCandles;
+      if (symbol.startsWith("mt5_id_") || baseSource.length > 0) {
+        const aggregated = aggregateCandlesToTimeframe(baseSource, interval, cutLimit);
+        if (aggregated.length > 0) {
+          targetSeries.setData(aggregated);
+          targetChart.timeScale().setVisibleLogicalRange({
+            from: Math.max(0, aggregated.length - 100),
+            to: aggregated.length - 1
+          });
+        }
+        return;
+      }
+
       try {
-        const candles = await fetchCandlesFromAPI(symbol, interval);
+        let candles = await fetchCandlesFromAPI(symbol, interval);
+        if (cutLimit < Infinity) {
+          candles = candles.filter(c => c.time <= cutLimit);
+        }
         if (candles.length > 0) {
           targetSeries.setData(candles);
           targetChart.timeScale().fitContent();
@@ -950,7 +1350,7 @@
       } catch (err) {}
     }
 
-    // --- CARGA ULTRA RÁPIDA DE VELAS CON VIRTUAL CHUNKS ---
+    // --- CARGA ULTRA RÁPIDA DE VELAS CON VIRTUAL CHUNKS Y MULTI-TEMPORALIDAD ---
     async function loadCandles() {
       if (isReplayActive) exitReplayMode();
 
@@ -961,27 +1361,32 @@
       if (symbol.startsWith("mt5_id_")) {
         const dataset = await getDatasetFromDB(symbol);
         if (dataset && dataset.candles && dataset.candles.length > 0) {
-          originalFullCandles = dataset.candles;
+          rawMT5Candles = dataset.candles;
+          // Agregar según la temporalidad elegida (1m, 5m, 15m, 1h, 4h, 1D)
+          if (tf === '1m') {
+            originalFullCandles = rawMT5Candles;
+          } else {
+            originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+          }
+
           const startIdx = Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER);
           allCandles = originalFullCandles.slice(startIdx);
           displayCandlesOnChart(allCandles);
+          refreshSecondaryWindows();
+
           document.getElementById('agent-verdict').innerText = 
-            `Dataset activo: "${dataset.name}". ${originalFullCandles.length.toLocaleString()} velas en memoria. Fluidez 60 FPS.`;
+            `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base en memoria. Fluidez 60 FPS.`;
         }
         return;
       }
 
       try {
         const data = await fetchCandlesFromAPI(symbol, tf);
+        rawMT5Candles = [...data];
         originalFullCandles = [...data];
         allCandles = [...data];
         displayCandlesOnChart(allCandles);
-
-        if (currentLayout === '2h' || currentLayout === '4') loadWindowCandles('1h', candleSeries2, chart2);
-        if (currentLayout === '4') {
-          loadWindowCandles('4h', candleSeries3, chart3);
-          loadWindowCandles('1D', candleSeries4, chart4);
-        }
+        refreshSecondaryWindows();
       } catch (err) {
         console.error(err);
       }
@@ -989,17 +1394,15 @@
 
     function displayCandlesOnChart(data) {
       candleSeries1.setData(data);
-
-      if (data.length > 150) {
-        chart1.timeScale().setVisibleLogicalRange({
-          from: data.length - 150,
-          to: data.length - 1
-        });
-      } else {
-        chart1.timeScale().fitContent();
-      }
-
       updateAllTechnicalIndicators();
+
+      const logicalRange = {
+        from: Math.max(0, data.length - 150),
+        to: Math.max(0, data.length - 1)
+      };
+      chart1.timeScale().setVisibleLogicalRange(logicalRange);
+      chartRSI.timeScale().setVisibleLogicalRange(logicalRange);
+      chartMACD.timeScale().setVisibleLogicalRange(logicalRange);
 
       if (data.length > 0) {
         document.getElementById('price-display').innerText = formatPrice(data[data.length - 1].close);
@@ -1058,10 +1461,14 @@
 
           await refreshSavedDatasetsDropdown(datasetId);
 
-          originalFullCandles = parsed;
+          rawMT5Candles = parsed;
+          const tf = document.getElementById('timeframeSelect').value;
+          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+
           const startIdx = Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER);
           allCandles = originalFullCandles.slice(startIdx);
           displayCandlesOnChart(allCandles);
+          refreshSecondaryWindows();
 
           document.getElementById('agent-verdict').innerText = 
             `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length.toLocaleString()} velas). Listo para simular.`;
@@ -1090,7 +1497,7 @@
       });
     }
 
-    // --- REPLAY / TIJERAS ULTRA RÁPIDO ---
+    // --- REPLAY / TIJERAS ULTRA RÁPIDO CON SINCRONIZACIÓN DE TODOS LOS INDICADORES Y VENTANAS ---
     function toggleCutMode() {
       if (allCandles.length === 0) return;
       isCutModeActive = !isCutModeActive;
@@ -1112,21 +1519,7 @@
       if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
       const foundIdx = binarySearchCandleIndex(originalFullCandles, cutTime);
       if (foundIdx === -1 || foundIdx === 0) return;
-
-      replayIndex = foundIdx;
-      isCutModeActive = false;
-      isReplayActive = true;
-
-      document.getElementById('replay-banner').classList.add('hidden');
-      document.getElementById('replay-controls').classList.remove('hidden');
-      document.getElementById('replay-controls').classList.add('flex');
-      document.getElementById('btn-cut-replay').classList.remove('bg-amber-500', 'text-black');
-      c1.classList.remove('scissor-cursor');
-
-      const startIdx = Math.max(0, replayIndex - MAX_CHART_BUFFER + 1);
-      allCandles = originalFullCandles.slice(startIdx, replayIndex + 1);
-      candleSeries1.setData(allCandles);
-      updateReplayIndicators();
+      applyCutAtIndex(foundIdx);
     }
 
     function updateReplayIndicators() {
@@ -1143,9 +1536,14 @@
       if (!isReplayActive || replayIndex >= originalFullCandles.length - 1) return;
       replayIndex++;
       const nextCandle = originalFullCandles[replayIndex];
+      currentReplayTimestamp = nextCandle.time;
       allCandles.push(nextCandle);
       candleSeries1.update(nextCandle);
       updateReplayIndicators();
+
+      if (currentLayout !== '1') {
+        refreshSecondaryWindows();
+      }
     }
 
     function togglePlayReplay() {
@@ -1178,6 +1576,7 @@
       }
       isReplayActive = false;
       isCutModeActive = false;
+      currentReplayTimestamp = 0;
       document.getElementById('replay-banner').classList.add('hidden');
       document.getElementById('replay-controls').classList.add('hidden');
       document.getElementById('replay-controls').classList.remove('flex');
@@ -1187,12 +1586,12 @@
       if (originalFullCandles.length > 0) {
         const startIdx = Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER);
         allCandles = originalFullCandles.slice(startIdx);
-        candleSeries1.setData(allCandles);
-        updateReplayIndicators();
+        displayCandlesOnChart(allCandles);
+        refreshSecondaryWindows();
       }
     }
 
-    // --- ALGORITMOS MATEMÁTICOS O(N) LINEALES (CERO LAG) ---
+    // --- ALGORITMOS MATEMÁTICOS O(N) LINEALES ALINEADOS 1:1 CON EL EJE DE TIEMPO ---
     function calcEMA(data, period) {
       if (!data || data.length === 0) return [];
       const k = 2 / (period + 1);
@@ -1205,16 +1604,23 @@
       return res;
     }
 
-    // Bandas de Bollinger O(N) con ventana deslizante (sin .slice)
+    // Bandas de Bollinger O(N) con alineación exacta de índices (whitespace en los primeros N-1 puntos)
     function calcBollingerBands(data, period = 20, mult = 2) {
-      const upper = [], basis = [], lower = [];
-      if (data.length < period) return { upper, basis, lower };
+      const upper = new Array(data.length);
+      const basis = new Array(data.length);
+      const lower = new Array(data.length);
+      if (data.length < period) return { upper: [], basis: [], lower: [] };
 
       let sum = 0, sumSq = 0;
       for (let i = 0; i < period; i++) {
         const c = data[i].close;
         sum += c;
         sumSq += c * c;
+        if (i < period - 1) {
+          upper[i] = { time: data[i].time };
+          basis[i] = { time: data[i].time };
+          lower[i] = { time: data[i].time };
+        }
       }
 
       for (let i = period - 1; i < data.length; i++) {
@@ -1228,37 +1634,41 @@
         const variance = Math.max(0, (sumSq / period) - (mean * mean));
         const stdDev = Math.sqrt(variance);
 
-        basis.push({ time: data[i].time, value: mean });
-        upper.push({ time: data[i].time, value: mean + mult * stdDev });
-        lower.push({ time: data[i].time, value: mean - mult * stdDev });
+        basis[i] = { time: data[i].time, value: mean };
+        upper[i] = { time: data[i].time, value: mean + mult * stdDev };
+        lower[i] = { time: data[i].time, value: mean - mult * stdDev };
       }
       return { upper, basis, lower };
     }
 
-    // RSI O(N) lineal instantáneo
+    // RSI O(N) lineal con puntos de anclaje { time } en las primeras 14 velas para sincronización 1:1 con chart1
     function calcRSI(data, period = 14) {
       if (data.length <= period) return [];
-      const rsiData = [];
+      const rsiData = new Array(data.length);
       let gains = 0, losses = 0;
 
+      rsiData[0] = { time: data[0].time };
       for (let i = 1; i <= period; i++) {
         const diff = data[i].close - data[i - 1].close;
         if (diff >= 0) gains += diff; else losses -= diff;
+        if (i < period) rsiData[i] = { time: data[i].time };
       }
       let avgGain = gains / period;
       let avgLoss = losses / period;
+      const rs0 = avgLoss === 0 ? 100 : avgGain / avgLoss;
+      rsiData[period] = { time: data[period].time, value: 100 - (100 / (1 + rs0)) };
 
       for (let i = period + 1; i < data.length; i++) {
         const diff = data[i].close - data[i - 1].close;
         avgGain = (avgGain * (period - 1) + (diff >= 0 ? diff : 0)) / period;
         avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
         const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-        rsiData.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
+        rsiData[i] = { time: data[i].time, value: 100 - (100 / (1 + rs)) };
       }
       return rsiData;
     }
 
-    // MACD O(N) lineal sincronizado
+    // MACD O(N) lineal sincronizado 1:1 con las velas de allCandles
     function calcMACD(data, fast = 12, slow = 26, signalPeriod = 9) {
       if (data.length < slow) return { macd: [], signal: [], hist: [] };
       const fastEMA = calcEMA(data, fast);
@@ -1294,9 +1704,13 @@
         bbLower.setData(bb.lower);
       }
 
+      const currentLogicalRange = chart1.timeScale().getVisibleLogicalRange();
+
       if (document.getElementById('check-rsi').checked) {
         rsiSeries.setData(calcRSI(allCandles, 14));
-        chartRSI.timeScale().fitContent();
+        if (currentLogicalRange) {
+          chartRSI.timeScale().setVisibleLogicalRange(currentLogicalRange);
+        }
       }
 
       if (document.getElementById('check-macd').checked) {
@@ -1304,7 +1718,9 @@
         macdLineSeries.setData(m.macd);
         macdSignalSeries.setData(m.signal);
         macdHistSeries.setData(m.hist);
-        chartMACD.timeScale().fitContent();
+        if (currentLogicalRange) {
+          chartMACD.timeScale().setVisibleLogicalRange(currentLogicalRange);
+        }
       }
     }
 
@@ -1341,11 +1757,13 @@
       if (type === 'rsi') {
         const chk = document.getElementById('check-rsi').checked;
         document.getElementById('rsi-subpanel').classList.toggle('hidden', !chk);
+        document.getElementById('resizer-rsi').classList.toggle('hidden', !chk);
         resizeAllCharts();
       }
       if (type === 'macd') {
         const chk = document.getElementById('check-macd').checked;
         document.getElementById('macd-subpanel').classList.toggle('hidden', !chk);
+        document.getElementById('resizer-macd').classList.toggle('hidden', !chk);
         resizeAllCharts();
       }
       updateAllTechnicalIndicators();
@@ -1362,7 +1780,9 @@
       if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
       if (bbLower) { chart1.removeSeries(bbLower); bbLower = null; }
       document.getElementById('rsi-subpanel').classList.add('hidden');
+      document.getElementById('resizer-rsi').classList.add('hidden');
       document.getElementById('macd-subpanel').classList.add('hidden');
+      document.getElementById('resizer-macd').classList.add('hidden');
       resizeAllCharts();
       closeContextMenu();
     }
@@ -1430,7 +1850,6 @@ for (let i = 205; i < bars.length; i++) {
 }`
     };
 
-    // Transpilador ligero para permitir comentarios '#' estilo Python dentro del motor JS
     function preprocessStrategyCode(rawCode) {
       return rawCode
         .split('\n')
@@ -1454,7 +1873,6 @@ for (let i = 205; i < bars.length; i++) {
       const text = document.getElementById('syntax-text');
 
       try {
-        // Comprobación instantánea de compilación AST sin ejecutar el código
         new Function(
           'bars', 'open', 'high', 'low', 'close', 'time',
           'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
@@ -1604,11 +2022,9 @@ for (let i = 205; i < bars.length; i++) {
         time[i]  = allCandles[i].time;
       }
 
-      // Determinar el valor unitario de 1 punto/pip según la escala del activo (Forex vs Crypto/Oro)
       const refPrice = close[len - 1] || 1;
       const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
 
-      // Leer Inputs de Riesgo y Ejecución (3.2)
       let TakeProfit   = parseFloat(document.getElementById('inp-tp').value) || 0;
       let StopLoss     = parseFloat(document.getElementById('inp-sl').value) || 0;
       let TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
@@ -1617,7 +2033,6 @@ for (let i = 205; i < bars.length; i++) {
       const Slippage   = 2;
       const _Symbol    = document.getElementById('symbolSelect').value;
 
-      // Permitir que el script también defina inputs dinámicos
       const input = (name, defVal) => defVal;
 
       const indCache = {};
@@ -1640,7 +2055,6 @@ for (let i = 205; i < bars.length; i++) {
         return a[i - 1] >= bPrev && a[i] < bCurr;
       };
 
-      // Cola de señales solicitadas por el código del usuario
       const rawOrders = new Map();
       const LONG = 'LONG', SHORT = 'SHORT', OP_BUY = 'LONG', OP_SELL = 'SHORT';
 
@@ -1657,331 +2071,4 @@ for (let i = 205; i < bars.length; i++) {
         exit:  (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
       };
 
-      // Función OrderSend compatible con MQL5
-      const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment, barIdx) => {
-        registerSignal(barIdx, cmd, comment || (cmd === OP_BUY ? "MQL5 BUY" : "MQL5 SELL"));
-      };
-
-      try {
-        const runner = new Function(
-          'bars', 'open', 'high', 'low', 'close', 'time',
-          'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
-          'crossover', 'crossunder', 'strategy', 'OrderSend',
-          'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
-          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input',
-          code
-        );
-        runner(
-          allCandles, open, high, low, close, time,
-          ema, sma, rsi, bb, ema, rsi, bb,
-          crossover, crossunder, strategy, OrderSend,
-          LONG, SHORT, OP_BUY, OP_SELL, _Symbol,
-          Lots, TakeProfit, StopLoss, TrailingStop, Slippage, input
-        );
-      } catch (err) {
-        logToIdeConsole(`❌ Error en tiempo de ejecución: ${err.message}`, "error");
-        return;
-      }
-
-      // Simulador de Posiciones con Take Profit, Stop Loss, Trailing Stop y Gestión de Riesgo
-      const markers = [];
-      const closedTrades = [];
-      const equityCurve = [];
-
-      let balance = 10000;
-      let peakBalance = 10000;
-      let maxDrawdownUSD = 0;
-      let pos = null; // { dir, entryPrice, entryTime, slPrice, tpPrice, trailDist, size, tag }
-      let countLongs = 0, countShorts = 0, countExits = 0;
-
-      for (let i = 0; i < len; i++) {
-        // 1. Verificar si hay posición abierta y si toca SL, TP o Trailing Stop en la vela actual
-        if (pos) {
-          let exitPrice = null;
-          let exitReason = "";
-
-          if (pos.dir === 'LONG') {
-            // Actualizar Trailing Stop alcista
-            if (pos.trailDist > 0) {
-              const newTrailSL = high[i] - pos.trailDist;
-              if (newTrailSL > pos.slPrice && high[i] > pos.entryPrice) {
-                pos.slPrice = newTrailSL;
-                pos.isTrailingActive = true;
-              }
-            }
-            if (pos.slPrice > 0 && low[i] <= pos.slPrice) {
-              exitPrice = pos.slPrice;
-              exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL";
-            } else if (pos.tpPrice > 0 && high[i] >= pos.tpPrice) {
-              exitPrice = pos.tpPrice;
-              exitReason = "★ TP";
-            }
-          } else if (pos.dir === 'SHORT') {
-            // Actualizar Trailing Stop bajista
-            if (pos.trailDist > 0) {
-              const newTrailSL = low[i] + pos.trailDist;
-              if ((pos.slPrice === 0 || newTrailSL < pos.slPrice) && low[i] < pos.entryPrice) {
-                pos.slPrice = newTrailSL;
-                pos.isTrailingActive = true;
-              }
-            }
-            if (pos.slPrice > 0 && high[i] >= pos.slPrice) {
-              exitPrice = pos.slPrice;
-              exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL";
-            } else if (pos.tpPrice > 0 && low[i] <= pos.tpPrice) {
-              exitPrice = pos.tpPrice;
-              exitReason = "★ TP";
-            }
-          }
-
-          if (exitPrice !== null) {
-            const pnl = pos.dir === 'LONG'
-              ? (exitPrice - pos.entryPrice) * pos.size
-              : (pos.entryPrice - exitPrice) * pos.size;
-            balance += pnl;
-            if (balance > peakBalance) peakBalance = balance;
-            const dd = peakBalance - balance;
-            if (dd > maxDrawdownUSD) maxDrawdownUSD = dd;
-
-            countExits++;
-            closedTrades.push({
-              dir: pos.dir,
-              entryTime: pos.entryTime,
-              exitTime: time[i],
-              entryPrice: pos.entryPrice,
-              exitPrice,
-              pnl,
-              reason: exitReason
-            });
-
-            markers.push({
-              time: time[i],
-              position: pos.dir === 'LONG' ? 'aboveBar' : 'belowBar',
-              color: pnl >= 0 ? '#38bdf8' : '#f59e0b',
-              shape: 'circle',
-              text: `${exitReason} (${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}$)`
-            });
-            pos = null;
-          }
-        }
-
-        // 2. Evaluar nueva señal de entrada o giro de posición en la vela actual
-        if (rawOrders.has(i)) {
-          const sig = rawOrders.get(i);
-
-          // Si hay una posición abierta en dirección contraria, cerrarla por reversión
-          if (pos && pos.dir !== sig.dir) {
-            const exitPrice = close[i];
-            const pnl = pos.dir === 'LONG'
-              ? (exitPrice - pos.entryPrice) * pos.size
-              : (pos.entryPrice - exitPrice) * pos.size;
-            balance += pnl;
-            if (balance > peakBalance) peakBalance = balance;
-            const dd = peakBalance - balance;
-            if (dd > maxDrawdownUSD) maxDrawdownUSD = dd;
-
-            closedTrades.push({
-              dir: pos.dir,
-              entryTime: pos.entryTime,
-              exitTime: time[i],
-              entryPrice: pos.entryPrice,
-              exitPrice,
-              pnl,
-              reason: "🔄 REV"
-            });
-            pos = null;
-          }
-
-          // Abrir nueva posición si no estamos ya dentro en la misma dirección
-          if (!pos && (sig.dir === 'LONG' || sig.dir === 'SHORT')) {
-            const entryPrice = close[i];
-            const slDist = StopLoss > 0 ? StopLoss * pipUnit : 0;
-            const tpDist = TakeProfit > 0 ? TakeProfit * pipUnit : 0;
-            const trailDist = TrailingStop > 0 ? TrailingStop * pipUnit : 0;
-
-            // Cálculo de tamaño de posición según gestión de riesgo (3.2)
-            let unitSize = (Lots * 100) / (refPrice || 1);
-            if (riskMode === 'pct' && slDist > 0) {
-              const riskAmountUSD = balance * 0.015; // 1.5% de la cuenta
-              unitSize = riskAmountUSD / slDist;
-            }
-
-            if (sig.dir === 'LONG') {
-              countLongs++;
-              pos = {
-                dir: 'LONG',
-                entryPrice,
-                entryTime: time[i],
-                slPrice: slDist > 0 ? entryPrice - slDist : 0,
-                tpPrice: tpDist > 0 ? entryPrice + tpDist : 0,
-                trailDist,
-                size: unitSize,
-                isTrailingActive: false
-              };
-              markers.push({
-                time: time[i],
-                position: 'belowBar',
-                color: '#10b981',
-                shape: 'arrowUp',
-                text: sig.tag
-              });
-            } else {
-              countShorts++;
-              pos = {
-                dir: 'SHORT',
-                entryPrice,
-                entryTime: time[i],
-                slPrice: slDist > 0 ? entryPrice + slDist : 0,
-                tpPrice: tpDist > 0 ? entryPrice - tpDist : 0,
-                trailDist,
-                size: unitSize,
-                isTrailingActive: false
-              };
-              markers.push({
-                time: time[i],
-                position: 'aboveBar',
-                color: '#ef4444',
-                shape: 'arrowDown',
-                text: sig.tag
-              });
-            }
-          }
-        }
-
-        equityCurve.push({ time: time[i], value: balance });
-      }
-
-      // Pintar marcadores en el gráfico principal y sincronizar curvas
-      markers.sort((a, b) => a.time - b.time);
-      candleSeries1.setMarkers(markers);
-      isBotActiveOnChart = true;
-
-      if (equityCurve.length > 0) {
-        equitySeries.setData(equityCurve);
-        equityChart.timeScale().fitContent();
-      }
-
-      // Actualizar métricas reales del Probador de Estrategia e IDE
-      const totalNetPnl = balance - 10000;
-      const totalNetPct = (totalNetPnl / 10000) * 100;
-      const wins = closedTrades.filter(t => t.pnl > 0);
-      const losses = closedTrades.filter(t => t.pnl <= 0);
-      const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
-      const grossProfit = wins.reduce((acc, t) => acc + t.pnl, 0);
-      const grossLoss = Math.abs(losses.reduce((acc, t) => acc + t.pnl, 0));
-      const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? "9.99" : "0.00");
-
-      const pygEl = document.getElementById('st-pyg');
-      pygEl.innerText = `${totalNetPnl >= 0 ? '+' : ''}${totalNetPnl.toFixed(2)} USD (${totalNetPct >= 0 ? '+' : ''}${totalNetPct.toFixed(2)}%)`;
-      pygEl.className = `text-sm font-bold font-mono ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
-      document.getElementById('st-dd').innerText = `${maxDrawdownUSD.toFixed(2)} USD (${((maxDrawdownUSD / peakBalance) * 100).toFixed(2)}%)`;
-      document.getElementById('st-winrate').innerText = `${winRate.toFixed(1)}% (${wins.length}/${closedTrades.length})`;
-      document.getElementById('st-pf').innerText = profitFactor;
-
-      const elapsed = (performance.now() - t0).toFixed(1);
-      document.getElementById('ide-stat-trades').innerText = countLongs + countShorts;
-      document.getElementById('ide-stat-ls').innerText = `${countLongs} ▲ / ${countShorts} ▼`;
-      document.getElementById('ide-stat-exits').innerText = countExits;
-      document.getElementById('ide-stat-ms').innerText = `${elapsed} ms`;
-
-      if (!silent) {
-        renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
-      }
-    }
-
-    function renderIdeExecutionLog(trades, longs, shorts, netPnl, elapsed) {
-      const container = document.getElementById('ide-console-logs');
-      container.innerHTML = '';
-
-      logToIdeConsole(`✅ Compilado en ${elapsed} ms | Entradas: ${longs} Long, ${shorts} Short | PyG Neto: ${netPnl >= 0 ? '+' : ''}${netPnl.toFixed(2)} USD`, "info");
-
-      const recentTrades = trades.slice(-80).reverse();
-      recentTrades.forEach(tr => {
-        const row = document.createElement('div');
-        const isWin = tr.pnl >= 0;
-        const dateStr = new Date(tr.exitTime * 1000).toISOString().replace('T', ' ').substring(0, 16);
-        row.className = `flex justify-between items-center px-2 py-0.5 rounded bg-[#131722] border-l-2 ${isWin ? 'border-emerald-500' : 'border-rose-500'}`;
-        row.innerHTML = `
-          <div>
-            <span class="${tr.dir === 'LONG' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${tr.dir}</span>
-            <span class="text-gray-400">[${dateStr}]</span>
-            <span class="text-amber-300 font-semibold">${tr.reason}</span>
-          </div>
-          <div class="${isWin ? 'text-emerald-400' : 'text-rose-400'} font-bold">
-            ${isWin ? '+' : ''}${tr.pnl.toFixed(2)} USD
-          </div>
-        `;
-        container.appendChild(row);
-      });
-    }
-
-    function logToIdeConsole(msg, type = "info") {
-      const container = document.getElementById('ide-console-logs');
-      const div = document.createElement('div');
-      div.className = type === "error" ? "text-rose-400 font-bold" : "text-sky-400 font-semibold";
-      div.innerText = msg;
-      container.prepend(div);
-    }
-
-    function clearStrategyMarkers() {
-      isBotActiveOnChart = false;
-      candleSeries1.setMarkers([]);
-      document.getElementById('ide-stat-trades').innerText = "0";
-      document.getElementById('ide-stat-ls').innerText = "0 / 0";
-      document.getElementById('ide-stat-exits').innerText = "0";
-      logToIdeConsole("🧹 Marcadores de estrategia eliminados del gráfico.", "info");
-    }
-
-    // --- MONTE CARLO & BACKTEST ---
-    async function runOneClickBacktest() {
-      // Ejecutar primero el motor del Módulo 3 sobre las velas actuales
-      compileAndRunStrategy();
-
-      const tf = document.getElementById('timeframeSelect').value;
-      const symbol = document.getElementById('symbolSelect').value;
-      document.getElementById('agent-verdict').innerText = `Simulando Monte Carlo sobre ${symbol}...`;
-
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: symbol.startsWith("mt5_") ? "BTC-USD" : symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
-        });
-        const data = await res.json();
-
-        document.getElementById('agent-verdict').innerText = 
-          `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
-      } catch (e) {
-        document.getElementById('agent-verdict').innerText = "Backtest del Módulo 3 ejecutado en local a 60 FPS.";
-      }
-    }
-
-    window.addEventListener('resize', resizeAllCharts);
-    document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
-    document.getElementById('symbolSelect').addEventListener('change', loadCandles);
-
-    // Inicialización del IDE (Módulo 3) + Soporte de tecla Tab
-    const editorEl = document.getElementById('stratscript-editor');
-    editorEl.value = localStorage.getItem('sv5_module3_code') || STRATEGY_PRESETS.stratscript_ema_rsi;
-    updateIdeLineNumbers();
-    validateSyntaxRealtime();
-
-    editorEl.addEventListener('keydown', function(e) {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const start = this.selectionStart;
-        const end = this.selectionEnd;
-        this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
-        this.selectionStart = this.selectionEnd = start + 4;
-        handleEditorInput();
-      }
-    });
-
-    // Inicialización suave
-    refreshSavedDatasetsDropdown();
-    loadCandles();
-    setTimeout(resizeCanvas, 500);
-  </script>
-</body>
-</html>
+      const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment,
