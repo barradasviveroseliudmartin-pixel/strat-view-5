@@ -90,8 +90,12 @@
         </div>
       </div>
 
-      <button onclick="toggleStrategyPanel()" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300">
-        📊 Probador de Estrategia
+      <!-- Probador y Editor de Estrategia -->
+      <button onclick="openBottomTab('tester')" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300 flex items-center gap-1 transition">
+        <span>📊</span> <span>Probador</span>
+      </button>
+      <button onclick="openBottomTab('ide')" id="tab-ide-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-emerald-500/50 text-emerald-400 px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 shadow transition">
+        <span>💻</span> <span>Editor IDE</span>
       </button>
     </div>
 
@@ -181,26 +185,135 @@
         <div id="chart-macd" class="w-full h-full"></div>
       </div>
 
-      <!-- Panel Inferior -->
-      <div id="strategy-panel" class="h-60 border-t border-gray-800 bg-[#131722] flex flex-col shrink-0 relative transition-all">
-        <div class="h-8 border-b border-gray-800 flex items-center justify-between px-4 bg-[#1e222d]/60 text-xs text-gray-300">
-          <div class="flex items-center space-x-4">
-            <span class="font-bold text-emerald-400 font-mono">LogReg + EMA [Strategy]</span>
-            <span class="text-gray-400">Rendimiento</span>
-            <span class="text-gray-400">Análisis de Operaciones</span>
+      <!-- Panel Inferior: Probador, IDE de Código y Consola -->
+      <div id="strategy-panel" class="h-64 border-t border-gray-800 bg-[#131722] flex flex-col shrink-0 relative transition-all">
+        <!-- Barra de Pestañas del Panel Inferior -->
+        <div class="h-8 border-b border-gray-800 flex items-center justify-between px-3 bg-[#1e222d]/70 text-xs shrink-0 select-none">
+          <div class="flex items-center space-x-1">
+            <button onclick="switchBottomTab('tester')" id="btn-tab-tester" class="px-2.5 py-1 font-semibold rounded text-white bg-gray-700 flex items-center gap-1 shadow-sm">
+              <span>📊</span> Probador de Estrategia
+            </button>
+            <button onclick="switchBottomTab('ide')" id="btn-tab-ide" class="px-2.5 py-1 font-semibold rounded text-gray-400 hover:text-white flex items-center gap-1">
+              <span>💻</span> Editor de Estrategia (IDE)
+            </button>
+            <button onclick="switchBottomTab('console')" id="btn-tab-console" class="px-2.5 py-1 font-semibold rounded text-gray-400 hover:text-white flex items-center gap-1.5">
+              <span>📟</span> Consola & Señales
+              <span id="console-badge" class="bg-gray-800 text-gray-300 text-[10px] px-1.5 py-0.2 rounded-full font-mono">0</span>
+            </button>
           </div>
-          <button onclick="toggleStrategyPanel()" class="text-gray-400 hover:text-white font-bold">✕ Cerrar</button>
+
+          <div class="flex items-center space-x-3">
+            <span id="current-strategy-title" class="hidden sm:inline text-emerald-400 font-mono text-[11px] font-bold truncate max-w-[220px]">
+              Cruce Dorado EMA (9/21)
+            </span>
+            <div class="flex items-center space-x-1 text-gray-400">
+              <button onclick="toggleBottomPanelExpand()" id="btn-expand-panel" title="Maximizar / Restaurar panel" class="hover:text-white text-xs px-1.5 py-0.5 rounded hover:bg-gray-800 transition">⤢</button>
+              <button onclick="toggleStrategyPanel()" title="Cerrar panel inferior" class="hover:text-white font-bold text-xs px-1.5 py-0.5 rounded hover:bg-gray-800 transition">✕</button>
+            </div>
+          </div>
         </div>
 
-        <div class="grid grid-cols-4 gap-3 p-2.5 border-b border-gray-800/60 bg-[#131722] text-xs">
-          <div><p class="text-gray-500 text-[10px]">PyG Totales</p><p id="st-pyg" class="text-sm font-bold text-emerald-400 font-mono">+0.36 USD (+0.04%)</p></div>
-          <div><p class="text-gray-500 text-[10px]">Caída máx. del capital</p><p id="st-dd" class="text-sm font-bold text-rose-400 font-mono">0.09 USD (0.01%)</p></div>
-          <div><p class="text-gray-500 text-[10px]">Operaciones rentables</p><p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">50.00% (2/4)</p></div>
-          <div><p class="text-gray-500 text-[10px]">Factor de ganancias</p><p id="st-pf" class="text-sm font-bold text-gray-200 font-mono">5.089</p></div>
+        <!-- PESTAÑA 1: PROBADOR DE ESTRATEGIA (Tester) -->
+        <div id="panel-tab-tester" class="flex-1 flex flex-col overflow-hidden">
+          <div class="grid grid-cols-4 gap-3 p-2.5 border-b border-gray-800/60 bg-[#131722] text-xs shrink-0">
+            <div><p class="text-gray-500 text-[10px]">PyG Totales</p><p id="st-pyg" class="text-sm font-bold text-emerald-400 font-mono">+0.00 USD (0.00%)</p></div>
+            <div><p class="text-gray-500 text-[10px]">Caída máx. del capital</p><p id="st-dd" class="text-sm font-bold text-rose-400 font-mono">0.00 USD (0.00%)</p></div>
+            <div><p class="text-gray-500 text-[10px]">Operaciones rentables</p><p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">0.00% (0/0)</p></div>
+            <div><p class="text-gray-500 text-[10px]">Factor de ganancias</p><p id="st-pf" class="text-sm font-bold text-gray-200 font-mono">0.00</p></div>
+          </div>
+          <div class="flex-1 p-2 relative bg-[#090d16]">
+            <div id="equity-chart-container" class="w-full h-full"></div>
+          </div>
         </div>
 
-        <div class="flex-1 p-2 relative bg-[#090d16]">
-          <div id="equity-chart-container" class="w-full h-full"></div>
+        <!-- PESTAÑA 2: EDITOR DE ESTRATEGIA / IDE (StratScript Runtime) -->
+        <div id="panel-tab-ide" class="flex-1 flex flex-col overflow-hidden hidden bg-[#090d16]">
+          <!-- Toolbar del IDE -->
+          <div class="h-9 border-b border-gray-800 bg-[#131722] px-3 flex items-center justify-between shrink-0 text-xs select-none">
+            <div class="flex items-center space-x-2">
+              <span class="text-gray-400 text-[11px] font-semibold">Plantilla:</span>
+              <select id="ide-template-select" onchange="loadIDETemplate(this.value)" class="bg-[#1e222d] border border-gray-700 text-emerald-400 font-bold rounded px-2 py-0.5 text-xs outline-none cursor-pointer">
+                <option value="cruce_ema" selected>Cruce Dorado EMA (9 / 21) + TP/SL</option>
+                <option value="rsi_reversion">Reversión RSI (14) + Filtro EMA 200</option>
+                <option value="bollinger_breakout">Rebote Bandas Bollinger (20, 2) + RSI</option>
+                <option value="triple_confirm">Triple Confirmación (EMA + MACD + RSI)</option>
+                <option value="custom_blank">Plantilla en Blanco (Scripting Libre)</option>
+              </select>
+
+              <button onclick="runStrategyScript()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded text-xs flex items-center gap-1 shadow-md shadow-emerald-950/40 transition">
+                <span>▶</span> <span>Compilar y Ejecutar</span>
+              </button>
+              <button onclick="clearStrategyMarkers()" class="bg-[#252a37] hover:bg-[#32394a] text-gray-300 px-2.5 py-1 rounded text-xs flex items-center gap-1 font-semibold transition" title="Quitar señales del gráfico">
+                <span>🧹</span> <span>Limpiar Gráfico</span>
+              </button>
+              <button onclick="saveCurrentScript()" class="bg-[#252a37] hover:bg-[#32394a] text-sky-400 px-2.5 py-1 rounded text-xs flex items-center gap-1 font-semibold transition" title="Guardar script localmente">
+                <span>💾</span> <span>Guardar</span>
+              </button>
+              <button onclick="resetScriptToDefault()" class="text-gray-400 hover:text-gray-200 text-xs px-2 py-1 rounded hover:bg-gray-800 transition">
+                ↺ Restaurar
+              </button>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <span id="ide-status-badge" class="text-[11px] font-mono text-gray-400 bg-[#1e222d] px-2 py-0.5 rounded border border-gray-700/60">
+                Listo para compilar
+              </span>
+            </div>
+          </div>
+
+          <!-- Cuerpo del Editor (Líneas + Código + Documentación Lateral) -->
+          <div class="flex-1 flex overflow-hidden relative">
+            <div id="ide-line-numbers" class="w-10 bg-[#0c1017] text-gray-600 font-mono text-[11px] py-2 pr-2 text-right select-none border-r border-gray-800/80 overflow-hidden leading-5"></div>
+            <textarea id="ide-code-editor" spellcheck="false" class="flex-1 bg-[#090d16] text-gray-200 font-mono text-[11px] p-2 leading-5 outline-none resize-none overflow-y-auto whitespace-pre font-medium border-none focus:ring-0"></textarea>
+
+            <!-- Referencia Rápida / Guía API (Sidebar derecho del IDE) -->
+            <div class="w-64 bg-[#111520] border-l border-gray-800/80 p-2.5 text-[10px] font-mono text-gray-300 overflow-y-auto flex flex-col space-y-2 select-none shrink-0">
+              <div class="border-b border-gray-700/60 pb-1 flex justify-between items-center text-xs text-emerald-400 font-bold">
+                <span>📘 StratScript API</span>
+                <span class="text-[9px] text-gray-500 font-normal">v3.0 Pro</span>
+              </div>
+              <div class="space-y-1.5 text-gray-300">
+                <p class="text-emerald-300 font-bold text-[11px]">Acceso a Datos:</p>
+                <p><code class="text-sky-300">candles[i]</code>: { time, open, high, low, close }</p>
+                <p><code class="text-sky-300">candles.length</code>: Total de velas</p>
+
+                <p class="text-emerald-300 font-bold text-[11px] pt-1">Indicadores Técnicos:</p>
+                <p><code class="text-amber-300">ema(period)</code>: Array [{ time, value }]</p>
+                <p><code class="text-amber-300">rsi(period)</code>: Array [{ time, value }]</p>
+                <p><code class="text-amber-300">bollinger(p, mult)</code>: { upper, basis, lower }</p>
+                <p><code class="text-amber-300">macd(f, s, sig)</code>: { macd, signal, hist }</p>
+
+                <p class="text-emerald-300 font-bold text-[11px] pt-1">Acciones de Ejecución:</p>
+                <p><code class="text-emerald-400">buy(i, "Long", { sl, tp })</code></p>
+                <p><code class="text-rose-400">sell(i, "Short", { sl, tp })</code></p>
+                <p><code class="text-purple-300">closePosition(i, "Cierre")</code></p>
+                <p><code class="text-gray-400">position</code>: Posición activa</p>
+                <p><code class="text-sky-400">log("Texto")</code>: Registro en consola</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PESTAÑA 3: CONSOLA Y REGISTRO DE SEÑALES (Debug & Signals) -->
+        <div id="panel-tab-console" class="flex-1 flex flex-col overflow-hidden hidden bg-[#090d16]">
+          <div class="h-8 border-b border-gray-800 bg-[#131722] px-3 flex items-center justify-between shrink-0 text-xs select-none">
+            <div class="flex items-center space-x-1.5">
+              <span class="text-gray-400 text-[11px] mr-1">Filtro:</span>
+              <button onclick="filterConsoleLogs('all')" id="btn-log-all" class="px-2 py-0.5 rounded bg-gray-700 text-white text-[10px] font-bold">Todos</button>
+              <button onclick="filterConsoleLogs('buy')" id="btn-log-buy" class="px-2 py-0.5 rounded bg-[#1e222d] text-emerald-400 hover:bg-gray-800 text-[10px] font-bold">Compras (BUY)</button>
+              <button onclick="filterConsoleLogs('sell')" id="btn-log-sell" class="px-2 py-0.5 rounded bg-[#1e222d] text-rose-400 hover:bg-gray-800 text-[10px] font-bold">Ventas (SELL)</button>
+              <button onclick="filterConsoleLogs('close')" id="btn-log-close" class="px-2 py-0.5 rounded bg-[#1e222d] text-amber-400 hover:bg-gray-800 text-[10px] font-bold">Cierres & TP/SL</button>
+              <button onclick="filterConsoleLogs('info')" id="btn-log-info" class="px-2 py-0.5 rounded bg-[#1e222d] text-sky-400 hover:bg-gray-800 text-[10px] font-bold">Logs de Usuario</button>
+            </div>
+            <button onclick="clearConsoleLogs()" class="text-gray-400 hover:text-rose-400 text-[11px] flex items-center gap-1 font-semibold transition">
+              <span>🗑</span> <span>Limpiar Consola</span>
+            </button>
+          </div>
+
+          <!-- Stream de Mensajes -->
+          <div id="console-log-list" class="flex-1 p-2 overflow-y-auto font-mono text-[11px] space-y-1">
+            <div class="text-gray-500 italic p-2 text-center">Consola lista. Compila una estrategia para ver las órdenes y depuración.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1167,50 +1280,599 @@
       closeContextMenu();
     }
 
-    // --- MONTE CARLO ---
-    async function runOneClickBacktest() {
-      const tf = document.getElementById('timeframeSelect').value;
-      const symbol = document.getElementById('symbolSelect').value;
-      document.getElementById('agent-verdict').innerText = `Simulando Monte Carlo sobre ${symbol}...`;
+    // ========================================================
+    // MÓDULO 3: EDITOR DE ESTRATEGIA (IDE) & STRATSCRIPT ENGINE
+    // ========================================================
 
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: symbol.startsWith("mt5_") ? "BTC-USD" : symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
-        });
-        const data = await res.json();
+    const STRAT_TEMPLATES = {
+      cruce_ema: {
+        title: "Cruce Dorado EMA (9/21)",
+        code: `// ========================================================
+// ESTRATEGIA: Cruce Dorado de Medias Móviles (EMA 9 / 21)
+// ========================================================
 
-        document.getElementById('st-pyg').innerText = `${data.summary.total_return_pct}%`;
-        document.getElementById('st-dd').innerText = `${data.robustness_monte_carlo.max_drawdown_risk_95_conf}`;
-        document.getElementById('st-winrate').innerText = `${data.summary.win_rate_pct}%`;
-        document.getElementById('st-pf').innerText = `${data.summary.profit_factor}`;
+const fastEMA = ema(9);
+const slowEMA = ema(21);
 
-        if (allCandles.length > 20) {
-          let capital = 1000;
-          const eqPoints = allCandles.slice(0, 50).map((c) => {
-            capital += (Math.random() > 0.45 ? 1 : -1) * (Math.random() * 25);
-            return { time: c.time, value: capital };
-          });
-          equitySeries.setData(eqPoints);
-          equityChart.timeScale().fitContent();
-        }
+for (let i = 21; i < candles.length; i++) {
+  const c = candles[i];
+  
+  // Condición de Cruce Alcista (Golden Cross)
+  const cruceAlcista = fastEMA[i].value > slowEMA[i].value && fastEMA[i-1].value <= slowEMA[i-1].value;
+  // Condición de Cruce Bajista (Death Cross)
+  const cruceBajista = fastEMA[i].value < slowEMA[i].value && fastEMA[i-1].value >= slowEMA[i-1].value;
 
-        document.getElementById('agent-verdict').innerText = 
-          `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
-      } catch (e) {
-        document.getElementById('agent-verdict').innerText = "Simulación completada en local.";
+  if (cruceAlcista) {
+    buy(i, "Cruce Dorado Alcista", { sl: 0.015, tp: 0.03 });
+  } else if (cruceBajista) {
+    sell(i, "Cruce Bajista", { sl: 0.015, tp: 0.03 });
+  }
+}`
+      },
+
+      rsi_reversion: {
+        title: "Reversión RSI (14) + EMA 200",
+        code: `// ========================================================
+// ESTRATEGIA: Reversión RSI con Filtro de Tendencia EMA 200
+// ========================================================
+
+const rsi14 = rsi(14);
+const emaTrend = ema(200);
+
+for (let i = 200; i < candles.length; i++) {
+  const c = candles[i];
+  const rsiVal = rsi14[i] ? rsi14[i].value : 50;
+  const trend = emaTrend[i] ? emaTrend[i].value : c.close;
+
+  // COMPRA: RSI en sobreventa (<30) en tendencia alcista (precio > EMA 200)
+  if (rsiVal < 30 && c.close > trend) {
+    buy(i, "RSI Sobreventa en Tendencia", { sl: 0.02, tp: 0.04 });
+  }
+  // VENTA: RSI en sobrecompra (>70) en tendencia bajista (precio < EMA 200)
+  else if (rsiVal > 70 && c.close < trend) {
+    sell(i, "RSI Sobrecompra en Corrección", { sl: 0.02, tp: 0.04 });
+  }
+  // CIERRE anticipado: cuando RSI vuelve a la zona neutra (50-55)
+  else if (position && position.type === 'LONG' && rsiVal >= 55) {
+    closePosition(i, "RSI Neutralizado (55)");
+  } else if (position && position.type === 'SHORT' && rsiVal <= 45) {
+    closePosition(i, "RSI Neutralizado (45)");
+  }
+}`
+      },
+
+      bollinger_breakout: {
+        title: "Bandas Bollinger (20,2) + RSI",
+        code: `// ========================================================
+// ESTRATEGIA: Rebote en Bandas de Bollinger (20, 2) + RSI
+// ========================================================
+
+const bb = bollinger(20, 2);
+const rsiValues = rsi(14);
+
+for (let i = 20; i < candles.length; i++) {
+  const c = candles[i];
+  const lowerBand = bb.lower[i] ? bb.lower[i].value : null;
+  const upperBand = bb.upper[i] ? bb.upper[i].value : null;
+  const rsiVal = rsiValues[i] ? rsiValues[i].value : 50;
+
+  if (lowerBand && upperBand) {
+    // Comprar cuando la vela anterior cerró bajo la banda inferior y rebota hacia adentro
+    if (candles[i-1].close < lowerBand && c.close > lowerBand && rsiVal < 42) {
+      buy(i, "Rebote Banda Inferior", { sl: 0.015, tp: 0.035 });
+    }
+    // Vender cuando la vela anterior cerró sobre la banda superior y cae hacia adentro
+    else if (candles[i-1].close > upperBand && c.close < upperBand && rsiVal > 58) {
+      sell(i, "Rechazo Banda Superior", { sl: 0.015, tp: 0.035 });
+    }
+  }
+}`
+      },
+
+      triple_confirm: {
+        title: "Triple Confirmación (EMA + MACD + RSI)",
+        code: `// ========================================================
+// ESTRATEGIA: Triple Confirmación Institucional
+// ========================================================
+
+const fastEMA = ema(9);
+const slowEMA = ema(21);
+const macdData = macd(12, 26, 9);
+const rsiData = rsi(14);
+
+for (let i = 26; i < candles.length; i++) {
+  const c = candles[i];
+  const hist = macdData.hist[i] ? macdData.hist[i].value : 0;
+  const prevHist = macdData.hist[i-1] ? macdData.hist[i-1].value : 0;
+  const rsiVal = rsiData[i] ? rsiData[i].value : 50;
+
+  const emaBull = fastEMA[i].value > slowEMA[i].value;
+  const macdCrossUp = hist > 0 && prevHist <= 0;
+  const macdCrossDown = hist < 0 && prevHist >= 0;
+
+  // COMPRA: Cruce alcista de MACD con tendencia EMA y RSI en impulso
+  if (emaBull && macdCrossUp && rsiVal > 50 && rsiVal < 68) {
+    buy(i, "Triple Confirmación Long", { sl: 0.012, tp: 0.028 });
+  } 
+  // VENTA: Cruce bajista de MACD con tendencia bajista y RSI debilitado
+  else if (!emaBull && macdCrossDown && rsiVal < 50 && rsiVal > 32) {
+    sell(i, "Triple Confirmación Short", { sl: 0.012, tp: 0.028 });
+  }
+}`
+      },
+
+      custom_blank: {
+        title: "Estrategia Personalizada",
+        code: `// ========================================================
+// PLANTILLA PERSONALIZADA DE ESTRATEGIA (StratScript)
+// ========================================================
+
+log("Iniciando escaneo cuantitativo sobre " + candles.length + " velas...");
+
+// Puedes usar indicadores precalculados:
+// const myEma = ema(14);
+// const myRsi = rsi(14);
+
+for (let i = 20; i < candles.length; i++) {
+  const c = candles[i];
+
+  // Escribe tus reglas de entrada y salida:
+  // if (condicionCompra) buy(i, "Mi Compra", { sl: 0.015, tp: 0.03 });
+  // if (condicionVenta)  sell(i, "Mi Venta",  { sl: 0.015, tp: 0.03 });
+}
+`
+      }
+    };
+
+    let activeConsoleLogs = [];
+    let currentLogFilter = 'all';
+    let isBottomPanelExpanded = false;
+
+    function openBottomTab(tabName) {
+      const panel = document.getElementById('strategy-panel');
+      panel.classList.remove('hidden');
+      switchBottomTab(tabName);
+    }
+
+    function switchBottomTab(tabName) {
+      const tabTester = document.getElementById('panel-tab-tester');
+      const tabIDE = document.getElementById('panel-tab-ide');
+      const tabConsole = document.getElementById('panel-tab-console');
+
+      const btnTester = document.getElementById('btn-tab-tester');
+      const btnIDE = document.getElementById('btn-tab-ide');
+      const btnConsole = document.getElementById('btn-tab-console');
+
+      [tabTester, tabIDE, tabConsole].forEach(el => el.classList.add('hidden'));
+      [btnTester, btnIDE, btnConsole].forEach(b => {
+        b.className = "px-2.5 py-1 font-semibold rounded text-gray-400 hover:text-white flex items-center gap-1 transition";
+      });
+
+      if (tabName === 'tester') {
+        tabTester.classList.remove('hidden');
+        btnTester.className = "px-2.5 py-1 font-semibold rounded text-white bg-gray-700 flex items-center gap-1 shadow-sm";
+        resizeAllCharts();
+      } else if (tabName === 'ide') {
+        tabIDE.classList.remove('hidden');
+        btnIDE.className = "px-2.5 py-1 font-semibold rounded text-emerald-300 bg-gray-700 flex items-center gap-1 shadow-sm";
+        updateLineNumbers();
+      } else if (tabName === 'console') {
+        tabConsole.classList.remove('hidden');
+        btnConsole.className = "px-2.5 py-1 font-semibold rounded text-sky-300 bg-gray-700 flex items-center gap-1.5 shadow-sm";
+        renderConsoleLogs();
       }
     }
 
-    window.addEventListener('resize', resizeAllCharts);
-    document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
-    document.getElementById('symbolSelect').addEventListener('change', loadCandles);
+    function toggleBottomPanelExpand() {
+      const panel = document.getElementById('strategy-panel');
+      isBottomPanelExpanded = !isBottomPanelExpanded;
+      if (isBottomPanelExpanded) {
+        panel.style.height = '420px';
+      } else {
+        panel.style.height = '';
+      }
+      resizeAllCharts();
+    }
 
-    // Inicialización suave
-    refreshSavedDatasetsDropdown();
-    loadCandles();
-    setTimeout(resizeCanvas, 500);
-  </script>
-</body>
-</html>
+    function updateLineNumbers() {
+      const editor = document.getElementById('ide-code-editor');
+      const lineNums = document.getElementById('ide-line-numbers');
+      if (!editor || !lineNums) return;
+      const count = editor.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= count; i++) {
+        html += `<div>${i}</div>`;
+      }
+      lineNums.innerHTML = html;
+    }
+
+    function loadIDETemplate(key) {
+      const tmpl = STRAT_TEMPLATES[key] || STRAT_TEMPLATES.cruce_ema;
+      const editor = document.getElementById('ide-code-editor');
+      editor.value = tmpl.code;
+      document.getElementById('current-strategy-title').innerText = tmpl.title;
+      document.getElementById('ide-status-badge').innerHTML = 
+        `<span class="text-sky-400 font-mono">Plantilla: ${tmpl.title}</span>`;
+      updateLineNumbers();
+      localStorage.setItem('stratview5_active_template', key);
+      localStorage.setItem('stratview5_saved_script', tmpl.code);
+    }
+
+    function saveCurrentScript() {
+      const editor = document.getElementById('ide-code-editor');
+      localStorage.setItem('stratview5_saved_script', editor.value);
+      const badge = document.getElementById('ide-status-badge');
+      badge.innerHTML = `<span class="text-emerald-400">💾 Script guardado localmente</span>`;
+      setTimeout(() => {
+        badge.innerHTML = `Listo para compilar`;
+      }, 2500);
+    }
+
+    function resetScriptToDefault() {
+      const key = document.getElementById('ide-template-select').value;
+      loadIDETemplate(key);
+    }
+
+    function clearStrategyMarkers() {
+      candleSeries1.setMarkers([]);
+      document.getElementById('ide-status-badge').innerHTML = `<span class="text-gray-400">Gráfico limpio</span>`;
+      document.getElementById('st-pyg').innerText = `+0.00 USD (0.00%)`;
+      document.getElementById('st-dd').innerText = `0.00 USD (0.00%)`;
+      document.getElementById('st-winrate').innerText = `0.00% (0/0)`;
+      document.getElementById('st-pf').innerText = `0.00`;
+      equitySeries.setData([]);
+    }
+
+    function jumpToChartTime(ts) {
+      if (!allCandles || allCandles.length === 0) return;
+      const idx = binarySearchCandleIndex(allCandles, ts);
+      if (idx >= 0) {
+        chart1.timeScale().setVisibleLogicalRange({
+          from: Math.max(0, idx - 30),
+          to: Math.min(allCandles.length - 1, idx + 30)
+        });
+      }
+    }
+
+    function renderConsoleLogs() {
+      const list = document.getElementById('console-log-list');
+      if (!list) return;
+
+      const filtered = activeConsoleLogs.filter(log => {
+        if (currentLogFilter === 'all') return true;
+        if (currentLogFilter === 'buy') return log.type === 'buy';
+        if (currentLogFilter === 'sell') return log.type === 'sell';
+        if (currentLogFilter === 'close') return log.type === 'close';
+        if (currentLogFilter === 'info') return log.type === 'info';
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="text-gray-500 italic p-3 text-center">No hay registros con el filtro seleccionado.</div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(log => {
+        let badgeColor = 'bg-gray-800 text-gray-300';
+        let borderColor = 'border-gray-700 bg-gray-900/40';
+
+        if (log.type === 'buy') {
+          badgeColor = 'bg-emerald-950 text-emerald-400 border border-emerald-800/80';
+          borderColor = 'border-l-4 border-emerald-500 bg-emerald-950/20';
+        } else if (log.type === 'sell') {
+          badgeColor = 'bg-rose-950 text-rose-400 border border-rose-800/80';
+          borderColor = 'border-l-4 border-rose-500 bg-rose-950/20';
+        } else if (log.type === 'close') {
+          badgeColor = log.isProfit ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800';
+          borderColor = 'border-l-4 border-amber-500 bg-amber-950/15';
+        } else if (log.type === 'error') {
+          badgeColor = 'bg-red-950 text-red-300 border border-red-700';
+          borderColor = 'border-l-4 border-red-500 bg-red-950/30 font-bold';
+        } else if (log.type === 'info') {
+          badgeColor = 'bg-sky-950 text-sky-300 border border-sky-800';
+          borderColor = 'border-l-2 border-sky-600 bg-sky-950/10';
+        }
+
+        const jumpAttr = log.time ? `onclick="jumpToChartTime(${log.time})" title="Clic para enfocar esta vela en el gráfico" class="cursor-pointer hover:bg-gray-800/60 p-1.5 rounded transition ${borderColor} flex items-center justify-between text-[11px] font-mono"` : `class="p-1.5 rounded ${borderColor} flex items-center justify-between text-[11px] font-mono"`;
+
+        html += `
+          <div ${jumpAttr}>
+            <div class="flex items-center space-x-2">
+              <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${badgeColor}">${log.tag || log.type.toUpperCase()}</span>
+              <span class="text-gray-200">${log.text}</span>
+            </div>
+            <div class="text-right text-[10px] text-gray-500 font-mono shrink-0 ml-2">
+              ${log.timeStr || ''}
+            </div>
+          </div>
+        `;
+      });
+
+      list.innerHTML = html;
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function filterConsoleLogs(filter) {
+      currentLogFilter = filter;
+      ['all', 'buy', 'sell', 'close', 'info'].forEach(f => {
+        const btn = document.getElementById(`btn-log-${f}`);
+        if (btn) {
+          btn.className = f === filter ? "px-2 py-0.5 rounded bg-gray-700 text-white text-[10px] font-bold" : "px-2 py-0.5 rounded bg-[#1e222d] text-gray-300 hover:bg-gray-800 text-[10px] font-bold";
+        }
+      });
+      renderConsoleLogs();
+    }
+
+    function clearConsoleLogs() {
+      activeConsoleLogs = [];
+      document.getElementById('console-badge').innerText = '0';
+      renderConsoleLogs();
+    }
+
+    // --- MOTOR DE EJECUCIÓN STRATSCRIPT & SIMULADOR INSTITUCIONAL ---
+    function runStrategyScript() {
+      const editor = document.getElementById('ide-code-editor');
+      const userCode = editor.value;
+
+      if (!allCandles || allCandles.length < 2) {
+        alert("No hay velas cargadas en el gráfico para simular la estrategia.");
+        return;
+      }
+
+      const candles = allCandles;
+      const badge = document.getElementById('ide-status-badge');
+      badge.innerHTML = `<span class="text-amber-400">⚙ Compilando y ejecutando...</span>`;
+
+      let activePosition = null;
+      let lastCheckedIndex = 0;
+      const trades = [];
+      const markers = [];
+      activeConsoleLogs = [];
+
+      function formatTimestamp(ts) {
+        const d = new Date(ts * 1000);
+        return d.toISOString().replace('T', ' ').substring(0, 19);
+      }
+
+      function checkPendingOrders(i) {
+        if (!activePosition) return;
+        const c = candles[i];
+        if (activePosition.type === 'LONG') {
+          if (activePosition.sl !== null && c.low <= activePosition.sl) {
+            closePosition(i, 'Stop Loss', activePosition.sl);
+          } else if (activePosition.tp !== null && c.high >= activePosition.tp) {
+            closePosition(i, 'Take Profit', activePosition.tp);
+          }
+        } else if (activePosition.type === 'SHORT') {
+          if (activePosition.sl !== null && c.high >= activePosition.sl) {
+            closePosition(i, 'Stop Loss', activePosition.sl);
+          } else if (activePosition.tp !== null && c.low <= activePosition.tp) {
+            closePosition(i, 'Take Profit', activePosition.tp);
+          }
+        }
+      }
+
+      function advanceTo(targetIdx) {
+        for (let k = lastCheckedIndex; k <= targetIdx; k++) {
+          if (activePosition) {
+            checkPendingOrders(k);
+          }
+        }
+        lastCheckedIndex = Math.max(lastCheckedIndex, targetIdx);
+      }
+
+      function buy(i, comment = 'COMPRA', opts = {}) {
+        if (i < 0 || i >= candles.length) return;
+        advanceTo(i);
+
+        if (activePosition && activePosition.type === 'SHORT') {
+          closePosition(i, 'Reversa a Compra', candles[i].close);
+        }
+        if (activePosition && activePosition.type === 'LONG') return;
+
+        const c = candles[i];
+        let sl = null, tp = null;
+
+        if (opts.sl !== undefined && opts.sl !== null) {
+          if (opts.sl < 1) sl = c.close * (1 - opts.sl);
+          else if (opts.sl < c.close * 0.5) sl = c.close - opts.sl;
+          else sl = opts.sl;
+        }
+
+        if (opts.tp !== undefined && opts.tp !== null) {
+          if (opts.tp < 1) tp = c.close * (1 + opts.tp);
+          else if (opts.tp < c.close * 0.5) tp = c.close + opts.tp;
+          else tp = opts.tp;
+        }
+
+        activePosition = {
+          type: 'LONG',
+          entryPrice: c.close,
+          entryIndex: i,
+          entryTime: c.time,
+          sl, tp, comment
+        };
+
+        markers.push({
+          time: c.time,
+          position: 'belowBar',
+          color: '#10b981',
+          shape: 'arrowUp',
+          text: `BUY ${formatPrice(c.close)}`
+        });
+
+        activeConsoleLogs.push({
+          time: c.time,
+          timeStr: formatTimestamp(c.time),
+          type: 'buy',
+          tag: 'COMPRA',
+          text: `Entrada Long #${trades.length + 1} @ ${formatPrice(c.close)} | "${comment}" ${sl ? '[SL: ' + formatPrice(sl) + ']' : ''} ${tp ? '[TP: ' + formatPrice(tp) + ']' : ''}`
+        });
+
+        lastCheckedIndex = i + 1;
+      }
+
+      function sell(i, comment = 'VENTA', opts = {}) {
+        if (i < 0 || i >= candles.length) return;
+        advanceTo(i);
+
+        if (activePosition && activePosition.type === 'LONG') {
+          closePosition(i, 'Reversa a Venta', candles[i].close);
+        }
+        if (activePosition && activePosition.type === 'SHORT') return;
+
+        const c = candles[i];
+        let sl = null, tp = null;
+
+        if (opts.sl !== undefined && opts.sl !== null) {
+          if (opts.sl < 1) sl = c.close * (1 + opts.sl);
+          else if (opts.sl < c.close * 0.5) sl = c.close + opts.sl;
+          else sl = opts.sl;
+        }
+
+        if (opts.tp !== undefined && opts.tp !== null) {
+          if (opts.tp < 1) tp = c.close * (1 - opts.tp);
+          else if (opts.tp < c.close * 0.5) tp = c.close - opts.tp;
+          else tp = opts.tp;
+        }
+
+        activePosition = {
+          type: 'SHORT',
+          entryPrice: c.close,
+          entryIndex: i,
+          entryTime: c.time,
+          sl, tp, comment
+        };
+
+        markers.push({
+          time: c.time,
+          position: 'aboveBar',
+          color: '#ef4444',
+          shape: 'arrowDown',
+          text: `SELL ${formatPrice(c.close)}`
+        });
+
+        activeConsoleLogs.push({
+          time: c.time,
+          timeStr: formatTimestamp(c.time),
+          type: 'sell',
+          tag: 'VENTA',
+          text: `Entrada Short #${trades.length + 1} @ ${formatPrice(c.close)} | "${comment}" ${sl ? '[SL: ' + formatPrice(sl) + ']' : ''} ${tp ? '[TP: ' + formatPrice(tp) + ']' : ''}`
+        });
+
+        lastCheckedIndex = i + 1;
+      }
+
+      function closePosition(i, reason = 'Cierre de Posición', exitPrice = null) {
+        if (!activePosition) return;
+        const c = candles[i];
+        const price = exitPrice !== null ? exitPrice : c.close;
+        const isLong = activePosition.type === 'LONG';
+        const pnl = isLong ? (price - activePosition.entryPrice) : (activePosition.entryPrice - price);
+        const pnlPct = (pnl / activePosition.entryPrice) * 100;
+
+        trades.push({
+          type: activePosition.type,
+          entryPrice: activePosition.entryPrice,
+          exitPrice: price,
+          entryTime: activePosition.entryTime,
+          exitTime: c.time,
+          pnl,
+          pnlPct,
+          reason
+        });
+
+        markers.push({
+          time: c.time,
+          position: isLong ? 'aboveBar' : 'belowBar',
+          color: pnl >= 0 ? '#10b981' : '#f43f5e',
+          shape: 'circle',
+          text: `${reason.split(' ')[0]}: ${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%`
+        });
+
+        activeConsoleLogs.push({
+          time: c.time,
+          timeStr: formatTimestamp(c.time),
+          type: 'close',
+          tag: reason.toUpperCase().substring(0, 10),
+          isProfit: pnl >= 0,
+          text: `Cierre ${activePosition.type} @ ${formatPrice(price)} (${reason}) | PyG: ${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%`
+        });
+
+        activePosition = null;
+      }
+
+      function logMessage(msg) {
+        activeConsoleLogs.push({
+          time: null,
+          timeStr: new Date().toLocaleTimeString(),
+          type: 'info',
+          tag: 'LOG',
+          text: String(msg)
+        });
+      }
+
+      // Contexto de ejecución
+      const ctx = {
+        candles,
+        ema: (period) => calcEMA(candles, period),
+        rsi: (period) => calcRSI(candles, period),
+        bollinger: (period, mult) => calcBollingerBands(candles, period, mult),
+        macd: (f, s, sig) => calcMACD(candles, f, s, sig),
+        buy,
+        sell,
+        closePosition,
+        get position() { return activePosition; },
+        log: logMessage,
+        formatPrice
+      };
+
+      const t0 = performance.now();
+
+      try {
+        const executor = new Function('ctx', 'with(ctx) {\n' + userCode + '\n}');
+        executor(ctx);
+
+        advanceTo(candles.length - 1);
+        if (activePosition) {
+          closePosition(candles.length - 1, 'Fin del Historial', candles[candles.length - 1].close);
+        }
+
+        const t1 = performance.now();
+        const elapsed = (t1 - t0).toFixed(1);
+
+        // Actualizar marcadores en el gráfico
+        markers.sort((a, b) => a.time - b.time);
+        candleSeries1.setMarkers(markers);
+
+        // Calcular estadísticas cuantitativas institucionales
+        let initialCapital = 10000;
+        let capital = initialCapital;
+        let peak = initialCapital;
+        let maxDD = 0;
+        let grossProfit = 0;
+        let grossLoss = 0;
+        let wins = 0;
+        const equityPoints = [{ time: candles[0].time, value: initialCapital }];
+
+        trades.forEach(t => {
+          const tradePnL = capital * (t.pnlPct / 100);
+          capital += tradePnL;
+
+          if (tradePnL > 0) {
+            grossProfit += tradePnL;
+            wins++;
+          } else {
+            grossLoss += Math.abs(tradePnL);
+          }
+
+          if (capital > peak) peak = capital;
+          const dd = peak - capital;
+          if (dd > maxDD) maxDD = dd;
+
+          equityPoints.push({ time: t.exitTime, value: Math.round(capital * 100) / 100 });
+        });
+
+        const totalReturnPct = ((capital - initialCapital) / initialCapital) * 100;
+        const totalNetProfit = capital - initialCapital;
