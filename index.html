@@ -6,9 +6,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
-    .scissor-cursor {
-      cursor: crosshair !important;
-    }
+    .scissor-cursor { cursor: crosshair !important; }
+    .drawing-canvas { pointer-events: none; position: absolute; top: 0; left: 0; z-index: 15; }
+    .drawing-active { pointer-events: auto !important; cursor: crosshair !important; }
   </style>
 </head>
 <body class="bg-[#0b0e14] text-gray-200 flex flex-col h-screen overflow-hidden select-none font-sans" oncontextmenu="return false;">
@@ -18,9 +18,9 @@
     <div class="flex items-center space-x-2">
       <span class="text-emerald-400 font-extrabold text-base tracking-wider mr-2">STRATVIEW-5</span>
 
-      <!-- Selector de Mercados Dinámico (Incluye MT5 Guardados) -->
+      <!-- Selector de Mercados -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
-        <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer max-w-[200px] truncate">
+        <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer max-w-[210px] truncate">
           <optgroup label="Criptomonedas">
             <option value="BTC-USD" selected>BTC/USD</option>
             <option value="ETH-USD">ETH/USD</option>
@@ -35,12 +35,11 @@
             <option value="XAU-USD">XAU/USD (Oro)</option>
           </optgroup>
           <optgroup id="optgroup-mt5-saved" label="📂 Mis Archivos MT5 Guardados">
-            <!-- Se agregan automáticamente los archivos MT5 subidos -->
           </optgroup>
         </select>
       </div>
 
-      <!-- Selector de Temporalidades Principal -->
+      <!-- Selector de Temporalidades -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
         <select id="timeframeSelect" class="bg-transparent text-xs text-gray-200 outline-none cursor-pointer font-mono">
           <option value="1m">1m</option>
@@ -57,17 +56,20 @@
         <span>fx</span> Indicadores
       </button>
 
-      <!-- Selector de Diseño Multiventana -->
+      <!-- Selector Multiventana (Layout 1, 2, 4) -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded p-0.5 space-x-1">
         <button onclick="setLayout('1')" id="layout-btn-1" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
         <button onclick="setLayout('2h')" id="layout-btn-2h" title="2 Pantallas Verticales" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2|</button>
         <button onclick="setLayout('4')" id="layout-btn-4" title="4 Pantallas (Cuadrícula)" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">4⊞</button>
       </div>
 
-      <!-- Barra de Replay / Backtesting Manual con Tijera -->
+      <!-- Controles de Replay y Tijeras con Selector de Fecha -->
       <div class="flex items-center bg-[#1e222d] border border-blue-900/60 rounded px-1.5 py-0.5 space-x-1 text-xs">
-        <button onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar hacia el pasado" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
+        <button onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
           <span>✂</span> <span class="hidden sm:inline">Cortar</span>
+        </button>
+        <button onclick="openJumpToDateModal()" title="Ir a fecha exacta (desde 2021)" class="px-2 py-1 rounded bg-[#252a37] text-sky-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
+          <span>📅</span> <span class="hidden sm:inline">Ir a Fecha</span>
         </button>
         <div id="replay-controls" class="hidden items-center space-x-1">
           <button onclick="stepForwardReplay()" title="Avanzar 1 vela" class="px-2 py-1 rounded bg-[#252a37] text-gray-300 hover:bg-[#32394a]">
@@ -82,13 +84,13 @@
             <option value="250">0.25s</option>
             <option value="100">0.1s</option>
           </select>
-          <button onclick="exitReplayMode()" title="Salir del modo Replay" class="px-1.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold">
+          <button onclick="exitReplayMode()" title="Salir del Replay" class="px-1.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold">
             ✕
           </button>
         </div>
       </div>
 
-      <!-- Pestaña Probador de Estrategias -->
+      <!-- Probador de Estrategias -->
       <button onclick="toggleStrategyPanel()" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300">
         📊 Probador de Estrategia
       </button>
@@ -106,65 +108,108 @@
     </div>
   </header>
 
-  <!-- Banner de aviso al cortar con Tijeras -->
+  <!-- Banner de aviso al cortar con Tijera -->
   <div id="replay-banner" class="hidden bg-amber-500/20 border-b border-amber-500/40 text-amber-300 text-xs py-1 px-4 text-center font-medium flex items-center justify-center gap-2">
-    <span>✂ Modo Tijera Activo: Haz clic sobre cualquier vela del gráfico para cortar el tiempo e iniciar la simulación manual.</span>
+    <span>✂ Modo Tijera: Haz clic sobre la vela donde quieres cortar el gráfico en el pasado.</span>
     <button onclick="exitReplayMode()" class="bg-amber-600 text-black px-2 py-0.2 rounded font-bold hover:bg-amber-500 text-[10px]">Cancelar</button>
   </div>
 
   <!-- Área Central de Trabajo -->
   <div class="flex-1 flex overflow-hidden relative">
 
-    <!-- Barra de Herramientas Lateral Izquierda -->
-    <aside class="w-11 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-3 space-y-3 shrink-0 z-20 text-gray-400">
-      <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="p-1.5 rounded text-emerald-400 bg-[#2a2e39]">
+    <!-- BARRA DE HERRAMIENTAS DE DIBUJO LATERAL (MÓDULO 2) -->
+    <aside class="w-12 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-2 space-y-2 shrink-0 z-20 text-gray-400">
+      <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="p-2 rounded text-emerald-400 bg-[#2a2e39]">
         ✛
       </button>
-      <button onclick="selectTool('horizontal')" id="tool-horizontal" title="Nivel Horizontal (Clic en el gráfico)" class="p-1.5 rounded hover:bg-[#2a2e39]">
+      <button onclick="selectTool('horizontal')" id="tool-horizontal" title="Nivel Horizontal" class="p-2 rounded hover:bg-[#2a2e39]">
         ―
       </button>
-      <div class="w-6 border-b border-gray-800"></div>
-      <button onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-1.5 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">
+      <button onclick="selectTool('trendline')" id="tool-trendline" title="Línea de Tendencia Diagonal" class="p-2 rounded hover:bg-[#2a2e39]">
+        ╱
+      </button>
+      <button onclick="selectTool('fibonacci')" id="tool-fibonacci" title="Retroceso de Fibonacci" class="p-2 rounded hover:bg-[#2a2e39]">
+        ☷
+      </button>
+      <button onclick="selectTool('box')" id="tool-box" title="Caja / Zona de Liquidez" class="p-2 rounded hover:bg-[#2a2e39]">
+        ▭
+      </button>
+      <div class="w-6 border-b border-gray-800 my-1"></div>
+      <button onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-2 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">
         🗑
       </button>
     </aside>
 
-    <!-- Centro: Contenedor Multiventana Dinámico -->
+    <!-- Centro: Contenedor Multiventana Dinámico con Segunderos estilo TradingView -->
     <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#090d16] relative">
       
       <!-- Rejilla de Gráficos -->
       <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 h-full w-full relative">
+        
+        <!-- PANTALLA 1 -->
         <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 1 (<span id="p1-tf-label">15m</span>)
           </div>
+          <!-- Segundero estilo TradingView en la escala de precios -->
+          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-amber-500/80 text-amber-400 shadow pointer-events-none flex items-center gap-1">
+            <span>⏱</span> <span id="tv-countdown-p1">00:00</span>
+          </div>
+          <canvas id="canvas-overlay" class="drawing-canvas w-full h-full"></canvas>
           <div id="chart-c1" class="w-full h-full"></div>
         </div>
 
+        <!-- PANTALLA 2 (1h) -->
         <div id="chart-box-2" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 2 (1h)
           </div>
+          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-sky-500/80 text-sky-400 shadow pointer-events-none flex items-center gap-1">
+            <span>⏱ 1h:</span> <span id="tv-countdown-p2">00:00</span>
+          </div>
           <div id="chart-c2" class="w-full h-full"></div>
         </div>
 
+        <!-- PANTALLA 3 (4h) -->
         <div id="chart-box-3" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 3 (4h)
           </div>
+          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-purple-500/80 text-purple-400 shadow pointer-events-none flex items-center gap-1">
+            <span>⏱ 4h:</span> <span id="tv-countdown-p3">00:00:00</span>
+          </div>
           <div id="chart-c3" class="w-full h-full"></div>
         </div>
 
+        <!-- PANTALLA 4 (1D) -->
         <div id="chart-box-4" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
           <div class="absolute top-1 left-2 z-10 text-[10px] font-mono text-gray-400 bg-[#131722]/80 border border-gray-800 px-1.5 py-0.5 rounded pointer-events-none">
             Pantalla 4 (1D)
+          </div>
+          <div class="absolute top-2 right-16 z-20 font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-emerald-500/80 text-emerald-400 shadow pointer-events-none flex items-center gap-1">
+            <span>⏱ 1D:</span> <span id="tv-countdown-p4">00:00:00</span>
           </div>
           <div id="chart-c4" class="w-full h-full"></div>
         </div>
       </div>
 
+      <!-- SUBPANELES DE INDICADORES (RSI & MACD - MÓDULO 2) -->
+      <div id="rsi-subpanel" class="h-28 border-t border-gray-800 bg-[#0c1017] hidden relative">
+        <div class="absolute top-1 left-3 z-10 text-[10px] font-mono font-bold text-amber-400 bg-[#131722] px-1.5 py-0.5 rounded border border-gray-700">
+          RSI (14) - [Sobrecompra 70 | Sobreventa 30]
+        </div>
+        <div id="chart-rsi" class="w-full h-full"></div>
+      </div>
+
+      <div id="macd-subpanel" class="h-28 border-t border-gray-800 bg-[#0c1017] hidden relative">
+        <div class="absolute top-1 left-3 z-10 text-[10px] font-mono font-bold text-sky-400 bg-[#131722] px-1.5 py-0.5 rounded border border-gray-700">
+          MACD (12, 26, 9)
+        </div>
+        <div id="chart-macd" class="w-full h-full"></div>
+      </div>
+
       <!-- Panel Inferior: Probador de Estrategias y Curva de Equidad -->
-      <div id="strategy-panel" class="h-64 border-t border-gray-800 bg-[#131722] flex flex-col shrink-0 relative transition-all">
+      <div id="strategy-panel" class="h-60 border-t border-gray-800 bg-[#131722] flex flex-col shrink-0 relative transition-all">
         <div class="h-8 border-b border-gray-800 flex items-center justify-between px-4 bg-[#1e222d]/60 text-xs text-gray-300">
           <div class="flex items-center space-x-4">
             <span class="font-bold text-emerald-400 font-mono">LogReg + EMA [Strategy]</span>
@@ -174,22 +219,22 @@
           <button onclick="toggleStrategyPanel()" class="text-gray-400 hover:text-white font-bold">✕ Cerrar</button>
         </div>
 
-        <div class="grid grid-cols-4 gap-3 p-3 border-b border-gray-800/60 bg-[#131722] text-xs">
+        <div class="grid grid-cols-4 gap-3 p-2.5 border-b border-gray-800/60 bg-[#131722] text-xs">
           <div>
             <p class="text-gray-500 text-[10px]">PyG Totales</p>
-            <p id="st-pyg" class="text-base font-bold text-emerald-400 font-mono">+0.36 USD (+0.04%)</p>
+            <p id="st-pyg" class="text-sm font-bold text-emerald-400 font-mono">+0.36 USD (+0.04%)</p>
           </div>
           <div>
             <p class="text-gray-500 text-[10px]">Caída máx. del capital</p>
-            <p id="st-dd" class="text-base font-bold text-rose-400 font-mono">0.09 USD (0.01%)</p>
+            <p id="st-dd" class="text-sm font-bold text-rose-400 font-mono">0.09 USD (0.01%)</p>
           </div>
           <div>
             <p class="text-gray-500 text-[10px]">Operaciones rentables</p>
-            <p id="st-winrate" class="text-base font-bold text-gray-200 font-mono">50.00% (2/4)</p>
+            <p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">50.00% (2/4)</p>
           </div>
           <div>
             <p class="text-gray-500 text-[10px]">Factor de ganancias</p>
-            <p id="st-pf" class="text-base font-bold text-gray-200 font-mono">5.089</p>
+            <p id="st-pf" class="text-sm font-bold text-gray-200 font-mono">5.089</p>
           </div>
         </div>
 
@@ -218,18 +263,17 @@
           <p class="text-xs font-semibold text-gray-200">Agente Cuantitativo IA</p>
         </div>
         <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
-          Haz clic en "⚡ Backtest", corta con las ✂ Tijeras, o sube tu CSV de MT5 para guardarlo automáticamente.
+          Módulo 2 activo: Usa las herramientas de dibujo, abre RSI/MACD o salta a cualquier fecha desde 2021.
         </p>
       </div>
 
-      <!-- Gestor de Archivos MT5 Guardados -->
       <div class="bg-[#1e222d]/30 border border-gray-800 rounded-lg p-3">
         <div class="flex justify-between items-center mb-2">
           <span class="text-xs font-bold text-gray-300">📁 Base de Datos MT5</span>
           <span id="db-count" class="text-[10px] text-emerald-400 font-mono">0 archivos</span>
         </div>
         <p class="text-[11px] text-gray-400 mb-2 leading-tight">
-          Todos los CSV cargados quedan guardados aquí permanentemente sin consumir RAM.
+          Tus archivos masivos (hasta 2+ millones de velas) quedan guardados aquí.
         </p>
         <button onclick="clearMT5Database()" class="w-full text-[10px] text-rose-400 hover:text-rose-300 border border-rose-950 hover:bg-rose-950/40 py-1 rounded transition">
           Vaciar Historial MT5 Guardado
@@ -238,8 +282,35 @@
     </aside>
   </div>
 
+  <!-- MODAL: SALTAR A FECHA EXACTA EN EL PASADO (REPLAY / TIJERAS) -->
+  <div id="jumpDateModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-md shadow-2xl p-4 text-xs space-y-3">
+      <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+        <span class="font-bold text-gray-200 text-sm">📅 Retroceder a Fecha Exacta (Tijeras)</span>
+        <button onclick="closeJumpToDateModal()" class="text-gray-400 hover:text-white font-bold">✕</button>
+      </div>
+      <p class="text-gray-400">
+        Elige cualquier año, mes, día y hora hacia atrás (disponible desde 2021). El gráfico cortará en esa vela de inmediato:
+      </p>
+      <div>
+        <label class="block text-gray-400 mb-1">Fecha y Hora:</label>
+        <input type="datetime-local" id="jumpDateTimeInput" value="2021-01-04T00:00" min="2021-01-01T00:00" max="2026-11-07T23:59" class="w-full bg-[#131722] border border-gray-700 rounded p-2 text-white font-mono text-sm outline-none focus:border-emerald-500">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeJumpToDateModal()" class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">Cancelar</button>
+        <button onclick="executeJumpToDate()" class="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow">
+          ✂ Cortar y Retroceder Aquí
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Menú Contextual (Clic Derecho) -->
-  <div id="contextMenu" class="hidden fixed bg-[#1e222d] border border-gray-700 rounded-lg shadow-2xl py-1 w-52 z-50 text-xs">
+  <div id="contextMenu" class="hidden fixed bg-[#1e222d] border border-gray-700 rounded-lg shadow-2xl py-1 w-56 z-50 text-xs">
+    <button onclick="openJumpToDateModal(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-sky-400 font-semibold flex items-center gap-1.5">
+      <span>📅</span> Ir a fecha específica (Cortar)
+    </button>
+    <div class="border-b border-gray-700/60 my-1"></div>
     <button onclick="removeAllIndicators()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">
       ✕ Eliminar Indicadores
     </button>
@@ -251,14 +322,14 @@
     </button>
   </div>
 
-  <!-- Modal de Indicadores -->
+  <!-- Modal de Indicadores Oficiales (Módulo 2) -->
   <div id="indicatorsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-sm shadow-2xl overflow-hidden flex flex-col text-xs">
       <div class="p-3 border-b border-gray-700 flex justify-between items-center bg-[#131722]">
-        <h3 class="font-bold text-gray-200">Indicadores Técnicos</h3>
+        <h3 class="font-bold text-gray-200">Indicadores Técnicos Oficiales</h3>
         <button onclick="toggleIndicatorsModal()" class="text-gray-400 hover:text-white font-bold">✕</button>
       </div>
-      <div class="p-3 space-y-2">
+      <div class="p-3 space-y-2 max-h-96 overflow-y-auto">
         <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
           <span>EMA 9 (Rápida)</span>
           <input type="checkbox" id="check-ema9" checked onchange="toggleIndicator('ema9')">
@@ -271,6 +342,19 @@
           <span>EMA 200 (Tendencia)</span>
           <input type="checkbox" id="check-ema200" checked onchange="toggleIndicator('ema200')">
         </label>
+        <div class="border-b border-gray-700/60 my-1"></div>
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
+          <span class="text-purple-300 font-semibold">Bandas de Bollinger (20, 2)</span>
+          <input type="checkbox" id="check-bb" onchange="toggleIndicator('bb')">
+        </label>
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
+          <span class="text-amber-400 font-semibold">RSI (14 - Subpanel)</span>
+          <input type="checkbox" id="check-rsi" onchange="toggleIndicator('rsi')">
+        </label>
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
+          <span class="text-sky-400 font-semibold">MACD (12, 26, 9 - Subpanel)</span>
+          <input type="checkbox" id="check-macd" onchange="toggleIndicator('macd')">
+        </label>
       </div>
     </div>
   </div>
@@ -278,7 +362,7 @@
   <script>
     const API_BASE_URL = "https://strat-view-5.onrender.com";
 
-    // --- BASE DE DATOS LOCAL PERSISTENTE (INDEXEDDB - OPCIÓN B) ---
+    // --- BASE DE DATOS LOCAL PERSISTENTE (INDEXEDDB) ---
     const DB_NAME = "StratView5_Storage";
     const DB_VERSION = 1;
     const STORE_NAME = "mt5_datasets";
@@ -301,8 +385,7 @@
       const db = await openDatabase();
       return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, "readwrite");
-        const store = tx.objectStore(STORE_NAME);
-        store.put(item);
+        tx.objectStore(STORE_NAME).put(item);
         tx.oncomplete = () => resolve(true);
         tx.onerror = () => reject(tx.error);
       });
@@ -312,8 +395,7 @@
       const db = await openDatabase();
       return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, "readonly");
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.get(id);
+        const req = tx.objectStore(STORE_NAME).get(id);
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
       });
@@ -323,25 +405,24 @@
       const db = await openDatabase();
       return new Promise((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, "readonly");
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.getAll();
+        const req = tx.objectStore(STORE_NAME).getAll();
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
       });
     }
 
     async function clearMT5Database() {
-      if (!confirm("¿Deseas vaciar todos los archivos MT5 guardados permanentemente?")) return;
+      if (!confirm("¿Deseas vaciar todos los archivos MT5 guardados?")) return;
       const db = await openDatabase();
       const tx = db.transaction(STORE_NAME, "readwrite");
       tx.objectStore(STORE_NAME).clear();
       tx.oncomplete = () => {
         refreshSavedDatasetsDropdown();
-        alert("Base de datos de MT5 vaciada con éxito.");
+        alert("Base de datos MT5 vaciada.");
       };
     }
 
-    // --- GRÁFICOS LIGHTWEIGHT CHARTS ---
+    // --- GRÁFICOS LIGHTWEIGHT CHARTS (4 PANTALLAS) ---
     const baseChartOptions = {
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
@@ -371,9 +452,36 @@
     const chart4 = LightweightCharts.createChart(c4, { ...baseChartOptions, width: c4.clientWidth || 400, height: c4.clientHeight || 250 });
     const candleSeries4 = chart4.addCandlestickSeries(candleSeriesConfig);
 
+    // Indicadores en el gráfico principal
     let ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
     let ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
     let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
+
+    // Bandas de Bollinger (Módulo 2)
+    let bbUpper = null, bbBasis = null, bbLower = null;
+
+    // Subpaneles RSI & MACD
+    const rsiCont = document.getElementById('chart-rsi');
+    const chartRSI = LightweightCharts.createChart(rsiCont, {
+      ...baseChartOptions,
+      width: rsiCont.clientWidth || 800,
+      height: 110,
+      timeScale: { visible: false }
+    });
+    const rsiSeries = chartRSI.addLineSeries({ color: '#f59e0b', lineWidth: 2, title: 'RSI 14' });
+    rsiSeries.createPriceLine({ price: 70, color: '#ef4444', lineStyle: LightweightCharts.LineStyle.Dotted, title: '70' });
+    rsiSeries.createPriceLine({ price: 30, color: '#10b981', lineStyle: LightweightCharts.LineStyle.Dotted, title: '30' });
+
+    const macdCont = document.getElementById('chart-macd');
+    const chartMACD = LightweightCharts.createChart(macdCont, {
+      ...baseChartOptions,
+      width: macdCont.clientWidth || 800,
+      height: 110,
+      timeScale: { visible: false }
+    });
+    const macdHistSeries = chartMACD.addHistogramSeries({ color: '#10b981', title: 'Hist' });
+    const macdLineSeries = chartMACD.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'MACD' });
+    const macdSignalSeries = chartMACD.addLineSeries({ color: '#ef4444', lineWidth: 1.5, title: 'Signal' });
 
     let drawnLines = [];
     let activeTool = 'crosshair';
@@ -384,7 +492,7 @@
     let allCandlesP3 = [];
     let allCandlesP4 = [];
 
-    // --- ESTADO DEL REPLAY CON TIJERA ---
+    // --- REPLAY / SIMULACIÓN ---
     let isCutModeActive = false;
     let isReplayActive = false;
     let replayIntervalId = null;
@@ -395,7 +503,7 @@
     const eqContainer = document.getElementById('equity-chart-container');
     const equityChart = LightweightCharts.createChart(eqContainer, {
       width: eqContainer.clientWidth || 800,
-      height: eqContainer.clientHeight || 150,
+      height: eqContainer.clientHeight || 140,
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#94a3b8' },
       grid: { vertLines: { color: '#121824' }, horzLines: { color: '#121824' } },
       timeScale: { visible: false }
@@ -407,15 +515,225 @@
       lineWidth: 2
     });
 
-    // --- GESTIÓN DE INDICADORES Y DIBUJO ---
+    // --- SEGUNDERO DINÁMICO ESTILO TRADINGVIEW EN LAS 4 PANTALLAS ---
+    function formatTimeRemaining(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      if (h > 0) {
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateAllCandleCountdowns() {
+      const now = Math.floor(Date.now() / 1000);
+
+      // Pantalla 1: según selector (1m, 5m, 15m, etc.)
+      const tf1 = document.getElementById('timeframeSelect').value;
+      let tfSec1 = 900;
+      if (tf1 === '1m') tfSec1 = 60;
+      else if (tf1 === '5m') tfSec1 = 300;
+      else if (tf1 === '15m') tfSec1 = 900;
+      else if (tf1 === '1h') tfSec1 = 3600;
+      else if (tf1 === '4h') tfSec1 = 14400;
+      else if (tf1 === '1D') tfSec1 = 86400;
+
+      const rem1 = tfSec1 - (now % tfSec1);
+      const rem2 = 3600 - (now % 3600);     // Pantalla 2 (1h)
+      const rem3 = 14400 - (now % 14400);   // Pantalla 3 (4h)
+      const rem4 = 86400 - (now % 86400);   // Pantalla 4 (1D)
+
+      const text1 = formatTimeRemaining(rem1);
+      document.getElementById('tv-countdown-p1').innerText = text1;
+      document.getElementById('countdown-timer').innerText = text1;
+
+      document.getElementById('tv-countdown-p2').innerText = formatTimeRemaining(rem2);
+      document.getElementById('tv-countdown-p3').innerText = formatTimeRemaining(rem3);
+      document.getElementById('tv-countdown-p4').innerText = formatTimeRemaining(rem4);
+    }
+    setInterval(updateAllCandleCountdowns, 1000);
+
+    // --- MODAL: RETROCEDER A FECHA EXACTA DESDE 2021 (BÚSQUEDA BINARIA) ---
+    function openJumpToDateModal() {
+      document.getElementById('jumpDateModal').classList.remove('hidden');
+    }
+
+    function closeJumpToDateModal() {
+      document.getElementById('jumpDateModal').classList.add('hidden');
+    }
+
+    // Búsqueda binaria O(log N) para encontrar la vela exacta entre millones de datos
+    function binarySearchCandleIndex(data, targetTime) {
+      let low = 0, high = data.length - 1;
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        if (data[mid].time === targetTime) return mid;
+        if (data[mid].time < targetTime) low = mid + 1;
+        else high = mid - 1;
+      }
+      return Math.max(0, Math.min(data.length - 1, low));
+    }
+
+    function executeJumpToDate() {
+      const inputVal = document.getElementById('jumpDateTimeInput').value;
+      if (!inputVal) return;
+
+      const targetTimestamp = Math.floor(new Date(inputVal).getTime() / 1000);
+
+      const sourceData = originalFullCandles.length > 0 ? originalFullCandles : allCandles;
+      if (sourceData.length === 0) {
+        alert("Carga primero un activo o CSV de MT5.");
+        return;
+      }
+
+      if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
+
+      const cutIdx = binarySearchCandleIndex(originalFullCandles, targetTimestamp);
+      replayIndex = cutIdx;
+      isReplayActive = true;
+      isCutModeActive = false;
+
+      closeJumpToDateModal();
+
+      document.getElementById('replay-banner').classList.add('hidden');
+      document.getElementById('replay-controls').classList.remove('hidden');
+      document.getElementById('replay-controls').classList.add('flex');
+      document.getElementById('btn-cut-replay').classList.remove('bg-amber-500', 'text-black');
+      document.getElementById('btn-cut-replay').classList.add('bg-[#252a37]', 'text-amber-400');
+      c1.classList.remove('scissor-cursor');
+
+      // Cortar el dataset hasta la vela elegida
+      allCandles = originalFullCandles.slice(0, replayIndex + 1);
+      candleSeries1.setData(allCandles);
+
+      // Enfocar las velas recortadas
+      chart1.timeScale().setVisibleLogicalRange({
+        from: Math.max(0, allCandles.length - 150),
+        to: allCandles.length - 1
+      });
+
+      updateReplayIndicators();
+
+      const cutDateStr = new Date(originalFullCandles[replayIndex].time * 1000).toLocaleString();
+      document.getElementById('agent-verdict').innerText = 
+        `Gráfico retrocedido a: ${cutDateStr}. Presiona ▶ para simular hacia adelante.`;
+    }
+
+    // --- LIENZO DE DIBUJO PROFESIONAL EN CANVAS (MÓDULO 2) ---
+    const canvas = document.getElementById('canvas-overlay');
+    const ctx = canvas.getContext('2d');
+    let customDrawings = [];
+    let currentDrawing = null;
+
+    function resizeCanvas() {
+      canvas.width = c1.clientWidth;
+      canvas.height = c1.clientHeight;
+      redrawAllCanvasShapes();
+    }
+
     function selectTool(tool) {
       if (isCutModeActive) exitReplayMode();
       activeTool = tool;
-      document.getElementById('tool-crosshair').className = tool === 'crosshair' ? "p-1.5 rounded text-emerald-400 bg-[#2a2e39]" : "p-1.5 rounded hover:bg-[#2a2e39]";
-      document.getElementById('tool-horizontal').className = tool === 'horizontal' ? "p-1.5 rounded text-emerald-400 bg-[#2a2e39]" : "p-1.5 rounded hover:bg-[#2a2e39]";
+
+      ['crosshair', 'horizontal', 'trendline', 'fibonacci', 'box'].forEach(t => {
+        const btn = document.getElementById(`tool-${t}`);
+        if (btn) btn.className = t === tool ? "p-2 rounded text-emerald-400 bg-[#2a2e39]" : "p-2 rounded hover:bg-[#2a2e39]";
+      });
+
+      if (['trendline', 'fibonacci', 'box'].includes(tool)) {
+        canvas.classList.add('drawing-active');
+      } else {
+        canvas.classList.remove('drawing-active');
+      }
+
       c1.style.cursor = tool === 'horizontal' ? 'crosshair' : 'default';
     }
 
+    canvas.addEventListener('mousedown', (e) => {
+      if (!['trendline', 'fibonacci', 'box'].includes(activeTool)) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (!currentDrawing) {
+        currentDrawing = { type: activeTool, startX: x, startY: y, endX: x, endY: y };
+      } else {
+        currentDrawing.endX = x;
+        currentDrawing.endY = y;
+        customDrawings.push(currentDrawing);
+        currentDrawing = null;
+        redrawAllCanvasShapes();
+        selectTool('crosshair');
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!currentDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      currentDrawing.endX = e.clientX - rect.left;
+      currentDrawing.endY = e.clientY - rect.top;
+      redrawAllCanvasShapes();
+      drawShape(currentDrawing);
+    });
+
+    function redrawAllCanvasShapes() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      customDrawings.forEach(shape => drawShape(shape));
+    }
+
+    function drawShape(s) {
+      if (s.type === 'trendline') {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(s.startX, s.startY);
+        ctx.lineTo(s.endX, s.endY);
+        ctx.stroke();
+      } else if (s.type === 'box') {
+        ctx.strokeStyle = '#10b981';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+        ctx.lineWidth = 1.5;
+        const w = s.endX - s.startX;
+        const h = s.endY - s.startY;
+        ctx.fillRect(s.startX, s.startY, w, h);
+        ctx.strokeRect(s.startX, s.startY, w, h);
+      } else if (s.type === 'fibonacci') {
+        const levels = [
+          { p: 0.0, c: '#94a3b8' },
+          { p: 0.236, c: '#ef4444' },
+          { p: 0.382, c: '#f59e0b' },
+          { p: 0.5, c: '#10b981' },
+          { p: 0.618, c: '#eab308' }, // Nivel dorado
+          { p: 0.786, c: '#06b6d4' },
+          { p: 1.0, c: '#94a3b8' }
+        ];
+        const dy = s.endY - s.startY;
+        levels.forEach(lvl => {
+          const y = s.startY + dy * lvl.p;
+          ctx.strokeStyle = lvl.c;
+          ctx.lineWidth = lvl.p === 0.618 ? 2 : 1;
+          ctx.beginPath();
+          ctx.moveTo(Math.min(s.startX, s.endX), y);
+          ctx.lineTo(Math.max(s.startX, s.endX) + 80, y);
+          ctx.stroke();
+          ctx.fillStyle = lvl.c;
+          ctx.font = '10px monospace';
+          ctx.fillText(`Fib ${(lvl.p * 100).toFixed(1)}%`, Math.max(s.startX, s.endX) + 10, y - 2);
+        });
+      }
+    }
+
+    function clearAllDrawings() {
+      drawnLines.forEach(l => candleSeries1.removePriceLine(l));
+      drawnLines = [];
+      customDrawings = [];
+      currentDrawing = null;
+      redrawAllCanvasShapes();
+      closeContextMenu();
+    }
+
+    // Clic sobre el gráfico para niveles horizontales o corte con tijeras
     chart1.subscribeClick((param) => {
       if (!param || !param.point) return;
       if (isCutModeActive) {
@@ -445,12 +763,7 @@
       return val < 10 ? val.toFixed(5) : `$${val.toFixed(2)}`;
     }
 
-    function clearAllDrawings() {
-      drawnLines.forEach(l => candleSeries1.removePriceLine(l));
-      drawnLines = [];
-      closeContextMenu();
-    }
-
+    // Menú contextual
     c1.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const menu = document.getElementById('contextMenu');
@@ -462,13 +775,6 @@
     window.addEventListener('click', closeContextMenu);
     function closeContextMenu() {
       document.getElementById('contextMenu').classList.add('hidden');
-    }
-
-    function removeAllIndicators() {
-      if (ema9) { chart1.removeSeries(ema9); ema9 = null; document.getElementById('check-ema9').checked = false; }
-      if (ema21) { chart1.removeSeries(ema21); ema21 = null; document.getElementById('check-ema21').checked = false; }
-      if (ema200) { chart1.removeSeries(ema200); ema200 = null; document.getElementById('check-ema200').checked = false; }
-      closeContextMenu();
     }
 
     function resetChart() {
@@ -486,10 +792,13 @@
         if (c3.clientWidth && c3.clientHeight) chart3.resize(c3.clientWidth, c3.clientHeight);
         if (c4.clientWidth && c4.clientHeight) chart4.resize(c4.clientWidth, c4.clientHeight);
         if (eqContainer.clientWidth && eqContainer.clientHeight) equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
-      }, 50);
+        if (rsiCont.clientWidth) chartRSI.resize(rsiCont.clientWidth, 110);
+        if (macdCont.clientWidth) chartMACD.resize(macdCont.clientWidth, 110);
+        resizeCanvas();
+      }, 60);
     }
 
-    // --- SELECTOR DE DISEÑO MULTIVENTANA ---
+    // --- DISEÑO MULTIVENTANA ---
     function setLayout(mode) {
       currentLayout = mode;
       const b2 = document.getElementById('chart-box-2');
@@ -534,7 +843,7 @@
       resizeAllCharts();
     }
 
-    // --- CARGA DE VELAS: DESDE API O DESDE BASE DE DATOS LOCAL MT5 ---
+    // --- CARGA DE VELAS ---
     async function fetchCandlesFromAPI(symbol, interval) {
       const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${interval}`);
       const json = await res.json();
@@ -550,7 +859,7 @@
 
     async function loadWindowCandles(interval, targetSeries, targetChart, cacheSetter) {
       const symbol = document.getElementById('symbolSelect').value;
-      if (symbol.startsWith("mt5_id_")) return; // Si es MT5 personalizado se maneja en pantalla 1
+      if (symbol.startsWith("mt5_id_")) return;
       try {
         const candles = await fetchCandlesFromAPI(symbol, interval);
         if (candles.length > 0) {
@@ -570,18 +879,16 @@
       const tf = document.getElementById('timeframeSelect').value;
       document.getElementById('p1-tf-label').innerText = tf;
 
-      // 1. Si el usuario seleccionó un dataset guardado de MT5
       if (symbol.startsWith("mt5_id_")) {
         const dataset = await getDatasetFromDB(symbol);
         if (dataset && dataset.candles && dataset.candles.length > 0) {
           displayCandlesOnChart(dataset.candles);
           document.getElementById('agent-verdict').innerText = 
-            `Dataset activo: "${dataset.name}". ${dataset.candles.length} velas guardadas listas para simular con ✂ Tijera.`;
+            `Dataset activo: "${dataset.name}". ${dataset.candles.length.toLocaleString()} velas listas.`;
         }
         return;
       }
 
-      // 2. Si es un activo en vivo de la API
       try {
         allCandles = await fetchCandlesFromAPI(symbol, tf);
         displayCandlesOnChart(allCandles);
@@ -604,7 +911,6 @@
 
       candleSeries1.setData(allCandles);
 
-      // Vista óptima estilo TradingView (últimas 150 velas) para evitar compresión
       if (allCandles.length > 150) {
         chart1.timeScale().setVisibleLogicalRange({
           from: allCandles.length - 150,
@@ -614,9 +920,7 @@
         chart1.timeScale().fitContent();
       }
 
-      if (ema9) ema9.setData(calcEMA(allCandles, 9));
-      if (ema21) ema21.setData(calcEMA(allCandles, 21));
-      if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+      updateAllTechnicalIndicators();
 
       if (allCandles.length > 0) {
         const lastPrice = allCandles[allCandles.length - 1].close;
@@ -624,7 +928,7 @@
       }
     }
 
-    // --- OPCIÓN B: GUARDADO AUTOMÁTICO EN MEMORIA PERSISTENTE AL ABRIR ARCHIVO ---
+    // --- PROCESAMIENTO CSV MT5 ---
     async function handleMT5CSV(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -635,33 +939,22 @@
       reader.onload = async function(e) {
         const text = e.target.result;
         const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-        if (lines.length < 2) {
-          alert("El archivo CSV no contiene suficientes datos.");
-          return;
-        }
+        if (lines.length < 2) return;
 
         const parsed = [];
         for (let i = 1; i < lines.length; i++) {
           const row = lines[i].split(/[,\t;]/).map(item => item.trim().replace(/"/g, ''));
           if (row.length < 5) continue;
 
-          let timeVal = 0;
-          let o = 0, h = 0, l = 0, c = 0;
+          let timeVal = 0, o = 0, h = 0, l = 0, c = 0;
 
           if (row.length >= 6 && (row[0].includes('.') || row[0].includes('-') || row[0].includes('/'))) {
             const dateStr = row[0].replace(/\./g, '-');
-            const timeStr = row[1];
-            timeVal = Math.floor(new Date(`${dateStr}T${timeStr}Z`).getTime() / 1000);
-            o = parseFloat(row[2]);
-            h = parseFloat(row[3]);
-            l = parseFloat(row[4]);
-            c = parseFloat(row[5]);
+            timeVal = Math.floor(new Date(`${dateStr}T${row[1]}Z`).getTime() / 1000);
+            o = parseFloat(row[2]); h = parseFloat(row[3]); l = parseFloat(row[4]); c = parseFloat(row[5]);
           } else {
             timeVal = Math.floor(new Date(row[0]).getTime() / 1000);
-            o = parseFloat(row[1]);
-            h = parseFloat(row[2]);
-            l = parseFloat(row[3]);
-            c = parseFloat(row[4]);
+            o = parseFloat(row[1]); h = parseFloat(row[2]); l = parseFloat(row[3]); c = parseFloat(row[4]);
           }
 
           if (!isNaN(timeVal) && !isNaN(o) && !isNaN(h) && !isNaN(l) && !isNaN(c)) {
@@ -671,42 +964,30 @@
 
         if (parsed.length > 0) {
           parsed.sort((a, b) => a.time - b.time);
-
-          // Crear registro único para guardado permanente
           const datasetId = `mt5_id_${Date.now()}`;
           const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
 
-          const record = {
+          await saveDatasetToDB({
             id: datasetId,
             name: cleanName,
             candlesCount: parsed.length,
             savedAt: new Date().toLocaleDateString(),
             candles: parsed
-          };
+          });
 
-          // GUARDADO AUTOMÁTICO EN BASE DE DATOS LOCAL
-          await saveDatasetToDB(record);
-
-          // Actualizar menú desplegable y seleccionarlo
           await refreshSavedDatasetsDropdown(datasetId);
-
-          // Renderizar en el gráfico
           displayCandlesOnChart(parsed);
 
           document.getElementById('agent-verdict').innerText = 
-            `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length} velas). Disponible siempre en el menú sin tener que volver a subirlo.`;
-        } else {
-          alert("No se pudo interpretar el archivo. Asegúrate de exportarlo en formato CSV desde MT5.");
+            `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length.toLocaleString()} velas).`;
         }
       };
       reader.readAsText(file);
     }
 
-    // Actualiza la lista desplegable de datasets guardados
     async function refreshSavedDatasetsDropdown(selectedId = null) {
       const optgroup = document.getElementById('optgroup-mt5-saved');
       optgroup.innerHTML = "";
-
       const allDatasets = await getAllDatasetsFromDB();
       document.getElementById('db-count').innerText = `${allDatasets.length} archivos`;
 
@@ -718,30 +999,25 @@
       allDatasets.forEach(ds => {
         const opt = document.createElement('option');
         opt.value = ds.id;
-        opt.innerText = `📂 ${ds.name} (${ds.candlesCount} velas)`;
+        opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} velas)`;
         if (selectedId && ds.id === selectedId) opt.selected = true;
         optgroup.appendChild(opt);
       });
     }
 
-    // --- MÓDULO REPLAY / SIMULACIÓN MANUAL CON TIJERA ---
+    // --- REPLAY CON TIJERAS ---
     function toggleCutMode() {
-      if (allCandles.length === 0) {
-        alert("Primero carga datos en el gráfico para usar la Tijera.");
-        return;
-      }
+      if (allCandles.length === 0) return;
       isCutModeActive = !isCutModeActive;
       const btn = document.getElementById('btn-cut-replay');
       const banner = document.getElementById('replay-banner');
 
       if (isCutModeActive) {
         btn.classList.add('bg-amber-500', 'text-black');
-        btn.classList.remove('bg-[#252a37]', 'text-amber-400');
         banner.classList.remove('hidden');
         c1.classList.add('scissor-cursor');
       } else {
         btn.classList.remove('bg-amber-500', 'text-black');
-        btn.classList.add('bg-[#252a37]', 'text-amber-400');
         banner.classList.add('hidden');
         c1.classList.remove('scissor-cursor');
       }
@@ -749,7 +1025,6 @@
 
     function executeCutAtTime(cutTime) {
       if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
-
       const foundIdx = originalFullCandles.findIndex(c => c.time >= cutTime);
       if (foundIdx === -1 || foundIdx === 0) return;
 
@@ -761,27 +1036,18 @@
       document.getElementById('replay-controls').classList.remove('hidden');
       document.getElementById('replay-controls').classList.add('flex');
       document.getElementById('btn-cut-replay').classList.remove('bg-amber-500', 'text-black');
-      document.getElementById('btn-cut-replay').classList.add('bg-[#252a37]', 'text-amber-400');
       c1.classList.remove('scissor-cursor');
 
-      const sliced = originalFullCandles.slice(0, replayIndex + 1);
-      allCandles = sliced;
+      allCandles = originalFullCandles.slice(0, replayIndex + 1);
       candleSeries1.setData(allCandles);
-
       updateReplayIndicators();
-
-      document.getElementById('agent-verdict').innerText = 
-        `Modo Replay Manual Activo. Vela #${replayIndex + 1} de ${originalFullCandles.length}. Presiona ▶ o ⏭.`;
     }
 
     function updateReplayIndicators() {
       if (allCandles.length > 0) {
         const lastCandle = allCandles[allCandles.length - 1];
         document.getElementById('price-display').innerText = formatPrice(lastCandle.close);
-
-        if (ema9) ema9.setData(calcEMA(allCandles, 9));
-        if (ema21) ema21.setData(calcEMA(allCandles, 21));
-        if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+        updateAllTechnicalIndicators();
       }
     }
 
@@ -796,7 +1062,6 @@
 
     function togglePlayReplay() {
       if (!isReplayActive) return;
-
       const playBtn = document.getElementById('btn-play-replay');
       if (replayIntervalId) {
         clearInterval(replayIntervalId);
@@ -807,11 +1072,10 @@
         playBtn.innerText = "⏸";
         playBtn.className = "px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold";
         const speed = parseInt(document.getElementById('replaySpeed').value) || 500;
-
         replayIntervalId = setInterval(() => {
           if (replayIndex >= originalFullCandles.length - 1) {
             togglePlayReplay();
-            alert("Fin del historial de simulación alcanzado.");
+            alert("Fin del historial de simulación.");
             return;
           }
           stepForwardReplay();
@@ -826,7 +1090,6 @@
       }
       isReplayActive = false;
       isCutModeActive = false;
-
       document.getElementById('replay-banner').classList.add('hidden');
       document.getElementById('replay-controls').classList.add('hidden');
       document.getElementById('replay-controls').classList.remove('flex');
@@ -838,12 +1101,9 @@
         candleSeries1.setData(allCandles);
         updateReplayIndicators();
       }
-
-      document.getElementById('agent-verdict').innerText = 
-        `Modo Replay finalizado. Gráfico completo restaurado.`;
     }
 
-    // --- CÁLCULO DE EMAs ---
+    // --- CÁLCULO DE INDICADORES TÉCNICOS (MÓDULO 2) ---
     function calcEMA(data, period) {
       if (!data || data.length === 0) return [];
       const k = 2 / (period + 1);
@@ -852,6 +1112,99 @@
         ema = d.close * k + ema * (1 - k);
         return { time: d.time, value: ema };
       });
+    }
+
+    function calcBollingerBands(data, period = 20, mult = 2) {
+      const upper = [], basis = [], lower = [];
+      for (let i = 0; i < data.length; i++) {
+        if (i < period - 1) continue;
+        const slice = data.slice(i - period + 1, i + 1);
+        const mean = slice.reduce((acc, v) => acc + v.close, 0) / period;
+        const variance = slice.reduce((acc, v) => acc + Math.pow(v.close - mean, 2), 0) / period;
+        const stdDev = Math.sqrt(variance);
+        basis.push({ time: data[i].time, value: mean });
+        upper.push({ time: data[i].time, value: mean + mult * stdDev });
+        lower.push({ time: data[i].time, value: mean - mult * stdDev });
+      }
+      return { upper, basis, lower };
+    }
+
+    function calcRSI(data, period = 14) {
+      if (data.length <= period) return [];
+      const rsiData = [];
+      let gains = 0, losses = 0;
+
+      for (let i = 1; i <= period; i++) {
+        const diff = data[i].close - data[i - 1].close;
+        if (diff >= 0) gains += diff; else losses -= diff;
+      }
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+
+      for (let i = period + 1; i < data.length; i++) {
+        const diff = data[i].close - data[i - 1].close;
+        const g = diff >= 0 ? diff : 0;
+        const l = diff < 0 ? -diff : 0;
+        avgGain = (avgGain * (period - 1) + g) / period;
+        avgLoss = (avgLoss * (period - 1) + l) / period;
+        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+        const rsi = 100 - (100 / (1 + rs));
+        rsiData.push({ time: data[i].time, value: rsi });
+      }
+      return rsiData;
+    }
+
+    function calcMACD(data, fast = 12, slow = 26, signalPeriod = 9) {
+      if (data.length < slow) return { macd: [], signal: [], hist: [] };
+      const fastEMA = calcEMA(data, fast);
+      const slowEMA = calcEMA(data, slow);
+      const macdLine = [];
+
+      slowEMA.forEach(s => {
+        const f = fastEMA.find(x => x.time === s.time);
+        if (f) macdLine.push({ time: s.time, value: f.value - s.value });
+      });
+
+      const signalLine = calcEMA(macdLine.map(m => ({ time: m.time, close: m.value })), signalPeriod);
+      const hist = [];
+
+      signalLine.forEach(sig => {
+        const m = macdLine.find(x => x.time === sig.time);
+        if (m) {
+          const val = m.value - sig.value;
+          hist.push({ time: sig.time, value: val, color: val >= 0 ? '#10b981' : '#ef4444' });
+        }
+      });
+
+      return { macd: macdLine, signal: signalLine, hist };
+    }
+
+    function updateAllTechnicalIndicators() {
+      if (allCandles.length === 0) return;
+
+      if (ema9) ema9.setData(calcEMA(allCandles, 9));
+      if (ema21) ema21.setData(calcEMA(allCandles, 21));
+      if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+
+      if (bbUpper && bbBasis && bbLower) {
+        const bb = calcBollingerBands(allCandles, 20, 2);
+        bbUpper.setData(bb.upper);
+        bbBasis.setData(bb.basis);
+        bbLower.setData(bb.lower);
+      }
+
+      if (document.getElementById('check-rsi').checked) {
+        rsiSeries.setData(calcRSI(allCandles, 14));
+        chartRSI.timeScale().fitContent();
+      }
+
+      if (document.getElementById('check-macd').checked) {
+        const m = calcMACD(allCandles, 12, 26, 9);
+        macdLineSeries.setData(m.macd);
+        macdSignalSeries.setData(m.signal);
+        macdHistSeries.setData(m.hist);
+        chartMACD.timeScale().fitContent();
+      }
     }
 
     function toggleIndicatorsModal() {
@@ -874,32 +1227,49 @@
         if (chk && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
         else if (!chk && ema200) { chart1.removeSeries(ema200); ema200 = null; }
       }
-      if (allCandles.length > 0) {
-        if (ema9) ema9.setData(calcEMA(allCandles, 9));
-        if (ema21) ema21.setData(calcEMA(allCandles, 21));
-        if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+      if (type === 'bb') {
+        const chk = document.getElementById('check-bb').checked;
+        if (chk) {
+          if (!bbUpper) bbUpper = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Superior' });
+          if (!bbBasis) bbBasis = chart1.addLineSeries({ color: '#eab308', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'BB Media' });
+          if (!bbLower) bbLower = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Inferior' });
+        } else {
+          if (bbUpper) { chart1.removeSeries(bbUpper); bbUpper = null; }
+          if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
+          if (bbLower) { chart1.removeSeries(bbLower); bbLower = null; }
+        }
       }
+      if (type === 'rsi') {
+        const chk = document.getElementById('check-rsi').checked;
+        document.getElementById('rsi-subpanel').classList.toggle('hidden', !chk);
+        resizeAllCharts();
+      }
+      if (type === 'macd') {
+        const chk = document.getElementById('check-macd').checked;
+        document.getElementById('macd-subpanel').classList.toggle('hidden', !chk);
+        resizeAllCharts();
+      }
+
+      updateAllTechnicalIndicators();
     }
 
-    // --- TEMPORIZADOR DE VELAS ---
-    function updateCountdown() {
-      const tf = document.getElementById('timeframeSelect').value;
-      let tfSec = 900;
-      if (tf.endsWith('s')) tfSec = parseInt(tf);
-      else if (tf.endsWith('m')) tfSec = parseInt(tf) * 60;
-      else if (tf.endsWith('h')) tfSec = parseInt(tf) * 3600;
-      else if (tf === '1D') tfSec = 86400;
-
-      const now = Math.floor(Date.now() / 1000);
-      const remaining = tfSec - (now % tfSec);
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      document.getElementById('countdown-timer').innerText = 
-        `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    function removeAllIndicators() {
+      ['check-ema9', 'check-ema21', 'check-ema200', 'check-bb', 'check-rsi', 'check-macd'].forEach(id => {
+        document.getElementById(id).checked = false;
+      });
+      if (ema9) { chart1.removeSeries(ema9); ema9 = null; }
+      if (ema21) { chart1.removeSeries(ema21); ema21 = null; }
+      if (ema200) { chart1.removeSeries(ema200); ema200 = null; }
+      if (bbUpper) { chart1.removeSeries(bbUpper); bbUpper = null; }
+      if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
+      if (bbLower) { chart1.removeSeries(bbLower); bbLower = null; }
+      document.getElementById('rsi-subpanel').classList.add('hidden');
+      document.getElementById('macd-subpanel').classList.add('hidden');
+      resizeAllCharts();
+      closeContextMenu();
     }
-    setInterval(updateCountdown, 1000);
 
-    // --- BACKTEST MONTE CARLO ---
+    // --- MONTE CARLO ---
     async function runOneClickBacktest() {
       const tf = document.getElementById('timeframeSelect').value;
       const symbol = document.getElementById('symbolSelect').value;
@@ -939,9 +1309,10 @@
     document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
     document.getElementById('symbolSelect').addEventListener('change', loadCandles);
 
-    // Inicialización al arrancar
+    // Inicialización
     refreshSavedDatasetsDropdown();
     loadCandles();
+    setTimeout(resizeCanvas, 500);
   </script>
 </body>
 </html>
