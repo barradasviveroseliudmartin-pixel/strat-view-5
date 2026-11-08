@@ -1,10 +1,3 @@
----
-
-### 📄 CÓDIGO COMPLETO ACTUALIZADO (`index.html`)
-
-Copia y pega este código completo en tu `index.html`:
-
-```html
 <!DOCTYPE html>
 <html lang="es" translate="no" class="notranslate">
 <head>
@@ -235,7 +228,6 @@ Copia y pega este código completo en tu `index.html`:
           <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
             Pantalla 1 (<span id="p1-tf-label">15m</span>)
           </div>
-          <!-- Segundero + Controles de Ventana Esquina Superior Derecha -->
           <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-amber-500/80 text-amber-400 shadow pointer-events-none flex items-center gap-1">
               <span>⏱</span> <span id="tv-countdown-p1">00:00</span>
@@ -340,12 +332,8 @@ Copia y pega este código completo en tu `index.html`:
       <!-- DIVISOR HORIZONTAL ARRASTRABLE (FLECHITA ARRIBA / ABAJO) ENTRE GRÁFICO Y PROBADOR/IDE -->
       <div id="resizer-bottom" class="resizer-h" title="Arrastra hacia arriba o hacia abajo para agrandar el Gráfico o el Probador/Editor"></div>
 
-      <!-- ======================================================================
-           PANEL INFERIOR UNIFICADO: PROBADOR DE ESTRATEGIA + MÓDULO 3 (IDE)
-           ====================================================================== -->
+      <!-- PANEL INFERIOR UNIFICADO: PROBADOR DE ESTRATEGIA + MÓDULO 3 (IDE) -->
       <div id="strategy-panel" class="h-72 bg-[#131722] flex flex-col shrink-0 relative">
-        
-        <!-- Cabecera de Pestañas del Panel Inferior + Botones Minimizar/Medio/Completa -->
         <div class="h-9 border-b border-gray-800 flex items-center justify-between px-3 bg-[#1e222d]/80 text-xs text-gray-300 select-none shrink-0">
           <div class="flex items-center space-x-2">
             <button onclick="switchBottomSubTab('performance')" id="subtab-btn-perf" class="px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition">
@@ -357,14 +345,12 @@ Copia y pega este código completo en tu `index.html`:
             </button>
           </div>
 
-          <!-- Estado del Validador de Sintaxis en Tiempo Real (3.3) + Controles de Ventana -->
           <div class="flex items-center space-x-2">
             <div id="syntax-status-badge" class="flex items-center gap-1.5 text-[11px] font-mono bg-[#131722] px-2.5 py-0.5 rounded border border-gray-700">
               <span id="syntax-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
               <span id="syntax-text" class="text-emerald-400">Sintaxis Válida (0 errores)</span>
             </div>
 
-            <!-- Botones estilo TradingView: Minimizar, Medio, Pantalla Completa, Cerrar -->
             <div class="flex items-center bg-[#131722] border border-gray-700 rounded px-1.5 py-0.5 space-x-1.5 text-xs">
               <button onclick="setBottomPanelMode('min')" title="Minimizar barra inferior" class="text-gray-400 hover:text-amber-400 px-1 font-bold">_</button>
               <button onclick="setBottomPanelMode('mid')" title="Tamaño Medio (50%)" class="text-gray-400 hover:text-sky-400 px-1 font-bold">❐</button>
@@ -383,16 +369,13 @@ Copia y pega este código completo en tu `index.html`:
             <div><p class="text-gray-500 text-[10px]">Operaciones rentables (Win Rate)</p><p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">50.00% (2/4)</p></div>
             <div><p class="text-gray-500 text-[10px]">Factor de ganancias (Profit Factor)</p><p id="st-pf" class="text-sm font-bold text-gray-200 font-mono">5.089</p></div>
           </div>
-
           <div class="flex-1 p-2 relative bg-[#090d16]">
             <div id="equity-chart-container" class="w-full h-full"></div>
           </div>
         </div>
 
-        <!-- SUB-VISTA 2: MÓDULO 3 - EDITOR DE CÓDIGO INTEGRADO (IDE) Y MOTOR DE ESTRATEGIAS -->
+        <!-- SUB-VISTA 2: MÓDULO 3 - EDITOR DE CÓDIGO INTEGRADO (IDE) -->
         <div id="subview-ide" class="hidden flex-1 flex flex-col overflow-hidden bg-[#0b0e14]">
-          
-          <!-- 3.2 Barra de Inputs Institucionales (TP, SL, Trailing Stop, Loteo, Gestión de Riesgo) -->
           <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
             <div class="flex items-center space-x-2">
               <span class="text-sky-400 font-bold uppercase tracking-wider">Bot:</span>
@@ -403,21 +386,20 @@ Copia y pega este código completo en tu `index.html`:
               </select>
             </div>
 
-            <!-- Parámetros de Gestión de Riesgo e Inputs -->
             <div class="flex items-center space-x-3 font-mono">
-              <label class="flex items-center gap-1 text-gray-300" title="Take Profit en puntos/pips (0 = desactivado)">
+              <label class="flex items-center gap-1 text-gray-300" title="Take Profit en puntos/pips">
                 <span class="text-emerald-400 font-bold">TP:</span>
                 <input type="number" id="inp-tp" value="150" min="0" step="10" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-emerald-300 text-right">
               </label>
-              <label class="flex items-center gap-1 text-gray-300" title="Stop Loss en puntos/pips (0 = desactivado)">
+              <label class="flex items-center gap-1 text-gray-300" title="Stop Loss en puntos/pips">
                 <span class="text-rose-400 font-bold">SL:</span>
                 <input type="number" id="inp-sl" value="80" min="0" step="10" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-rose-300 text-right">
               </label>
-              <label class="flex items-center gap-1 text-gray-300" title="Trailing Stop dinámico en puntos/pips (0 = desactivado)">
+              <label class="flex items-center gap-1 text-gray-300" title="Trailing Stop dinámico en puntos/pips">
                 <span class="text-amber-400 font-bold">Trail:</span>
                 <input type="number" id="inp-ts" value="50" min="0" step="10" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-amber-300 text-right">
               </label>
-              <label class="flex items-center gap-1 text-gray-300" title="Tamaño de Lote (Lots)">
+              <label class="flex items-center gap-1 text-gray-300" title="Tamaño de Lote">
                 <span class="text-sky-400 font-bold">Lotes:</span>
                 <input type="number" id="inp-lots" value="1.0" min="0.01" step="0.1" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200 text-right">
               </label>
@@ -430,7 +412,6 @@ Copia y pega este código completo en tu `index.html`:
               </label>
             </div>
 
-            <!-- Botones de Acción del IDE -->
             <div class="flex items-center space-x-1.5">
               <button onclick="compileAndRunStrategy()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded shadow flex items-center gap-1 transition">
                 <span>▶ Compilar y Marcar Gráfico</span>
@@ -441,18 +422,11 @@ Copia y pega este código completo en tu `index.html`:
             </div>
           </div>
 
-          <!-- Cuerpo Dividido: Editor de Código (Izquierda) + Divisor Vertical + Consola (Derecha) -->
           <div id="ide-split-container" class="flex-1 flex overflow-hidden">
-            <!-- Editor con numeración de líneas -->
             <div id="ide-editor-pane" class="w-3/5 flex flex-col bg-[#090d16] relative min-w-[220px]">
               <div class="flex-1 flex overflow-hidden relative">
-                <div id="ide-line-numbers" class="sv5-code-font w-10 py-2.5 bg-[#131722] text-gray-600 text-right pr-2 select-none overflow-hidden border-r border-gray-800">
-                  1
-                </div>
-                <textarea id="stratscript-editor" spellcheck="false"
-                          oninput="handleEditorInput()"
-                          onscroll="syncEditorScroll()"
-                          class="sv5-code-font flex-1 bg-transparent text-gray-200 p-2.5 w-full h-full overflow-y-auto whitespace-pre"></textarea>
+                <div id="ide-line-numbers" class="sv5-code-font w-10 py-2.5 bg-[#131722] text-gray-600 text-right pr-2 select-none overflow-hidden border-r border-gray-800">1</div>
+                <textarea id="stratscript-editor" spellcheck="false" oninput="handleEditorInput()" onscroll="syncEditorScroll()" class="sv5-code-font flex-1 bg-transparent text-gray-200 p-2.5 w-full h-full overflow-y-auto whitespace-pre"></textarea>
               </div>
               <div class="h-5 bg-[#131722] border-t border-gray-800 px-3 flex items-center justify-between text-[10px] text-gray-400 font-mono shrink-0">
                 <span>API: <b class="text-sky-400">ema(p)</b>, <b class="text-sky-400">sma(p)</b>, <b class="text-sky-400">rsi(p)</b>, <b class="text-sky-400">bb(p,m)</b>, <b class="text-emerald-400">strategy.entry(i, LONG)</b>, <b class="text-amber-400">OrderSend()</b></span>
@@ -460,10 +434,8 @@ Copia y pega este código completo en tu `index.html`:
               </div>
             </div>
 
-            <!-- Divisor Vertical Arrastrable entre Editor de Código y Consola -->
             <div id="resizer-ide-inner" class="resizer-v" title="Arrastra hacia los lados para ajustar ancho del Editor / Consola"></div>
 
-            <!-- Consola de Ejecución y Depuración de Operaciones -->
             <div id="ide-console-pane" class="flex-1 flex flex-col bg-[#0b0e14] min-w-[200px]">
               <div class="grid grid-cols-4 gap-1.5 p-2 bg-[#131722]/70 border-b border-gray-800 text-center font-mono shrink-0">
                 <div class="bg-[#090d16] p-1 rounded border border-gray-800">
@@ -489,15 +461,14 @@ Copia y pega este código completo en tu `index.html`:
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- DIVISOR VERTICAL ARRASTRABLE (FLECHITA HACIA LOS LADOS) ENTRE GRÁFICOS Y PANEL DERECHO -->
+    <!-- DIVISOR VERTICAL ARRASTRABLE (FLECHITA HACIA LOS LADOS) -->
     <div id="resizer-right" class="resizer-v" title="Arrastra hacia la izquierda o derecha para redimensionar el panel lateral"></div>
 
-    <!-- Panel Lateral Derecho con Controles de Ventana -->
+    <!-- Panel Lateral Derecho -->
     <aside id="right-sidebar" class="w-80 bg-[#131722] p-3 flex flex-col gap-3 overflow-y-auto shrink-0 z-10 relative">
       <div class="flex items-center justify-between border-b border-gray-800 pb-1.5">
         <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Panel de Control</span>
@@ -534,9 +505,7 @@ Copia y pega este código completo en tu `index.html`:
           <span class="text-xs font-bold text-gray-300">📁 Base de Datos MT5</span>
           <span id="db-count" class="text-[10px] text-emerald-400 font-mono">0 archivos</span>
         </div>
-        <p class="text-[11px] text-gray-400 mb-2 leading-tight">
-          Almacenamiento indexado de alta velocidad listo.
-        </p>
+        <p class="text-[11px] text-gray-400 mb-2 leading-tight">Almacenamiento indexado de alta velocidad listo.</p>
         <button onclick="clearMT5Database()" class="w-full text-[10px] text-rose-400 hover:text-rose-300 border border-rose-950 hover:bg-rose-950/40 py-1 rounded transition">
           Vaciar Historial MT5 Guardado
         </button>
@@ -613,12 +582,11 @@ Copia y pega este código completo en tu `index.html`:
       </div>
     </div>
   </div>
-
-  <script>
+<script>
     const API_BASE_URL = "https://strat-view-5.onrender.com";
-    const MAX_CHART_BUFFER = 20000; // Buffer óptimo a 60 FPS estilo TradingView
+    const MAX_CHART_BUFFER = 20000;
 
-    // --- BASE DE DATOS LOCAL PERSISTENTE ULTRA LIGERA ---
+    // --- BASE DE DATOS LOCAL PERSISTENTE ---
     const DB_NAME = "StratView5_Storage";
     const DB_VERSION = 1;
     const STORE_NAME = "mt5_datasets";
@@ -628,9 +596,7 @@ Copia y pega este código completo en tu `index.html`:
         const req = indexedDB.open(DB_NAME, DB_VERSION);
         req.onupgradeneeded = (e) => {
           const db = e.target.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { keyPath: "id" });
-          }
+          if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: "id" });
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -657,7 +623,6 @@ Copia y pega este código completo en tu `index.html`:
       });
     }
 
-    // Lazy load: solo extrae metadatos para no congelar la memoria
     async function getDatasetsMetadata() {
       const db = await openDatabase();
       return new Promise((resolve) => {
@@ -668,15 +633,9 @@ Copia y pega este código completo en tu `index.html`:
         req.onsuccess = (e) => {
           const cursor = e.target.result;
           if (cursor) {
-            results.push({
-              id: cursor.value.id,
-              name: cursor.value.name,
-              candlesCount: cursor.value.candlesCount
-            });
+            results.push({ id: cursor.value.id, name: cursor.value.name, candlesCount: cursor.value.candlesCount });
             cursor.continue();
-          } else {
-            resolve(results);
-          }
+          } else resolve(results);
         };
         req.onerror = () => resolve([]);
       });
@@ -687,10 +646,7 @@ Copia y pega este código completo en tu `index.html`:
       const db = await openDatabase();
       const tx = db.transaction(STORE_NAME, "readwrite");
       tx.objectStore(STORE_NAME).clear();
-      tx.oncomplete = () => {
-        refreshSavedDatasetsDropdown();
-        alert("Base de datos MT5 vaciada.");
-      };
+      tx.oncomplete = () => { refreshSavedDatasetsDropdown(); alert("Base de datos MT5 vaciada."); };
     }
 
     // --- GRÁFICOS LIGHTWEIGHT CHARTS ---
@@ -729,14 +685,10 @@ Copia y pega este código completo en tu `index.html`:
     let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
     let bbUpper = null, bbBasis = null, bbLower = null;
 
-    // Subpaneles RSI & MACD con escala de precio de igual ancho (75px) para alineación vertical exacta
     const rsiCont = document.getElementById('chart-rsi');
     const chartRSI = LightweightCharts.createChart(rsiCont, {
-      ...baseChartOptions,
-      width: rsiCont.clientWidth || 800,
-      height: 110,
-      rightPriceScale: { minimumWidth: 75 },
-      timeScale: { visible: false, rightOffset: 12 }
+      ...baseChartOptions, width: rsiCont.clientWidth || 800, height: 110,
+      rightPriceScale: { minimumWidth: 75 }, timeScale: { visible: false, rightOffset: 12 }
     });
     const rsiSeries = chartRSI.addLineSeries({ color: '#f59e0b', lineWidth: 2, title: 'RSI 14' });
     rsiSeries.createPriceLine({ price: 70, color: '#ef4444', lineStyle: LightweightCharts.LineStyle.Dotted, title: '70' });
@@ -744,11 +696,8 @@ Copia y pega este código completo en tu `index.html`:
 
     const macdCont = document.getElementById('chart-macd');
     const chartMACD = LightweightCharts.createChart(macdCont, {
-      ...baseChartOptions,
-      width: macdCont.clientWidth || 800,
-      height: 110,
-      rightPriceScale: { minimumWidth: 75 },
-      timeScale: { visible: false, rightOffset: 12 }
+      ...baseChartOptions, width: macdCont.clientWidth || 800, height: 110,
+      rightPriceScale: { minimumWidth: 75 }, timeScale: { visible: false, rightOffset: 12 }
     });
     const macdHistSeries = chartMACD.addHistogramSeries({ color: '#10b981', title: 'Hist' });
     const macdLineSeries = chartMACD.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'MACD' });
@@ -760,9 +709,7 @@ Copia y pega este código completo en tu `index.html`:
       sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
         if (isSyncingTimeScales || !range) return;
         isSyncingTimeScales = true;
-        targetCharts.forEach(tc => {
-          try { tc.timeScale().setVisibleLogicalRange(range); } catch (e) {}
-        });
+        targetCharts.forEach(tc => { try { tc.timeScale().setVisibleLogicalRange(range); } catch (e) {} });
         isSyncingTimeScales = false;
       });
     }
@@ -774,72 +721,48 @@ Copia y pega este código completo en tu `index.html`:
     let activeTool = 'crosshair';
     let currentLayout = '1';
 
-    let rawMT5Candles = [];       // Dataset bruto completo (ej. 2.1 millones de velas M1)
-    let originalFullCandles = []; // Velas en la temporalidad seleccionada de Pantalla 1
-    let allCandles = [];          // Buffer activo en Pantalla 1 (hasta 20,000 velas)
+    let rawMT5Candles = [];
+    let originalFullCandles = [];
+    let allCandles = [];
 
     let isCutModeActive = false;
     let isReplayActive = false;
     let replayIntervalId = null;
     let replayIndex = 0;
     let currentReplayTimestamp = 0;
-
-    // Estado activo del bot del Módulo 3 para sincronizar en Bar Replay
     let isBotActiveOnChart = false;
 
-    // Curva de Equidad
     const eqContainer = document.getElementById('equity-chart-container');
     const equityChart = LightweightCharts.createChart(eqContainer, {
-      width: eqContainer.clientWidth || 800,
-      height: 140,
+      width: eqContainer.clientWidth || 800, height: 140,
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#94a3b8' },
       grid: { vertLines: { color: '#121824' }, horzLines: { color: '#121824' } },
       timeScale: { visible: false }
     });
     const equitySeries = equityChart.addAreaSeries({ topColor: 'rgba(16, 185, 129, 0.4)', bottomColor: 'rgba(239, 68, 68, 0.2)', lineColor: '#10b981', lineWidth: 2 });
 
-    // --- MOTOR AGREGADOR DE TEMPORALIDADES OHLC (1m, 5m, 15m, 1h, 4h, 1D) PARA ARCHIVOS MT5 ---
+    // --- MOTOR AGREGADOR DE TEMPORALIDADES OHLC (1m, 5m, 15m, 1h, 4h, 1D) ---
     function getIntervalSeconds(tf) {
-      if (tf === '1m') return 60;
-      if (tf === '5m') return 300;
-      if (tf === '15m') return 900;
-      if (tf === '1h') return 3600;
-      if (tf === '4h') return 14400;
-      if (tf === '1D') return 86400;
-      return 900;
+      const map = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1D': 86400 };
+      return map[tf] || 900;
     }
 
     function aggregateCandlesToTimeframe(sourceCandles, tf, maxTimestamp = Infinity) {
       if (!sourceCandles || sourceCandles.length === 0) return [];
       const tfSec = getIntervalSeconds(tf);
-
-      // Encontrar hasta qué índice llegar usando búsqueda binaria si hay un corte de fecha activo
-      let endLimit = sourceCandles.length - 1;
-      if (maxTimestamp < Infinity) {
-        endLimit = binarySearchCandleIndex(sourceCandles, maxTimestamp);
-      }
-
-      // Tomar suficientes velas base para construir hasta MAX_CHART_BUFFER velas de la temporalidad objetivo
+      let endLimit = maxTimestamp < Infinity ? binarySearchCandleIndex(sourceCandles, maxTimestamp) : sourceCandles.length - 1;
       const approxBaseNeeded = Math.min(endLimit + 1, MAX_CHART_BUFFER * Math.max(1, Math.floor(tfSec / 60)));
       const startIndex = Math.max(0, endLimit - approxBaseNeeded + 1);
 
       const result = [];
       let currentBucket = null;
-
       for (let i = startIndex; i <= endLimit; i++) {
         const c = sourceCandles[i];
         if (c.time > maxTimestamp) break;
         const bucketTime = Math.floor(c.time / tfSec) * tfSec;
-
         if (!currentBucket || currentBucket.time !== bucketTime) {
           if (currentBucket) result.push(currentBucket);
-          currentBucket = {
-            time: bucketTime,
-            open: c.open,
-            high: c.high,
-            low: c.low,
-            close: c.close
-          };
+          currentBucket = { time: bucketTime, open: c.open, high: c.high, low: c.low, close: c.close };
         } else {
           if (c.high > currentBucket.high) currentBucket.high = c.high;
           if (c.low < currentBucket.low) currentBucket.low = c.low;
@@ -847,39 +770,28 @@ Copia y pega este código completo en tu `index.html`:
         }
       }
       if (currentBucket) result.push(currentBucket);
-
       return result.length > MAX_CHART_BUFFER ? result.slice(result.length - MAX_CHART_BUFFER) : result;
     }
 
-    // --- SEGUNDERO DINÁMICO EN LAS 4 PANTALLAS ---
     function formatTimeRemaining(seconds) {
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
-      const s = seconds % 60;
+      const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
       if (h > 0) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
     function updateAllCandleCountdowns() {
       const now = Math.floor(Date.now() / 1000);
-      const tf1 = document.getElementById('timeframeSelect').value;
-      const tfSec1 = getIntervalSeconds(tf1);
-
-      const rem1 = tfSec1 - (now % tfSec1);
-      const rem2 = 3600 - (now % 3600);
-      const rem3 = 14400 - (now % 14400);
-      const rem4 = 86400 - (now % 86400);
-
-      const text1 = formatTimeRemaining(rem1);
+      const tfSec1 = getIntervalSeconds(document.getElementById('timeframeSelect').value);
+      const text1 = formatTimeRemaining(tfSec1 - (now % tfSec1));
       document.getElementById('tv-countdown-p1').innerText = text1;
       document.getElementById('countdown-timer').innerText = text1;
-      document.getElementById('tv-countdown-p2').innerText = formatTimeRemaining(rem2);
-      document.getElementById('tv-countdown-p3').innerText = formatTimeRemaining(rem3);
-      document.getElementById('tv-countdown-p4').innerText = formatTimeRemaining(rem4);
+      document.getElementById('tv-countdown-p2').innerText = formatTimeRemaining(3600 - (now % 3600));
+      document.getElementById('tv-countdown-p3').innerText = formatTimeRemaining(14400 - (now % 14400));
+      document.getElementById('tv-countdown-p4').innerText = formatTimeRemaining(86400 - (now % 86400));
     }
     setInterval(updateAllCandleCountdowns, 1000);
 
-    // --- BÚSQUEDA BINARIA ULTRA RÁPIDA (O(log N)) ---
+    // --- BÚSQUEDA BINARIA O(log N) Y CORTE SINCRONIZADO ---
     function openJumpToDateModal() { document.getElementById('jumpDateModal').classList.remove('hidden'); }
     function closeJumpToDateModal() { document.getElementById('jumpDateModal').classList.add('hidden'); }
 
@@ -910,38 +822,25 @@ Copia y pega este código completo en tu `index.html`:
       const startIdx = Math.max(0, replayIndex - MAX_CHART_BUFFER + 1);
       allCandles = originalFullCandles.slice(startIdx, replayIndex + 1);
       candleSeries1.setData(allCandles);
-
       updateReplayIndicators();
 
-      // Sincronizar exactamente el rango lógico de Precio, RSI y MACD en el punto de corte
-      const logicalRange = {
-        from: Math.max(0, allCandles.length - 120),
-        to: allCandles.length - 1
-      };
+      const logicalRange = { from: Math.max(0, allCandles.length - 120), to: allCandles.length - 1 };
       chart1.timeScale().setVisibleLogicalRange(logicalRange);
       chartRSI.timeScale().setVisibleLogicalRange(logicalRange);
       chartMACD.timeScale().setVisibleLogicalRange(logicalRange);
 
-      // Si hay multiventana activa (2 o 4 pantallas), recortar también las pantallas 2, 3 y 4 en la misma fecha
       refreshSecondaryWindows();
-
       const cutDateStr = new Date(currentReplayTimestamp * 1000).toLocaleString();
-      document.getElementById('agent-verdict').innerText = 
-        `Gráfico e indicadores recortados en: ${cutDateStr}. Presiona ▶ para simular hacia adelante.`;
+      document.getElementById('agent-verdict').innerText = `Gráfico e indicadores recortados en: ${cutDateStr}. Presiona ▶ para simular.`;
     }
 
     function executeJumpToDate() {
       const inputVal = document.getElementById('jumpDateTimeInput').value;
       if (!inputVal) return;
-
       const targetTimestamp = Math.floor(new Date(inputVal).getTime() / 1000);
-      if (originalFullCandles.length === 0 && allCandles.length > 0) {
-        originalFullCandles = [...allCandles];
-      }
+      if (originalFullCandles.length === 0 && allCandles.length > 0) originalFullCandles = [...allCandles];
       if (originalFullCandles.length === 0) return;
-
-      const cutIdx = binarySearchCandleIndex(originalFullCandles, targetTimestamp);
-      applyCutAtIndex(cutIdx);
+      applyCutAtIndex(binarySearchCandleIndex(originalFullCandles, targetTimestamp));
     }
 
     // --- CANVAS DE DIBUJO ---
@@ -950,11 +849,7 @@ Copia y pega este código completo en tu `index.html`:
     let customDrawings = [];
     let currentDrawing = null;
 
-    function resizeCanvas() {
-      canvas.width = c1.clientWidth;
-      canvas.height = c1.clientHeight;
-      redrawAllCanvasShapes();
-    }
+    function resizeCanvas() { canvas.width = c1.clientWidth; canvas.height = c1.clientHeight; redrawAllCanvasShapes(); }
 
     function selectTool(tool) {
       if (isCutModeActive) exitReplayMode();
@@ -970,34 +865,24 @@ Copia y pega este código completo en tu `index.html`:
     canvas.addEventListener('mousedown', (e) => {
       if (!['trendline', 'fibonacci', 'box'].includes(activeTool)) return;
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
       if (!currentDrawing) {
         currentDrawing = { type: activeTool, startX: x, startY: y, endX: x, endY: y };
       } else {
-        currentDrawing.endX = x;
-        currentDrawing.endY = y;
-        customDrawings.push(currentDrawing);
-        currentDrawing = null;
-        redrawAllCanvasShapes();
-        selectTool('crosshair');
+        currentDrawing.endX = x; currentDrawing.endY = y;
+        customDrawings.push(currentDrawing); currentDrawing = null;
+        redrawAllCanvasShapes(); selectTool('crosshair');
       }
     });
 
     canvas.addEventListener('mousemove', (e) => {
       if (!currentDrawing) return;
       const rect = canvas.getBoundingClientRect();
-      currentDrawing.endX = e.clientX - rect.left;
-      currentDrawing.endY = e.clientY - rect.top;
-      redrawAllCanvasShapes();
-      drawShape(currentDrawing);
+      currentDrawing.endX = e.clientX - rect.left; currentDrawing.endY = e.clientY - rect.top;
+      redrawAllCanvasShapes(); drawShape(currentDrawing);
     });
 
-    function redrawAllCanvasShapes() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      customDrawings.forEach(shape => drawShape(shape));
-    }
+    function redrawAllCanvasShapes() { ctx.clearRect(0, 0, canvas.width, canvas.height); customDrawings.forEach(drawShape); }
 
     function drawShape(s) {
       if (s.type === 'trendline') {
@@ -1005,8 +890,8 @@ Copia y pega este código completo en tu `index.html`:
         ctx.beginPath(); ctx.moveTo(s.startX, s.startY); ctx.lineTo(s.endX, s.endY); ctx.stroke();
       } else if (s.type === 'box') {
         ctx.strokeStyle = '#10b981'; ctx.fillStyle = 'rgba(16, 185, 129, 0.15)'; ctx.lineWidth = 1.5;
-        const w = s.endX - s.startX; const h = s.endY - s.startY;
-        ctx.fillRect(s.startX, s.startY, w, h); ctx.strokeRect(s.startX, s.startY, w, h);
+        ctx.fillRect(s.startX, s.startY, s.endX - s.startX, s.endY - s.startY);
+        ctx.strokeRect(s.startX, s.startY, s.endX - s.startX, s.endY - s.startY);
       } else if (s.type === 'fibonacci') {
         const levels = [
           { p: 0.0, c: '#94a3b8' }, { p: 0.236, c: '#ef4444' }, { p: 0.382, c: '#f59e0b' },
@@ -1025,28 +910,20 @@ Copia y pega este código completo en tu `index.html`:
 
     function clearAllDrawings() {
       drawnLines.forEach(l => candleSeries1.removePriceLine(l));
-      drawnLines = [];
-      customDrawings = [];
-      currentDrawing = null;
-      redrawAllCanvasShapes();
-      closeContextMenu();
+      drawnLines = []; customDrawings = []; currentDrawing = null;
+      redrawAllCanvasShapes(); closeContextMenu();
     }
 
     chart1.subscribeClick((param) => {
       if (!param || !param.point) return;
-      if (isCutModeActive && param.time) {
-        executeCutAtTime(param.time);
-        return;
-      }
+      if (isCutModeActive && param.time) { executeCutAtTime(param.time); return; }
       if (activeTool === 'horizontal') {
         const price = candleSeries1.coordinateToPrice(param.point.y);
         if (price) {
-          const line = candleSeries1.createPriceLine({
-            price: price, color: '#38bdf8', lineWidth: 1.5,
-            lineStyle: LightweightCharts.LineStyle.Solid,
+          drawnLines.push(candleSeries1.createPriceLine({
+            price, color: '#38bdf8', lineWidth: 1.5, lineStyle: LightweightCharts.LineStyle.Solid,
             axisLabelVisible: true, title: `Nivel ${formatPrice(price)}`
-          });
-          drawnLines.push(line);
+          }));
           selectTool('crosshair');
         }
       }
@@ -1060,8 +937,7 @@ Copia y pega este código completo en tu `index.html`:
     c1.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const menu = document.getElementById('contextMenu');
-      menu.style.top = `${e.clientY}px`;
-      menu.style.left = `${e.clientX}px`;
+      menu.style.top = `${e.clientY}px`; menu.style.left = `${e.clientX}px`;
       menu.classList.remove('hidden');
     });
 
@@ -1069,10 +945,7 @@ Copia y pega este código completo en tu `index.html`:
     function closeContextMenu() { document.getElementById('contextMenu').classList.add('hidden'); }
 
     function resetChart() {
-      chart1.timeScale().fitContent();
-      chart2.timeScale().fitContent();
-      chart3.timeScale().fitContent();
-      chart4.timeScale().fitContent();
+      [chart1, chart2, chart3, chart4].forEach(ch => ch.timeScale().fitContent());
       closeContextMenu();
     }
 
@@ -1089,185 +962,127 @@ Copia y pega este código completo en tu `index.html`:
       }, 30);
     }
 
-    // --- CONTROLES DE VENTANA (MINIMIZAR _ / MEDIO ❐ / PANTALLA COMPLETA ⛶) ---
+    // --- CONTROLES DE VENTANA Y SPLITTERS ARRASTRABLES ---
     function setWindowSize(boxId, mode) {
       const box = document.getElementById(boxId);
       if (!box) return;
-
-      if (mode === 'max') {
-        box.classList.toggle('sv5-window-fullscreen');
-      } else if (mode === 'mid') {
+      if (mode === 'max') box.classList.toggle('sv5-window-fullscreen');
+      else if (mode === 'mid') {
         box.classList.remove('sv5-window-fullscreen');
         document.getElementById('strategy-panel').style.height = '18rem';
       } else if (mode === 'min') {
         box.classList.remove('sv5-window-fullscreen');
         if (boxId === 'chart-box-1') {
-          // Minimizar gráfico equivale a darle más espacio al panel inferior
           document.getElementById('strategy-panel').classList.remove('hidden');
           document.getElementById('strategy-panel').style.height = '62vh';
-        } else {
-          setLayout('1');
-        }
+        } else setLayout('1');
       }
       resizeAllCharts();
     }
 
     function setSubpanelHeight(panelId, heightPx) {
       const panel = document.getElementById(panelId);
-      if (!panel) return;
-      panel.style.height = `${heightPx}px`;
-      resizeAllCharts();
+      if (panel) { panel.style.height = `${heightPx}px`; resizeAllCharts(); }
     }
 
     function setBottomPanelMode(mode) {
       const panel = document.getElementById('strategy-panel');
       panel.classList.remove('hidden', 'sv5-window-fullscreen');
-
-      if (mode === 'min') {
-        panel.style.height = '36px';
-      } else if (mode === 'mid') {
-        panel.style.height = '45vh';
-      } else if (mode === 'max') {
-        panel.classList.add('sv5-window-fullscreen');
-        panel.style.height = '';
-      }
+      if (mode === 'min') panel.style.height = '36px';
+      else if (mode === 'mid') panel.style.height = '45vh';
+      else if (mode === 'max') { panel.classList.add('sv5-window-fullscreen'); panel.style.height = ''; }
       resizeAllCharts();
     }
 
     function setRightSidebarSize(mode) {
       const sidebar = document.getElementById('right-sidebar');
-      if (mode === 'min') sidebar.style.width = '180px';
-      else if (mode === 'mid') sidebar.style.width = '320px';
-      else if (mode === 'max') sidebar.style.width = '480px';
+      sidebar.style.width = mode === 'min' ? '180px' : mode === 'mid' ? '320px' : '480px';
       resizeAllCharts();
-    }
-
-    // --- DIVISORES ARRASTRABLES CON EL MOUSE (ARRIBA/ABAJO Y LADOS) ---
-    function initDraggableSplitters() {
-      // 1. Divisor Horizontal: Gráfico Principal <-> Panel Inferior (Probador/IDE)
-      const resBottom = document.getElementById('resizer-bottom');
-      const stratPanel = document.getElementById('strategy-panel');
-      setupHorizontalResizer(resBottom, stratPanel, true);
-
-      // 2. Divisor Horizontal: RSI
-      const resRsi = document.getElementById('resizer-rsi');
-      const rsiPanel = document.getElementById('rsi-subpanel');
-      setupHorizontalResizer(resRsi, rsiPanel, true);
-
-      // 3. Divisor Horizontal: MACD
-      const resMacd = document.getElementById('resizer-macd');
-      const macdPanel = document.getElementById('macd-subpanel');
-      setupHorizontalResizer(resMacd, macdPanel, true);
-
-      // 4. Divisor Vertical: Área de Gráficos <-> Panel Lateral Derecho
-      const resRight = document.getElementById('resizer-right');
-      const rightSidebar = document.getElementById('right-sidebar');
-      setupVerticalResizer(resRight, rightSidebar, true);
-
-      // 5. Divisor Vertical Interno del IDE: Editor de Código <-> Consola de Logs
-      const resIdeInner = document.getElementById('resizer-ide-inner');
-      const ideEditorPane = document.getElementById('ide-editor-pane');
-      setupVerticalResizer(resIdeInner, ideEditorPane, false);
     }
 
     function setupHorizontalResizer(resizerEl, targetPanel, invertDelta) {
       if (!resizerEl || !targetPanel) return;
       let startY = 0, startHeight = 0;
-
       resizerEl.addEventListener('mousedown', (e) => {
         e.preventDefault();
         targetPanel.classList.remove('hidden', 'sv5-window-fullscreen');
-        startY = e.clientY;
-        startHeight = targetPanel.getBoundingClientRect().height;
+        startY = e.clientY; startHeight = targetPanel.getBoundingClientRect().height;
         resizerEl.classList.add('active');
-
-        const onMouseMove = (ev) => {
+        const onMove = (ev) => {
           const dy = ev.clientY - startY;
           const newH = Math.max(36, Math.min(window.innerHeight - 140, invertDelta ? startHeight - dy : startHeight + dy));
           targetPanel.style.height = `${newH}px`;
           resizeAllCharts();
         };
-
-        const onMouseUp = () => {
+        const onUp = () => {
           resizerEl.classList.remove('active');
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
+          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       });
     }
 
     function setupVerticalResizer(resizerEl, targetPane, invertDelta) {
       if (!resizerEl || !targetPane) return;
       let startX = 0, startWidth = 0;
-
       resizerEl.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        startX = e.clientX;
-        startWidth = targetPane.getBoundingClientRect().width;
+        startX = e.clientX; startWidth = targetPane.getBoundingClientRect().width;
         resizerEl.classList.add('active');
-
-        const onMouseMove = (ev) => {
+        const onMove = (ev) => {
           const dx = ev.clientX - startX;
           const newW = Math.max(160, Math.min(window.innerWidth - 280, invertDelta ? startWidth - dx : startWidth + dx));
-          targetPane.style.width = `${newW}px`;
-          targetPane.style.flex = 'none';
+          targetPane.style.width = `${newW}px`; targetPane.style.flex = 'none';
           resizeAllCharts();
         };
-
-        const onMouseUp = () => {
+        const onUp = () => {
           resizerEl.classList.remove('active');
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
+          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       });
     }
 
-    // --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) CON SOPORTE TOTAL PARA ARCHIVOS MT5 Y API ---
+    function initDraggableSplitters() {
+      setupHorizontalResizer(document.getElementById('resizer-bottom'), document.getElementById('strategy-panel'), true);
+      setupHorizontalResizer(document.getElementById('resizer-rsi'), document.getElementById('rsi-subpanel'), true);
+      setupHorizontalResizer(document.getElementById('resizer-macd'), document.getElementById('macd-subpanel'), true);
+      setupVerticalResizer(document.getElementById('resizer-right'), document.getElementById('right-sidebar'), true);
+      setupVerticalResizer(document.getElementById('resizer-ide-inner'), document.getElementById('ide-editor-pane'), false);
+    }
+// --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) ---
     function setLayout(mode) {
       currentLayout = mode;
-      const b2 = document.getElementById('chart-box-2');
-      const b3 = document.getElementById('chart-box-3');
-      const b4 = document.getElementById('chart-box-4');
+      const b2 = document.getElementById('chart-box-2'), b3 = document.getElementById('chart-box-3'), b4 = document.getElementById('chart-box-4');
       const grid = document.getElementById('chart-grid');
-
-      document.querySelectorAll('#layout-btn-1, #layout-btn-2h, #layout-btn-4').forEach(b => {
-        b.className = "px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono";
+      ['1', '2h', '4'].forEach(m => {
+        document.getElementById(`layout-btn-${m}`).className = m === mode
+          ? "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono"
+          : "px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono";
       });
-
       if (mode === '1') {
         grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
         b2.classList.add('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
-        document.getElementById('layout-btn-1').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
       } else if (mode === '2h') {
         grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
         b2.classList.remove('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
-        document.getElementById('layout-btn-2h').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
       } else if (mode === '4') {
         grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 w-full relative min-h-[120px]";
         b2.classList.remove('hidden'); b3.classList.remove('hidden'); b4.classList.remove('hidden');
-        document.getElementById('layout-btn-4').className = "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono";
       }
       refreshSecondaryWindows();
       resizeAllCharts();
     }
 
     function refreshSecondaryWindows() {
-      if (currentLayout === '2h') {
-        loadWindowCandles('1h', candleSeries2, chart2);
-      } else if (currentLayout === '4') {
+      if (currentLayout === '2h') loadWindowCandles('1h', candleSeries2, chart2);
+      else if (currentLayout === '4') {
         loadWindowCandles('1h', candleSeries2, chart2);
         loadWindowCandles('4h', candleSeries3, chart3);
         loadWindowCandles('1D', candleSeries4, chart4);
       }
     }
 
-    // --- GESTIÓN DEL PANEL INFERIOR (PROBADOR + MÓDULO 3 IDE) ---
     function toggleStrategyPanel() {
       const panel = document.getElementById('strategy-panel');
       panel.classList.remove('sv5-window-fullscreen');
@@ -1277,34 +1092,23 @@ Copia y pega este código completo en tu `index.html`:
 
     function openBottomTab(tabName) {
       const panel = document.getElementById('strategy-panel');
-      if (panel.classList.contains('hidden')) {
-        panel.classList.remove('hidden');
-      }
-      if (panel.clientHeight < 100) {
-        panel.style.height = '18rem';
-      }
+      panel.classList.remove('hidden');
+      if (panel.clientHeight < 100) panel.style.height = '18rem';
       switchBottomSubTab(tabName);
       resizeAllCharts();
     }
 
     function switchBottomSubTab(tabName) {
-      const perfView = document.getElementById('subview-performance');
-      const ideView = document.getElementById('subview-ide');
-      const btnPerf = document.getElementById('subtab-btn-perf');
-      const btnIde = document.getElementById('subtab-btn-ide');
-
-      if (tabName === 'ide') {
-        perfView.classList.add('hidden');
-        ideView.classList.remove('hidden');
-        btnIde.className = "px-3 py-1 rounded font-bold bg-sky-600/20 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5";
-        btnPerf.className = "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition";
-      } else {
-        ideView.classList.add('hidden');
-        perfView.classList.remove('hidden');
-        btnPerf.className = "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition";
-        btnIde.className = "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-        resizeAllCharts();
-      }
+      const isIde = tabName === 'ide';
+      document.getElementById('subview-performance').classList.toggle('hidden', isIde);
+      document.getElementById('subview-ide').classList.toggle('hidden', !isIde);
+      document.getElementById('subtab-btn-ide').className = isIde
+        ? "px-3 py-1 rounded font-bold bg-sky-600/20 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5"
+        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
+      document.getElementById('subtab-btn-perf').className = !isIde
+        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition"
+        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition";
+      resizeAllCharts();
     }
 
     async function fetchCandlesFromAPI(symbol, interval) {
@@ -1323,37 +1127,25 @@ Copia y pega este código completo en tu `index.html`:
     async function loadWindowCandles(interval, targetSeries, targetChart) {
       const symbol = document.getElementById('symbolSelect').value;
       const cutLimit = isReplayActive && currentReplayTimestamp > 0 ? currentReplayTimestamp : Infinity;
-
-      // Si es un archivo MT5 local (o si tenemos velas base en memoria), construir la temporalidad automáticamente
       const baseSource = rawMT5Candles.length > 0 ? rawMT5Candles : originalFullCandles;
+
       if (symbol.startsWith("mt5_id_") || baseSource.length > 0) {
         const aggregated = aggregateCandlesToTimeframe(baseSource, interval, cutLimit);
         if (aggregated.length > 0) {
           targetSeries.setData(aggregated);
-          targetChart.timeScale().setVisibleLogicalRange({
-            from: Math.max(0, aggregated.length - 100),
-            to: aggregated.length - 1
-          });
+          targetChart.timeScale().setVisibleLogicalRange({ from: Math.max(0, aggregated.length - 100), to: aggregated.length - 1 });
         }
         return;
       }
-
       try {
         let candles = await fetchCandlesFromAPI(symbol, interval);
-        if (cutLimit < Infinity) {
-          candles = candles.filter(c => c.time <= cutLimit);
-        }
-        if (candles.length > 0) {
-          targetSeries.setData(candles);
-          targetChart.timeScale().fitContent();
-        }
+        if (cutLimit < Infinity) candles = candles.filter(c => c.time <= cutLimit);
+        if (candles.length > 0) { targetSeries.setData(candles); targetChart.timeScale().fitContent(); }
       } catch (err) {}
     }
 
-    // --- CARGA ULTRA RÁPIDA DE VELAS CON VIRTUAL CHUNKS Y MULTI-TEMPORALIDAD ---
     async function loadCandles() {
       if (isReplayActive) exitReplayMode();
-
       const symbol = document.getElementById('symbolSelect').value;
       const tf = document.getElementById('timeframeSelect').value;
       document.getElementById('p1-tf-label').innerText = tf;
@@ -1362,75 +1154,45 @@ Copia y pega este código completo en tu `index.html`:
         const dataset = await getDatasetFromDB(symbol);
         if (dataset && dataset.candles && dataset.candles.length > 0) {
           rawMT5Candles = dataset.candles;
-          // Agregar según la temporalidad elegida (1m, 5m, 15m, 1h, 4h, 1D)
-          if (tf === '1m') {
-            originalFullCandles = rawMT5Candles;
-          } else {
-            originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
-          }
-
-          const startIdx = Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER);
-          allCandles = originalFullCandles.slice(startIdx);
+          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+          allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
           displayCandlesOnChart(allCandles);
           refreshSecondaryWindows();
-
-          document.getElementById('agent-verdict').innerText = 
-            `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base en memoria. Fluidez 60 FPS.`;
+          document.getElementById('agent-verdict').innerText = `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base. Fluidez 60 FPS.`;
         }
         return;
       }
-
       try {
         const data = await fetchCandlesFromAPI(symbol, tf);
-        rawMT5Candles = [...data];
-        originalFullCandles = [...data];
-        allCandles = [...data];
+        rawMT5Candles = [...data]; originalFullCandles = [...data]; allCandles = [...data];
         displayCandlesOnChart(allCandles);
         refreshSecondaryWindows();
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     }
 
     function displayCandlesOnChart(data) {
       candleSeries1.setData(data);
       updateAllTechnicalIndicators();
-
-      const logicalRange = {
-        from: Math.max(0, data.length - 150),
-        to: Math.max(0, data.length - 1)
-      };
+      const logicalRange = { from: Math.max(0, data.length - 150), to: Math.max(0, data.length - 1) };
       chart1.timeScale().setVisibleLogicalRange(logicalRange);
       chartRSI.timeScale().setVisibleLogicalRange(logicalRange);
       chartMACD.timeScale().setVisibleLogicalRange(logicalRange);
-
-      if (data.length > 0) {
-        document.getElementById('price-display').innerText = formatPrice(data[data.length - 1].close);
-      }
-
-      if (isBotActiveOnChart) {
-        compileAndRunStrategy(true);
-      }
+      if (data.length > 0) document.getElementById('price-display').innerText = formatPrice(data[data.length - 1].close);
+      if (isBotActiveOnChart) compileAndRunStrategy(true);
     }
 
-    // --- GUARDADO MT5 CSV ASÍNCRONO ---
     async function handleMT5CSV(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       document.getElementById('agent-verdict').innerText = `Procesando ${file.name}...`;
-
       const reader = new FileReader();
       reader.onload = async function(e) {
-        const text = e.target.result;
-        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        const lines = e.target.result.split(/\r?\n/).filter(l => l.trim().length > 0);
         if (lines.length < 2) return;
-
         const parsed = [];
         for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(/[,\t;]/).map(item => item.trim().replace(/"/g, ''));
+          const row = lines[i].split(/[,\t;]/).map(s => s.trim().replace(/"/g, ''));
           if (row.length < 5) continue;
-
           let timeVal = 0, o = 0, h = 0, l = 0, c = 0;
           if (row.length >= 6 && (row[0].includes('.') || row[0].includes('-') || row[0].includes('/'))) {
             const dateStr = row[0].replace(/\./g, '-');
@@ -1440,38 +1202,23 @@ Copia y pega este código completo en tu `index.html`:
             timeVal = Math.floor(new Date(row[0]).getTime() / 1000);
             o = parseFloat(row[1]); h = parseFloat(row[2]); l = parseFloat(row[3]); c = parseFloat(row[4]);
           }
-
           if (!isNaN(timeVal) && !isNaN(o) && !isNaN(h) && !isNaN(l) && !isNaN(c)) {
             parsed.push({ time: timeVal, open: o, high: h, low: l, close: c });
           }
         }
-
         if (parsed.length > 0) {
           parsed.sort((a, b) => a.time - b.time);
           const datasetId = `mt5_id_${Date.now()}`;
           const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
-
-          await saveDatasetToDB({
-            id: datasetId,
-            name: cleanName,
-            candlesCount: parsed.length,
-            savedAt: new Date().toLocaleDateString(),
-            candles: parsed
-          });
-
+          await saveDatasetToDB({ id: datasetId, name: cleanName, candlesCount: parsed.length, savedAt: new Date().toLocaleDateString(), candles: parsed });
           await refreshSavedDatasetsDropdown(datasetId);
-
           rawMT5Candles = parsed;
           const tf = document.getElementById('timeframeSelect').value;
           originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
-
-          const startIdx = Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER);
-          allCandles = originalFullCandles.slice(startIdx);
+          allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
           displayCandlesOnChart(allCandles);
           refreshSecondaryWindows();
-
-          document.getElementById('agent-verdict').innerText = 
-            `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length.toLocaleString()} velas). Listo para simular.`;
+          document.getElementById('agent-verdict').innerText = `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length.toLocaleString()} velas).`;
         }
       };
       reader.readAsText(file);
@@ -1482,53 +1229,35 @@ Copia y pega este código completo en tu `index.html`:
       optgroup.innerHTML = "";
       const metaList = await getDatasetsMetadata();
       document.getElementById('db-count').innerText = `${metaList.length} archivos`;
-
-      if (metaList.length === 0) {
-        optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`;
-        return;
-      }
-
+      if (metaList.length === 0) { optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`; return; }
       metaList.forEach(ds => {
         const opt = document.createElement('option');
-        opt.value = ds.id;
-        opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} velas)`;
+        opt.value = ds.id; opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} velas)`;
         if (selectedId && ds.id === selectedId) opt.selected = true;
         optgroup.appendChild(opt);
       });
     }
 
-    // --- REPLAY / TIJERAS ULTRA RÁPIDO CON SINCRONIZACIÓN DE TODOS LOS INDICADORES Y VENTANAS ---
     function toggleCutMode() {
       if (allCandles.length === 0) return;
       isCutModeActive = !isCutModeActive;
-      const btn = document.getElementById('btn-cut-replay');
-      const banner = document.getElementById('replay-banner');
-
-      if (isCutModeActive) {
-        btn.classList.add('bg-amber-500', 'text-black');
-        banner.classList.remove('hidden');
-        c1.classList.add('scissor-cursor');
-      } else {
-        btn.classList.remove('bg-amber-500', 'text-black');
-        banner.classList.add('hidden');
-        c1.classList.remove('scissor-cursor');
-      }
+      document.getElementById('btn-cut-replay').classList.toggle('bg-amber-500', isCutModeActive);
+      document.getElementById('btn-cut-replay').classList.toggle('text-black', isCutModeActive);
+      document.getElementById('replay-banner').classList.toggle('hidden', !isCutModeActive);
+      c1.classList.toggle('scissor-cursor', isCutModeActive);
     }
 
     function executeCutAtTime(cutTime) {
       if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
       const foundIdx = binarySearchCandleIndex(originalFullCandles, cutTime);
-      if (foundIdx === -1 || foundIdx === 0) return;
-      applyCutAtIndex(foundIdx);
+      if (foundIdx > 0) applyCutAtIndex(foundIdx);
     }
 
     function updateReplayIndicators() {
       if (allCandles.length > 0) {
         document.getElementById('price-display').innerText = formatPrice(allCandles[allCandles.length - 1].close);
         updateAllTechnicalIndicators();
-        if (isBotActiveOnChart) {
-          compileAndRunStrategy(true);
-        }
+        if (isBotActiveOnChart) compileAndRunStrategy(true);
       }
     }
 
@@ -1540,58 +1269,41 @@ Copia y pega este código completo en tu `index.html`:
       allCandles.push(nextCandle);
       candleSeries1.update(nextCandle);
       updateReplayIndicators();
-
-      if (currentLayout !== '1') {
-        refreshSecondaryWindows();
-      }
+      if (currentLayout !== '1') refreshSecondaryWindows();
     }
 
     function togglePlayReplay() {
       if (!isReplayActive) return;
       const playBtn = document.getElementById('btn-play-replay');
       if (replayIntervalId) {
-        clearInterval(replayIntervalId);
-        replayIntervalId = null;
-        playBtn.innerText = "▶";
-        playBtn.className = "px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold";
+        clearInterval(replayIntervalId); replayIntervalId = null;
+        playBtn.innerText = "▶"; playBtn.className = "px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold";
       } else {
-        playBtn.innerText = "⏸";
-        playBtn.className = "px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold";
+        playBtn.innerText = "⏸"; playBtn.className = "px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold";
         const speed = parseInt(document.getElementById('replaySpeed').value) || 500;
         replayIntervalId = setInterval(() => {
-          if (replayIndex >= originalFullCandles.length - 1) {
-            togglePlayReplay();
-            alert("Fin del historial alcanzado.");
-            return;
-          }
+          if (replayIndex >= originalFullCandles.length - 1) { togglePlayReplay(); alert("Fin del historial alcanzado."); return; }
           stepForwardReplay();
         }, speed);
       }
     }
 
     function exitReplayMode() {
-      if (replayIntervalId) {
-        clearInterval(replayIntervalId);
-        replayIntervalId = null;
-      }
-      isReplayActive = false;
-      isCutModeActive = false;
-      currentReplayTimestamp = 0;
+      if (replayIntervalId) { clearInterval(replayIntervalId); replayIntervalId = null; }
+      isReplayActive = false; isCutModeActive = false; currentReplayTimestamp = 0;
       document.getElementById('replay-banner').classList.add('hidden');
       document.getElementById('replay-controls').classList.add('hidden');
       document.getElementById('replay-controls').classList.remove('flex');
       document.getElementById('btn-play-replay').innerText = "▶";
       c1.classList.remove('scissor-cursor');
-
       if (originalFullCandles.length > 0) {
-        const startIdx = Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER);
-        allCandles = originalFullCandles.slice(startIdx);
+        allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
         displayCandlesOnChart(allCandles);
         refreshSecondaryWindows();
       }
     }
 
-    // --- ALGORITMOS MATEMÁTICOS O(N) LINEALES ALINEADOS 1:1 CON EL EJE DE TIEMPO ---
+    // --- INDICADORES TÉCNICOS SINCRONIZADOS 1:1 CON EL EJE DE TIEMPO ---
     function calcEMA(data, period) {
       if (!data || data.length === 0) return [];
       const k = 2 / (period + 1);
@@ -1604,36 +1316,21 @@ Copia y pega este código completo en tu `index.html`:
       return res;
     }
 
-    // Bandas de Bollinger O(N) con alineación exacta de índices (whitespace en los primeros N-1 puntos)
     function calcBollingerBands(data, period = 20, mult = 2) {
-      const upper = new Array(data.length);
-      const basis = new Array(data.length);
-      const lower = new Array(data.length);
       if (data.length < period) return { upper: [], basis: [], lower: [] };
-
+      const upper = new Array(data.length), basis = new Array(data.length), lower = new Array(data.length);
       let sum = 0, sumSq = 0;
       for (let i = 0; i < period; i++) {
-        const c = data[i].close;
-        sum += c;
-        sumSq += c * c;
-        if (i < period - 1) {
-          upper[i] = { time: data[i].time };
-          basis[i] = { time: data[i].time };
-          lower[i] = { time: data[i].time };
-        }
+        const c = data[i].close; sum += c; sumSq += c * c;
+        if (i < period - 1) { upper[i] = { time: data[i].time }; basis[i] = { time: data[i].time }; lower[i] = { time: data[i].time }; }
       }
-
       for (let i = period - 1; i < data.length; i++) {
         if (i >= period) {
-          const addC = data[i].close;
-          const remC = data[i - period].close;
-          sum += addC - remC;
-          sumSq += (addC * addC) - (remC * remC);
+          const addC = data[i].close, remC = data[i - period].close;
+          sum += addC - remC; sumSq += (addC * addC) - (remC * remC);
         }
         const mean = sum / period;
-        const variance = Math.max(0, (sumSq / period) - (mean * mean));
-        const stdDev = Math.sqrt(variance);
-
+        const stdDev = Math.sqrt(Math.max(0, (sumSq / period) - (mean * mean)));
         basis[i] = { time: data[i].time, value: mean };
         upper[i] = { time: data[i].time, value: mean + mult * stdDev };
         lower[i] = { time: data[i].time, value: mean - mult * stdDev };
@@ -1641,86 +1338,59 @@ Copia y pega este código completo en tu `index.html`:
       return { upper, basis, lower };
     }
 
-    // RSI O(N) lineal con puntos de anclaje { time } en las primeras 14 velas para sincronización 1:1 con chart1
     function calcRSI(data, period = 14) {
       if (data.length <= period) return [];
       const rsiData = new Array(data.length);
       let gains = 0, losses = 0;
-
       rsiData[0] = { time: data[0].time };
       for (let i = 1; i <= period; i++) {
         const diff = data[i].close - data[i - 1].close;
         if (diff >= 0) gains += diff; else losses -= diff;
         if (i < period) rsiData[i] = { time: data[i].time };
       }
-      let avgGain = gains / period;
-      let avgLoss = losses / period;
-      const rs0 = avgLoss === 0 ? 100 : avgGain / avgLoss;
-      rsiData[period] = { time: data[period].time, value: 100 - (100 / (1 + rs0)) };
-
+      let avgGain = gains / period, avgLoss = losses / period;
+      rsiData[period] = { time: data[period].time, value: avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss)) };
       for (let i = period + 1; i < data.length; i++) {
         const diff = data[i].close - data[i - 1].close;
         avgGain = (avgGain * (period - 1) + (diff >= 0 ? diff : 0)) / period;
         avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
-        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-        rsiData[i] = { time: data[i].time, value: 100 - (100 / (1 + rs)) };
+        rsiData[i] = { time: data[i].time, value: avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss)) };
       }
       return rsiData;
     }
 
-    // MACD O(N) lineal sincronizado 1:1 con las velas de allCandles
     function calcMACD(data, fast = 12, slow = 26, signalPeriod = 9) {
       if (data.length < slow) return { macd: [], signal: [], hist: [] };
-      const fastEMA = calcEMA(data, fast);
-      const slowEMA = calcEMA(data, slow);
+      const fastEMA = calcEMA(data, fast), slowEMA = calcEMA(data, slow);
       const macdLine = new Array(data.length);
-
-      for (let i = 0; i < data.length; i++) {
-        macdLine[i] = { time: data[i].time, value: fastEMA[i].value - slowEMA[i].value };
-      }
-
+      for (let i = 0; i < data.length; i++) macdLine[i] = { time: data[i].time, value: fastEMA[i].value - slowEMA[i].value };
       const signalLine = calcEMA(macdLine.map(m => ({ time: m.time, close: m.value })), signalPeriod);
       const hist = new Array(data.length);
-
       for (let i = 0; i < data.length; i++) {
         const val = macdLine[i].value - signalLine[i].value;
         hist[i] = { time: data[i].time, value: val, color: val >= 0 ? '#10b981' : '#ef4444' };
       }
-
       return { macd: macdLine, signal: signalLine, hist };
     }
 
     function updateAllTechnicalIndicators() {
       if (allCandles.length === 0) return;
-
       if (ema9) ema9.setData(calcEMA(allCandles, 9));
       if (ema21) ema21.setData(calcEMA(allCandles, 21));
       if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
-
       if (bbUpper && bbBasis && bbLower) {
         const bb = calcBollingerBands(allCandles, 20, 2);
-        bbUpper.setData(bb.upper);
-        bbBasis.setData(bb.basis);
-        bbLower.setData(bb.lower);
+        bbUpper.setData(bb.upper); bbBasis.setData(bb.basis); bbLower.setData(bb.lower);
       }
-
-      const currentLogicalRange = chart1.timeScale().getVisibleLogicalRange();
-
+      const currentRange = chart1.timeScale().getVisibleLogicalRange();
       if (document.getElementById('check-rsi').checked) {
         rsiSeries.setData(calcRSI(allCandles, 14));
-        if (currentLogicalRange) {
-          chartRSI.timeScale().setVisibleLogicalRange(currentLogicalRange);
-        }
+        if (currentRange) chartRSI.timeScale().setVisibleLogicalRange(currentRange);
       }
-
       if (document.getElementById('check-macd').checked) {
         const m = calcMACD(allCandles, 12, 26, 9);
-        macdLineSeries.setData(m.macd);
-        macdSignalSeries.setData(m.signal);
-        macdHistSeries.setData(m.hist);
-        if (currentLogicalRange) {
-          chartMACD.timeScale().setVisibleLogicalRange(currentLogicalRange);
-        }
+        macdLineSeries.setData(m.macd); macdSignalSeries.setData(m.signal); macdHistSeries.setData(m.hist);
+        if (currentRange) chartMACD.timeScale().setVisibleLogicalRange(currentRange);
       }
     }
 
@@ -1770,9 +1440,7 @@ Copia y pega este código completo en tu `index.html`:
     }
 
     function removeAllIndicators() {
-      ['check-ema9', 'check-ema21', 'check-ema200', 'check-bb', 'check-rsi', 'check-macd'].forEach(id => {
-        document.getElementById(id).checked = false;
-      });
+      ['check-ema9', 'check-ema21', 'check-ema200', 'check-bb', 'check-rsi', 'check-macd'].forEach(id => document.getElementById(id).checked = false);
       if (ema9) { chart1.removeSeries(ema9); ema9 = null; }
       if (ema21) { chart1.removeSeries(ema21); ema21 = null; }
       if (ema200) { chart1.removeSeries(ema200); ema200 = null; }
@@ -1783,15 +1451,12 @@ Copia y pega este código completo en tu `index.html`:
       document.getElementById('resizer-rsi').classList.add('hidden');
       document.getElementById('macd-subpanel').classList.add('hidden');
       document.getElementById('resizer-macd').classList.add('hidden');
-      resizeAllCharts();
-      closeContextMenu();
+      resizeAllCharts(); closeContextMenu();
     }
 
     // =========================================================================
     // MÓDULO 3: EDITOR DE CÓDIGO INTEGRADO (IDE) Y LENGUAJE DE ESTRATEGIAS
-    // 3.1 Pine Editor / MetaEditor | 3.2 Motor StratScript/MQL5/Python | 3.3 Validador
     // =========================================================================
-
     const STRATEGY_PRESETS = {
       stratscript_ema_rsi: `// ============================================================================
 // [MÓDULO 3] StratScript Engine: Cruce EMA (9/21) + Filtro RSI + SL/TP/Trail
@@ -1811,7 +1476,6 @@ for (let i = 25; i < bars.length; i++) {
         strategy.entry(i, SHORT, "SELL EMA+RSI");
     }
 }`,
-
       mql5_style: `// ============================================================================
 // [MÓDULO 3] Sintaxis Compatible MQL5: OrderSend() con Bandas de Bollinger
 // ============================================================================
@@ -1819,31 +1483,23 @@ const bands = iBands(20, 2.0);
 const myRSI = iRSI(14);
 
 for (let i = 25; i < bars.length; i++) {
-    // Compra institucional en rebote de Banda Inferior + Sobreventa
     if (close[i - 1] < bands.lower[i - 1] && close[i] > bands.lower[i] && myRSI[i] < 38) {
         OrderSend(_Symbol, OP_BUY, Lots, close[i], Slippage, StopLoss, TakeProfit, "MQL5 BUY BB", i);
     }
-
-    // Venta institucional en rechazo de Banda Superior + Sobrecompra
     if (close[i - 1] > bands.upper[i - 1] && close[i] < bands.upper[i] && myRSI[i] > 62) {
         OrderSend(_Symbol, OP_SELL, Lots, close[i], Slippage, StopLoss, TakeProfit, "MQL5 SELL BB", i);
     }
 }`,
-
       python_style: `# ============================================================================
 # [MÓDULO 3] Lógica Cuantitativa Estilo Python: Tendencia Institucional EMA 200
 # ============================================================================
 const ema21  = ema(21);
 const ema200 = ema(200);
-const rsi14  = rsi(14);
 
 for (let i = 205; i < bars.length; i++) {
-    # Entrada Long solo a favor de la tendencia institucional (Precio > EMA 200)
     if (close[i] > ema200[i] && crossover(ema21, ema200, i)) {
         strategy.long(i, "PY TREND BUY");
     }
-
-    # Entrada Short solo a favor de tendencia bajista (Precio < EMA 200)
     if (close[i] < ema200[i] && crossunder(ema21, ema200, i)) {
         strategy.short(i, "PY TREND SELL");
     }
@@ -1851,44 +1507,25 @@ for (let i = 205; i < bars.length; i++) {
     };
 
     function preprocessStrategyCode(rawCode) {
-      return rawCode
-        .split('\n')
-        .map(line => {
-          const trimmed = line.trimStart();
-          if (trimmed.startsWith('#')) {
-            return line.replace('#', '//');
-          }
-          return line;
-        })
-        .join('\n');
+      return rawCode.split('\n').map(l => l.trimStart().startsWith('#') ? l.replace('#', '//') : l).join('\n');
     }
 
-    // --- 3.3 VALIDADOR DE SINTAXIS EN TIEMPO REAL ---
     let syntaxTimeout = null;
-
     function validateSyntaxRealtime() {
-      const rawCode = document.getElementById('stratscript-editor').value;
-      const processed = preprocessStrategyCode(rawCode);
-      const dot = document.getElementById('syntax-dot');
-      const text = document.getElementById('syntax-text');
-
+      const processed = preprocessStrategyCode(document.getElementById('stratscript-editor').value);
+      const dot = document.getElementById('syntax-dot'), text = document.getElementById('syntax-text');
       try {
         new Function(
-          'bars', 'open', 'high', 'low', 'close', 'time',
-          'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
-          'crossover', 'crossunder', 'strategy', 'OrderSend',
-          'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
-          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input',
-          processed
+          'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
+          'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
+          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', processed
         );
         dot.className = "w-2 h-2 rounded-full bg-emerald-400";
-        text.className = "text-emerald-400";
-        text.innerText = "Sintaxis Válida (0 errores)";
+        text.className = "text-emerald-400"; text.innerText = "Sintaxis Válida (0 errores)";
         return true;
       } catch (err) {
         dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
-        text.className = "text-rose-400";
-        text.innerText = `Error: ${err.message.substring(0, 42)}`;
+        text.className = "text-rose-400"; text.innerText = `Error: ${err.message.substring(0, 42)}`;
         return false;
       }
     }
@@ -1902,32 +1539,24 @@ for (let i = 205; i < bars.length; i++) {
     function updateIdeLineNumbers() {
       const editor = document.getElementById('stratscript-editor');
       const lines = editor.value.split('\n').length;
-      const lineContainer = document.getElementById('ide-line-numbers');
       let html = '';
       for (let i = 1; i <= lines; i++) html += i + '<br>';
-      lineContainer.innerHTML = html;
-
-      const currentLine = editor.value.substring(0, editor.selectionStart).split('\n').length;
-      document.getElementById('ide-cursor-pos').innerText = `Línea ${currentLine} de ${lines}`;
+      document.getElementById('ide-line-numbers').innerHTML = html;
+      const curr = editor.value.substring(0, editor.selectionStart).split('\n').length;
+      document.getElementById('ide-cursor-pos').innerText = `Línea ${curr} de ${lines}`;
     }
 
     function syncEditorScroll() {
-      const editor = document.getElementById('stratscript-editor');
-      const lineContainer = document.getElementById('ide-line-numbers');
-      lineContainer.scrollTop = editor.scrollTop;
+      document.getElementById('ide-line-numbers').scrollTop = document.getElementById('stratscript-editor').scrollTop;
     }
 
     function loadStrategyPreset(presetKey) {
       if (STRATEGY_PRESETS[presetKey]) {
-        const editor = document.getElementById('stratscript-editor');
-        editor.value = STRATEGY_PRESETS[presetKey];
-        updateIdeLineNumbers();
-        validateSyntaxRealtime();
-        compileAndRunStrategy();
+        document.getElementById('stratscript-editor').value = STRATEGY_PRESETS[presetKey];
+        updateIdeLineNumbers(); validateSyntaxRealtime(); compileAndRunStrategy();
       }
     }
 
-    // --- 3.2 MOTOR VECTORIAL O(N) CON SIMULACIÓN DE TP / SL / TRAILING STOP ---
     function calcFastSMAArray(closeArr, period) {
       const out = new Float64Array(closeArr.length).fill(NaN);
       let sum = 0;
@@ -1943,12 +1572,8 @@ for (let i = 205; i < bars.length; i++) {
       const out = new Float64Array(closeArr.length).fill(NaN);
       if (closeArr.length === 0) return out;
       const k = 2 / (period + 1);
-      let prev = closeArr[0];
-      out[0] = prev;
-      for (let i = 1; i < closeArr.length; i++) {
-        prev = closeArr[i] * k + prev * (1 - k);
-        out[i] = prev;
-      }
+      let prev = closeArr[0]; out[0] = prev;
+      for (let i = 1; i < closeArr.length; i++) { prev = closeArr[i] * k + prev * (1 - k); out[i] = prev; }
       return out;
     }
 
@@ -1956,12 +1581,8 @@ for (let i = 205; i < bars.length; i++) {
       const out = new Float64Array(closeArr.length).fill(50);
       if (closeArr.length <= period) return out;
       let gains = 0, losses = 0;
-      for (let i = 1; i <= period; i++) {
-        const d = closeArr[i] - closeArr[i - 1];
-        if (d >= 0) gains += d; else losses -= d;
-      }
-      let avgG = gains / period;
-      let avgL = losses / period;
+      for (let i = 1; i <= period; i++) { const d = closeArr[i] - closeArr[i - 1]; if (d >= 0) gains += d; else losses -= d; }
+      let avgG = gains / period, avgL = losses / period;
       for (let i = period + 1; i < closeArr.length; i++) {
         const d = closeArr[i] - closeArr[i - 1];
         avgG = (avgG * (period - 1) + (d >= 0 ? d : 0)) / period;
@@ -1973,66 +1594,39 @@ for (let i = 205; i < bars.length; i++) {
 
     function calcFastBBArray(closeArr, period = 20, mult = 2.0) {
       const len = closeArr.length;
-      const upper = new Float64Array(len).fill(NaN);
-      const middle = new Float64Array(len).fill(NaN);
-      const lower = new Float64Array(len).fill(NaN);
+      const upper = new Float64Array(len).fill(NaN), middle = new Float64Array(len).fill(NaN), lower = new Float64Array(len).fill(NaN);
       if (len < period) return { upper, middle, lower };
-
       let sum = 0, sumSq = 0;
-      for (let i = 0; i < period; i++) {
-        sum += closeArr[i];
-        sumSq += closeArr[i] * closeArr[i];
-      }
+      for (let i = 0; i < period; i++) { sum += closeArr[i]; sumSq += closeArr[i] * closeArr[i]; }
       for (let i = period - 1; i < len; i++) {
-        if (i >= period) {
-          const add = closeArr[i], rem = closeArr[i - period];
-          sum += add - rem;
-          sumSq += add * add - rem * rem;
-        }
-        const mean = sum / period;
-        const std = Math.sqrt(Math.max(0, sumSq / period - mean * mean));
-        middle[i] = mean;
-        upper[i] = mean + mult * std;
-        lower[i] = mean - mult * std;
+        if (i >= period) { const add = closeArr[i], rem = closeArr[i - period]; sum += add - rem; sumSq += add * add - rem * rem; }
+        const mean = sum / period, std = Math.sqrt(Math.max(0, sumSq / period - mean * mean));
+        middle[i] = mean; upper[i] = mean + mult * std; lower[i] = mean - mult * std;
       }
       return { upper, middle, lower };
     }
 
     function compileAndRunStrategy(silent = false) {
-      if (!allCandles || allCandles.length === 0) return;
-      if (!validateSyntaxRealtime()) return;
-
+      if (!allCandles || allCandles.length === 0 || !validateSyntaxRealtime()) return;
       const t0 = performance.now();
       const rawCode = document.getElementById('stratscript-editor').value;
       localStorage.setItem('sv5_module3_code', rawCode);
       const code = preprocessStrategyCode(rawCode);
 
       const len = allCandles.length;
-      const open  = new Float64Array(len);
-      const high  = new Float64Array(len);
-      const low   = new Float64Array(len);
-      const close = new Float64Array(len);
-      const time  = new Array(len);
-
+      const open = new Float64Array(len), high = new Float64Array(len), low = new Float64Array(len), close = new Float64Array(len), time = new Array(len);
       for (let i = 0; i < len; i++) {
-        open[i]  = allCandles[i].open;
-        high[i]  = allCandles[i].high;
-        low[i]   = allCandles[i].low;
-        close[i] = allCandles[i].close;
-        time[i]  = allCandles[i].time;
+        open[i] = allCandles[i].open; high[i] = allCandles[i].high; low[i] = allCandles[i].low; close[i] = allCandles[i].close; time[i] = allCandles[i].time;
       }
 
       const refPrice = close[len - 1] || 1;
       const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
-
-      let TakeProfit   = parseFloat(document.getElementById('inp-tp').value) || 0;
-      let StopLoss     = parseFloat(document.getElementById('inp-sl').value) || 0;
-      let TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
-      let Lots         = parseFloat(document.getElementById('inp-lots').value) || 1.0;
-      const riskMode   = document.getElementById('inp-risk-mode').value;
-      const Slippage   = 2;
-      const _Symbol    = document.getElementById('symbolSelect').value;
-
+      const TakeProfit = parseFloat(document.getElementById('inp-tp').value) || 0;
+      const StopLoss = parseFloat(document.getElementById('inp-sl').value) || 0;
+      const TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
+      const Lots = parseFloat(document.getElementById('inp-lots').value) || 1.0;
+      const riskMode = document.getElementById('inp-risk-mode').value;
+      const Slippage = 2, _Symbol = document.getElementById('symbolSelect').value;
       const input = (name, defVal) => defVal;
 
       const indCache = {};
@@ -2041,34 +1635,201 @@ for (let i = 205; i < bars.length; i++) {
       const rsi = (p = 14) => indCache[`rsi_${p}`] || (indCache[`rsi_${p}`] = calcFastRSIArray(close, p));
       const bb  = (p = 20, m = 2.0) => indCache[`bb_${p}_${m}`] || (indCache[`bb_${p}_${m}`] = calcFastBBArray(close, p, m));
 
-      const crossover = (a, b, i) => {
-        if (i < 1) return false;
-        const bPrev = typeof b === 'number' ? b : b[i - 1];
-        const bCurr = typeof b === 'number' ? b : b[i];
-        return a[i - 1] <= bPrev && a[i] > bCurr;
-      };
-
-      const crossunder = (a, b, i) => {
-        if (i < 1) return false;
-        const bPrev = typeof b === 'number' ? b : b[i - 1];
-        const bCurr = typeof b === 'number' ? b : b[i];
-        return a[i - 1] >= bPrev && a[i] < bCurr;
-      };
+      const crossover = (a, b, i) => i >= 1 && a[i - 1] <= (typeof b === 'number' ? b : b[i - 1]) && a[i] > (typeof b === 'number' ? b : b[i]);
+      const crossunder = (a, b, i) => i >= 1 && a[i - 1] >= (typeof b === 'number' ? b : b[i - 1]) && a[i] < (typeof b === 'number' ? b : b[i]);
 
       const rawOrders = new Map();
       const LONG = 'LONG', SHORT = 'SHORT', OP_BUY = 'LONG', OP_SELL = 'SHORT';
-
       const registerSignal = (idx, dir, tag) => {
-        if (idx >= 0 && idx < len) {
-          rawOrders.set(idx, { dir: dir === 'SHORT' || dir === OP_SELL ? 'SHORT' : 'LONG', tag: tag || dir });
-        }
+        if (idx >= 0 && idx < len) rawOrders.set(idx, { dir: dir === 'SHORT' || dir === OP_SELL ? 'SHORT' : 'LONG', tag: tag || dir });
       };
-
       const strategy = {
-        long:  (i, tag = "BUY")  => registerSignal(i, 'LONG', tag),
+        long: (i, tag = "BUY") => registerSignal(i, 'LONG', tag),
         short: (i, tag = "SELL") => registerSignal(i, 'SHORT', tag),
         entry: (i, dir = 'LONG', tag = "ENTRY") => registerSignal(i, dir, tag),
-        exit:  (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
+        exit: (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
+      };
+      const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment, barIdx) => {
+        registerSignal(barIdx, cmd, comment || (cmd === OP_BUY ? "MQL5 BUY" : "MQL5 SELL"));
       };
 
-      const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment,
+      try {
+        const runner = new Function(
+          'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
+          'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
+          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', code
+        );
+        runner(allCandles, open, high, low, close, time, ema, sma, rsi, bb, ema, rsi, bb, crossover, crossunder, strategy, OrderSend, LONG, SHORT, OP_BUY, OP_SELL, _Symbol, Lots, TakeProfit, StopLoss, TrailingStop, Slippage, input);
+      } catch (err) {
+        logToIdeConsole(`❌ Error en ejecución: ${err.message}`, "error"); return;
+      }
+
+      const markers = [], closedTrades = [], equityCurve = [];
+      let balance = 10000, peakBalance = 10000, maxDrawdownUSD = 0, pos = null;
+      let countLongs = 0, countShorts = 0, countExits = 0;
+
+      for (let i = 0; i < len; i++) {
+        if (pos) {
+          let exitPrice = null, exitReason = "";
+          if (pos.dir === 'LONG') {
+            if (pos.trailDist > 0 && high[i] - pos.trailDist > pos.slPrice && high[i] > pos.entryPrice) {
+              pos.slPrice = high[i] - pos.trailDist; pos.isTrailingActive = true;
+            }
+            if (pos.slPrice > 0 && low[i] <= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
+            else if (pos.tpPrice > 0 && high[i] >= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+          } else {
+            if (pos.trailDist > 0 && (pos.slPrice === 0 || low[i] + pos.trailDist < pos.slPrice) && low[i] < pos.entryPrice) {
+              pos.slPrice = low[i] + pos.trailDist; pos.isTrailingActive = true;
+            }
+            if (pos.slPrice > 0 && high[i] >= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
+            else if (pos.tpPrice > 0 && low[i] <= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+          }
+          if (exitPrice !== null) {
+            const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
+            balance += pnl;
+            if (balance > peakBalance) peakBalance = balance;
+            if (peakBalance - balance > maxDrawdownUSD) maxDrawdownUSD = peakBalance - balance;
+            countExits++;
+            closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: exitReason });
+            markers.push({ time: time[i], position: pos.dir === 'LONG' ? 'aboveBar' : 'belowBar', color: pnl >= 0 ? '#38bdf8' : '#f59e0b', shape: 'circle', text: `${exitReason} (${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}$)` });
+            pos = null;
+          }
+        }
+
+        if (rawOrders.has(i)) {
+          const sig = rawOrders.get(i);
+          if (pos && pos.dir !== sig.dir) {
+            const exitPrice = close[i];
+            const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
+            balance += pnl;
+            if (balance > peakBalance) peakBalance = balance;
+            if (peakBalance - balance > maxDrawdownUSD) maxDrawdownUSD = peakBalance - balance;
+            closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: "🔄 REV" });
+            pos = null;
+          }
+          if (!pos && (sig.dir === 'LONG' || sig.dir === 'SHORT')) {
+            const entryPrice = close[i];
+            const slDist = StopLoss > 0 ? StopLoss * pipUnit : 0;
+            const tpDist = TakeProfit > 0 ? TakeProfit * pipUnit : 0;
+            const trailDist = TrailingStop > 0 ? TrailingStop * pipUnit : 0;
+            let unitSize = (Lots * 100) / (refPrice || 1);
+            if (riskMode === 'pct' && slDist > 0) unitSize = (balance * 0.015) / slDist;
+
+            if (sig.dir === 'LONG') {
+              countLongs++;
+              pos = { dir: 'LONG', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice - slDist : 0, tpPrice: tpDist > 0 ? entryPrice + tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
+              markers.push({ time: time[i], position: 'belowBar', color: '#10b981', shape: 'arrowUp', text: sig.tag });
+            } else {
+              countShorts++;
+              pos = { dir: 'SHORT', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice + slDist : 0, tpPrice: tpDist > 0 ? entryPrice - tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
+              markers.push({ time: time[i], position: 'aboveBar', color: '#ef4444', shape: 'arrowDown', text: sig.tag });
+            }
+          }
+        }
+        equityCurve.push({ time: time[i], value: balance });
+      }
+
+      markers.sort((a, b) => a.time - b.time);
+      candleSeries1.setMarkers(markers);
+      isBotActiveOnChart = true;
+      if (equityCurve.length > 0) { equitySeries.setData(equityCurve); equityChart.timeScale().fitContent(); }
+
+      const totalNetPnl = balance - 10000, totalNetPct = (totalNetPnl / 10000) * 100;
+      const wins = closedTrades.filter(t => t.pnl > 0), losses = closedTrades.filter(t => t.pnl <= 0);
+      const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
+      const grossProfit = wins.reduce((a, t) => a + t.pnl, 0), grossLoss = Math.abs(losses.reduce((a, t) => a + t.pnl, 0));
+      const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? "9.99" : "0.00");
+
+      const pygEl = document.getElementById('st-pyg');
+      pygEl.innerText = `${totalNetPnl >= 0 ? '+' : ''}${totalNetPnl.toFixed(2)} USD (${totalNetPct >= 0 ? '+' : ''}${totalNetPct.toFixed(2)}%)`;
+      pygEl.className = `text-sm font-bold font-mono ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('st-dd').innerText = `${maxDrawdownUSD.toFixed(2)} USD (${((maxDrawdownUSD / peakBalance) * 100).toFixed(2)}%)`;
+      document.getElementById('st-winrate').innerText = `${winRate.toFixed(1)}% (${wins.length}/${closedTrades.length})`;
+      document.getElementById('st-pf').innerText = profitFactor;
+
+      const elapsed = (performance.now() - t0).toFixed(1);
+      document.getElementById('ide-stat-trades').innerText = countLongs + countShorts;
+      document.getElementById('ide-stat-ls').innerText = `${countLongs} ▲ / ${countShorts} ▼`;
+      document.getElementById('ide-stat-exits').innerText = countExits;
+      document.getElementById('ide-stat-ms').innerText = `${elapsed} ms`;
+      if (!silent) renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
+    }
+
+    function renderIdeExecutionLog(trades, longs, shorts, netPnl, elapsed) {
+      const container = document.getElementById('ide-console-logs');
+      container.innerHTML = '';
+      logToIdeConsole(`✅ Compilado en ${elapsed} ms | Entradas: ${longs} Long, ${shorts} Short | PyG Neto: ${netPnl >= 0 ? '+' : ''}${netPnl.toFixed(2)} USD`, "info");
+      trades.slice(-80).reverse().forEach(tr => {
+        const row = document.createElement('div');
+        const isWin = tr.pnl >= 0;
+        const dateStr = new Date(tr.exitTime * 1000).toISOString().replace('T', ' ').substring(0, 16);
+        row.className = `flex justify-between items-center px-2 py-0.5 rounded bg-[#131722] border-l-2 ${isWin ? 'border-emerald-500' : 'border-rose-500'}`;
+        row.innerHTML = `<div><span class="${tr.dir === 'LONG' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${tr.dir}</span> <span class="text-gray-400">[${dateStr}]</span> <span class="text-amber-300 font-semibold">${tr.reason}</span></div><div class="${isWin ? 'text-emerald-400' : 'text-rose-400'} font-bold">${isWin ? '+' : ''}${tr.pnl.toFixed(2)} USD</div>`;
+        container.appendChild(row);
+      });
+    }
+
+    function logToIdeConsole(msg, type = "info") {
+      const container = document.getElementById('ide-console-logs');
+      const div = document.createElement('div');
+      div.className = type === "error" ? "text-rose-400 font-bold" : "text-sky-400 font-semibold";
+      div.innerText = msg; container.prepend(div);
+    }
+
+    function clearStrategyMarkers() {
+      isBotActiveOnChart = false;
+      candleSeries1.setMarkers([]);
+      document.getElementById('ide-stat-trades').innerText = "0";
+      document.getElementById('ide-stat-ls').innerText = "0 / 0";
+      document.getElementById('ide-stat-exits').innerText = "0";
+      logToIdeConsole("🧹 Marcadores de estrategia eliminados del gráfico.", "info");
+    }
+
+    async function runOneClickBacktest() {
+      compileAndRunStrategy();
+      const tf = document.getElementById('timeframeSelect').value;
+      const symbol = document.getElementById('symbolSelect').value;
+      document.getElementById('agent-verdict').innerText = `Simulando Monte Carlo sobre ${symbol}...`;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: symbol.startsWith("mt5_") ? "BTC-USD" : symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
+        });
+        const data = await res.json();
+        document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
+      } catch (e) {
+        document.getElementById('agent-verdict').innerText = "Backtest del Módulo 3 ejecutado en local a 60 FPS.";
+      }
+    }
+
+    window.addEventListener('resize', resizeAllCharts);
+    document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
+    document.getElementById('symbolSelect').addEventListener('change', loadCandles);
+
+    const editorEl = document.getElementById('stratscript-editor');
+    editorEl.value = localStorage.getItem('sv5_module3_code') || STRATEGY_PRESETS.stratscript_ema_rsi;
+    updateIdeLineNumbers();
+    validateSyntaxRealtime();
+
+    editorEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = this.selectionStart, end = this.selectionEnd;
+        this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+        this.selectionStart = this.selectionEnd = start + 4;
+        handleEditorInput();
+      }
+    });
+
+    initDraggableSplitters();
+    refreshSavedDatasetsDropdown();
+    loadCandles();
+    setTimeout(resizeCanvas, 500);
+  </script>
+</body>
+</html>
+
+
+
+
+  
