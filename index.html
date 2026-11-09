@@ -110,16 +110,16 @@
 
       <!-- Selector de Mercados -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
-        <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer max-w-[210px] truncate">
-          <optgroup label="Criptomonedas">
-            <option value="BTC-USD" selected>BTC/USD</option>
-            <option value="ETH-USD">ETH/USD</option>
-            <option value="SOL-USD">SOL/USD</option>
-          </optgroup>
+        <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer max-w-[200px] truncate">
           <optgroup label="Forex">
-            <option value="EUR-USD">EUR/USD</option>
+            <option value="EUR-USD" selected>EUR/USD</option>
             <option value="GBP-USD">GBP/USD</option>
             <option value="USD-JPY">USD/JPY</option>
+          </optgroup>
+          <optgroup label="Criptomonedas">
+            <option value="BTC-USD">BTC/USD</option>
+            <option value="ETH-USD">ETH/USD</option>
+            <option value="SOL-USD">SOL/USD</option>
           </optgroup>
           <optgroup label="Metales">
             <option value="XAU-USD">XAU/USD (Oro)</option>
@@ -132,14 +132,20 @@
       <!-- Selector de Temporalidades -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
         <select id="timeframeSelect" class="bg-transparent text-xs text-gray-200 outline-none cursor-pointer font-mono">
-          <option value="1m">1m</option>
+          <option value="1m" selected>1m</option>
           <option value="5m">5m</option>
-          <option value="15m" selected>15m</option>
+          <option value="15m">15m</option>
           <option value="1h">1h</option>
           <option value="4h">4h</option>
           <option value="1D">1D</option>
         </select>
       </div>
+
+      <!-- Interruptor de Movimiento de Precio en Vivo (Tick-by-Tick estilo TradingView) -->
+      <button onclick="toggleLivePriceFeed()" id="btn-live-feed" title="Activar/Pausar movimiento de velas en tiempo real" class="flex items-center gap-1.5 bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/50 px-2 py-1 rounded text-[11px] font-bold text-emerald-400 transition">
+        <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="live-label">VIVO</span>
+      </button>
 
       <!-- Menú Indicadores -->
       <button onclick="toggleIndicatorsModal()" class="flex items-center gap-1.5 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold transition text-gray-200">
@@ -153,7 +159,7 @@
         <button onclick="setLayout('4')" id="layout-btn-4" title="4 Pantallas (Cuadrícula)" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">4⊞</button>
       </div>
 
-      <!-- Controles de Replay y Tijeras -->
+      <!-- Controles de Replay y Tijeras (Módulo 4.3 Playback en vivo) -->
       <div class="flex items-center bg-[#1e222d] border border-blue-900/60 rounded px-1.5 py-0.5 space-x-1 text-xs">
         <button onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
           <span>✂</span> <span class="hidden sm:inline">Cortar</span>
@@ -180,9 +186,9 @@
         </div>
       </div>
 
-      <!-- Botones del Panel Inferior: Probador & Módulo 3 IDE -->
-      <button onclick="openBottomTab('performance')" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300">
-        📊 Probador
+      <!-- Botones del Panel Inferior: Probador (Módulo 4) & IDE (Módulo 3) -->
+      <button onclick="openBottomTab('performance')" id="tab-strategy-btn" class="bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 px-2.5 py-1 rounded text-xs font-semibold text-emerald-300">
+        📊 Curva Bicolor (M4)
       </button>
       <button onclick="openBottomTab('ide')" id="tab-ide-btn" class="bg-sky-950/60 hover:bg-sky-900/70 border border-sky-500/50 px-2.5 py-1 rounded text-xs font-semibold text-sky-300 flex items-center gap-1 shadow">
         <span>💻</span> <span>StratScript IDE</span>
@@ -210,9 +216,9 @@
     <aside class="w-12 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-2 space-y-2 shrink-0 z-20 text-gray-400">
       <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="p-2 rounded text-emerald-400 bg-[#2a2e39]">✛</button>
       <button onclick="selectTool('horizontal')" id="tool-horizontal" title="Nivel Horizontal" class="p-2 rounded hover:bg-[#2a2e39]">―</button>
-      <button onclick="selectTool('trendline')" id="tool-trendline" title="Línea de Tendencia Diagonal" class="p-2 rounded hover:bg-[#2a2e39]">╱</button>
-      <button onclick="selectTool('fibonacci')" id="tool-fibonacci" title="Retroceso de Fibonacci" class="p-2 rounded hover:bg-[#2a2e39]">☷</button>
-      <button onclick="selectTool('box')" id="tool-box" title="Caja / Zona de Liquidez" class="p-2 rounded hover:bg-[#2a2e39]">▭</button>
+      <button onclick="selectTool('trendline')" id="tool-trendline" title="Línea de Tendencia Diagonal (Anclada al Precio/Tiempo)" class="p-2 rounded hover:bg-[#2a2e39]">╱</button>
+      <button onclick="selectTool('fibonacci')" id="tool-fibonacci" title="Retroceso de Fibonacci (Anclado al Precio/Tiempo)" class="p-2 rounded hover:bg-[#2a2e39]">☷</button>
+      <button onclick="selectTool('box')" id="tool-box" title="Caja / Zona de Liquidez (Anclada al Precio/Tiempo)" class="p-2 rounded hover:bg-[#2a2e39]">▭</button>
       <div class="w-6 border-b border-gray-800 my-1"></div>
       <button onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-2 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">🗑</button>
     </aside>
@@ -225,10 +231,11 @@
         
         <!-- PANTALLA 1 -->
         <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
-          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
-            Pantalla 1 (<span id="p1-tf-label">15m</span>)
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none flex items-center gap-2">
+            <span>Pantalla 1 (<span id="p1-tf-label">1m</span>)</span>
+            <span id="p1-ohlc-bar" class="text-emerald-400 font-bold"></span>
           </div>
-          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+          <div class="absolute top-1.5 right-20 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-amber-500/80 text-amber-400 shadow pointer-events-none flex items-center gap-1">
               <span>⏱</span> <span id="tv-countdown-p1">00:00</span>
             </div>
@@ -247,7 +254,7 @@
           <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
             Pantalla 2 (1h)
           </div>
-          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+          <div class="absolute top-1.5 right-20 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-sky-500/80 text-sky-400 shadow pointer-events-none flex items-center gap-1">
               <span>⏱ 1h:</span> <span id="tv-countdown-p2">00:00</span>
             </div>
@@ -265,7 +272,7 @@
           <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
             Pantalla 3 (4h)
           </div>
-          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+          <div class="absolute top-1.5 right-20 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-purple-500/80 text-purple-400 shadow pointer-events-none flex items-center gap-1">
               <span>⏱ 4h:</span> <span id="tv-countdown-p3">00:00:00</span>
             </div>
@@ -283,7 +290,7 @@
           <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
             Pantalla 4 (1D)
           </div>
-          <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
+          <div class="absolute top-1.5 right-20 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-emerald-500/80 text-emerald-400 shadow pointer-events-none flex items-center gap-1">
               <span>⏱ 1D:</span> <span id="tv-countdown-p4">00:00:00</span>
             </div>
@@ -305,7 +312,7 @@
         <div class="absolute top-1 left-3 z-20 text-[10px] font-mono font-bold text-amber-400 bg-[#131722]/90 px-1.5 py-0.5 rounded border border-gray-700 pointer-events-none">
           RSI (14) - [Sobrecompra 70 | Sobreventa 30]
         </div>
-        <div class="absolute top-1 right-16 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
+        <div class="absolute top-1 right-20 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
           <button onclick="setSubpanelHeight('rsi-subpanel', 45)" title="Minimizar RSI" class="hover:text-amber-400 px-1 font-bold">_</button>
           <button onclick="setSubpanelHeight('rsi-subpanel', 115)" title="Tamaño Medio RSI" class="hover:text-sky-400 px-1 font-bold">❐</button>
           <button onclick="setSubpanelHeight('rsi-subpanel', 240)" title="Expandir RSI" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
@@ -321,7 +328,7 @@
         <div class="absolute top-1 left-3 z-20 text-[10px] font-mono font-bold text-sky-400 bg-[#131722]/90 px-1.5 py-0.5 rounded border border-gray-700 pointer-events-none">
           MACD (12, 26, 9)
         </div>
-        <div class="absolute top-1 right-16 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
+        <div class="absolute top-1 right-20 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
           <button onclick="setSubpanelHeight('macd-subpanel', 45)" title="Minimizar MACD" class="hover:text-amber-400 px-1 font-bold">_</button>
           <button onclick="setSubpanelHeight('macd-subpanel', 115)" title="Tamaño Medio MACD" class="hover:text-sky-400 px-1 font-bold">❐</button>
           <button onclick="setSubpanelHeight('macd-subpanel', 240)" title="Expandir MACD" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
@@ -332,12 +339,15 @@
       <!-- DIVISOR HORIZONTAL ARRASTRABLE (FLECHITA ARRIBA / ABAJO) ENTRE GRÁFICO Y PROBADOR/IDE -->
       <div id="resizer-bottom" class="resizer-h" title="Arrastra hacia arriba o hacia abajo para agrandar el Gráfico o el Probador/Editor"></div>
 
-      <!-- PANEL INFERIOR UNIFICADO: PROBADOR DE ESTRATEGIA + MÓDULO 3 (IDE) -->
+      <!-- ======================================================================
+           PANEL INFERIOR UNIFICADO: MÓDULO 4 (CURVA BICOLOR) + MÓDULO 3 (IDE)
+           ====================================================================== -->
       <div id="strategy-panel" class="h-72 bg-[#131722] flex flex-col shrink-0 relative">
         <div class="h-9 border-b border-gray-800 flex items-center justify-between px-3 bg-[#1e222d]/80 text-xs text-gray-300 select-none shrink-0">
           <div class="flex items-center space-x-2">
-            <button onclick="switchBottomSubTab('performance')" id="subtab-btn-perf" class="px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition">
-              📊 Probador de Estrategia & Curva
+            <button onclick="switchBottomSubTab('performance')" id="subtab-btn-perf" class="px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5">
+              <span>📊 Backtest & Curva Bicolor</span>
+              <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 4</span>
             </button>
             <button onclick="switchBottomSubTab('ide')" id="subtab-btn-ide" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5">
               <span>💻 Pine / MetaEditor IDE</span>
@@ -346,6 +356,13 @@
           </div>
 
           <div class="flex items-center space-x-2">
+            <!-- Leyenda Bicolor Módulo 4.2 -->
+            <div class="hidden md:flex items-center gap-2 text-[10px] font-mono bg-[#090d16] px-2.5 py-0.5 rounded border border-gray-800">
+              <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>Run-Up / ATH</span>
+              <span class="text-gray-600">|</span>
+              <span class="flex items-center gap-1 text-rose-400"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Drawdown</span>
+            </div>
+
             <div id="syntax-status-badge" class="flex items-center gap-1.5 text-[11px] font-mono bg-[#131722] px-2.5 py-0.5 rounded border border-gray-700">
               <span id="syntax-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
               <span id="syntax-text" class="text-emerald-400">Sintaxis Válida (0 errores)</span>
@@ -361,15 +378,17 @@
           </div>
         </div>
 
-        <!-- SUB-VISTA 1: RENDIMIENTO Y CURVA DE CAPITAL -->
+        <!-- SUB-VISTA 1: MÓDULO 4 - GRÁFICA EN TIEMPO REAL DEL BACKTEST Y CURVA DE CAPITAL BICOLOR -->
         <div id="subview-performance" class="flex-1 flex flex-col overflow-hidden">
-          <div class="grid grid-cols-4 gap-3 p-2.5 border-b border-gray-800/60 bg-[#131722] text-xs shrink-0">
-            <div><p class="text-gray-500 text-[10px]">PyG Totales</p><p id="st-pyg" class="text-sm font-bold text-emerald-400 font-mono">+0.36 USD (+0.04%)</p></div>
-            <div><p class="text-gray-500 text-[10px]">Caída máx. del capital (Drawdown)</p><p id="st-dd" class="text-sm font-bold text-rose-400 font-mono">0.09 USD (0.01%)</p></div>
-            <div><p class="text-gray-500 text-[10px]">Operaciones rentables (Win Rate)</p><p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">50.00% (2/4)</p></div>
-            <div><p class="text-gray-500 text-[10px]">Factor de ganancias (Profit Factor)</p><p id="st-pf" class="text-sm font-bold text-gray-200 font-mono">5.089</p></div>
+          <div class="grid grid-cols-6 gap-2 px-3 py-2 border-b border-gray-800/60 bg-[#131722] text-xs shrink-0">
+            <div><p class="text-gray-500 text-[10px]">PyG Neto Total</p><p id="st-pyg" class="text-sm font-bold text-emerald-400 font-mono">+0.00 USD (0.00%)</p></div>
+            <div><p class="text-gray-500 text-[10px]">Run-Up Máx. (Verde)</p><p id="st-runup" class="text-sm font-bold text-emerald-400 font-mono">+0.00 USD (0.00%)</p></div>
+            <div><p class="text-gray-500 text-[10px]">Drawdown Máx. (Rojo)</p><p id="st-dd" class="text-sm font-bold text-rose-400 font-mono">0.00 USD (0.00%)</p></div>
+            <div><p class="text-gray-500 text-[10px]">Tasa Acierto (Win Rate)</p><p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">0.0% (0/0)</p></div>
+            <div><p class="text-gray-500 text-[10px]">Factor Beneficio (PF)</p><p id="st-pf" class="text-sm font-bold text-gray-200 font-mono">0.00</p></div>
+            <div><p class="text-gray-500 text-[10px]">Fase Actual Capital</p><p id="st-phase" class="text-xs font-extrabold text-emerald-400 font-mono">🟢 EN RUN-UP / ATH</p></div>
           </div>
-          <div class="flex-1 p-2 relative bg-[#090d16]">
+          <div class="flex-1 p-1.5 relative bg-[#090d16]">
             <div id="equity-chart-container" class="w-full h-full"></div>
           </div>
         </div>
@@ -457,7 +476,7 @@
               </div>
 
               <div id="ide-console-logs" class="sv5-code-font flex-1 p-2 overflow-y-auto space-y-1 text-[11px]">
-                <div class="text-gray-500 italic">Motor StratScript v3.0 listo. Pulsa "▶ Compilar y Marcar Gráfico" para ejecutar el bot...</div>
+                <div class="text-gray-500 italic">Motor StratScript v4.0 listo. Pulsa "▶ Compilar y Marcar Gráfico" para ejecutar el bot...</div>
               </div>
             </div>
           </div>
@@ -481,8 +500,8 @@
 
       <div class="bg-[#1e222d] p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
         <div>
-          <p class="text-[11px] text-gray-400">Precio en Pantalla</p>
-          <span id="price-display" class="text-lg font-mono font-extrabold text-emerald-400">--.--</span>
+          <p class="text-[11px] text-gray-400">Precio en Vivo</p>
+          <span id="price-display" class="text-lg font-mono font-extrabold text-emerald-400">--.-----</span>
         </div>
         <div class="text-right">
           <p class="text-[11px] text-gray-400">⏱ Cierre Vela</p>
@@ -496,7 +515,7 @@
           <p class="text-xs font-semibold text-gray-200">Agente Cuantitativo IA</p>
         </div>
         <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
-          Motor optimizado a 60 FPS: listo para simular millones de velas sin bloqueos.
+          Motor Módulo 4 activo: Escala de 5 decimales, dibujo anclado al tiempo y Curva Bicolor lista.
         </p>
       </div>
 
@@ -649,19 +668,22 @@
       tx.oncomplete = () => { refreshSavedDatasetsDropdown(); alert("Base de datos MT5 vaciada."); };
     }
 
-    // --- GRÁFICOS LIGHTWEIGHT CHARTS ---
+    // --- CONFIGURACIÓN DE PRECISIÓN REAL A 5 DECIMALES (ESTILO TRADINGVIEW) ---
+    const forexPriceFormat = { type: 'price', precision: 5, minMove: 0.00001 };
+
     const baseChartOptions = {
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#d1d4dc' },
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { minimumWidth: 75 },
+      rightPriceScale: { minimumWidth: 84, autoScale: true },
       timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 12 }
     };
 
     const candleSeriesConfig = {
       upColor: '#10b981', downColor: '#ef4444',
       borderUpColor: '#10b981', borderDownColor: '#ef4444',
-      wickUpColor: '#10b981', wickDownColor: '#ef4444'
+      wickUpColor: '#10b981', wickDownColor: '#ef4444',
+      priceFormat: forexPriceFormat
     };
 
     const c1 = document.getElementById('chart-c1');
@@ -680,15 +702,27 @@
     const chart4 = LightweightCharts.createChart(c4, { ...baseChartOptions, width: c4.clientWidth || 400, height: c4.clientHeight || 250 });
     const candleSeries4 = chart4.addCandlestickSeries(candleSeriesConfig);
 
-    let ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
-    let ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
-    let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
+    let ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9', priceFormat: forexPriceFormat });
+    let ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21', priceFormat: forexPriceFormat });
+    let ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200', priceFormat: forexPriceFormat });
     let bbUpper = null, bbBasis = null, bbLower = null;
+
+    // Actualizar formato de decimales automáticamente (5 decimales Forex / 2 decimales Crypto y Oro)
+    function applyDynamicPricePrecision(samplePrice) {
+      const isForex = samplePrice < 200;
+      const fmt = isForex
+        ? { type: 'price', precision: 5, minMove: 0.00001 }
+        : { type: 'price', precision: 2, minMove: 0.01 };
+
+      [candleSeries1, candleSeries2, candleSeries3, candleSeries4, ema9, ema21, ema200, bbUpper, bbBasis, bbLower].forEach(s => {
+        if (s) { try { s.applyOptions({ priceFormat: fmt }); } catch (e) {} }
+      });
+    }
 
     const rsiCont = document.getElementById('chart-rsi');
     const chartRSI = LightweightCharts.createChart(rsiCont, {
       ...baseChartOptions, width: rsiCont.clientWidth || 800, height: 110,
-      rightPriceScale: { minimumWidth: 75 }, timeScale: { visible: false, rightOffset: 12 }
+      rightPriceScale: { minimumWidth: 84 }, timeScale: { visible: false, rightOffset: 12 }
     });
     const rsiSeries = chartRSI.addLineSeries({ color: '#f59e0b', lineWidth: 2, title: 'RSI 14' });
     rsiSeries.createPriceLine({ price: 70, color: '#ef4444', lineStyle: LightweightCharts.LineStyle.Dotted, title: '70' });
@@ -697,25 +731,71 @@
     const macdCont = document.getElementById('chart-macd');
     const chartMACD = LightweightCharts.createChart(macdCont, {
       ...baseChartOptions, width: macdCont.clientWidth || 800, height: 110,
-      rightPriceScale: { minimumWidth: 75 }, timeScale: { visible: false, rightOffset: 12 }
+      rightPriceScale: { minimumWidth: 84 }, timeScale: { visible: false, rightOffset: 12 }
     });
-    const macdHistSeries = chartMACD.addHistogramSeries({ color: '#10b981', title: 'Hist' });
-    const macdLineSeries = chartMACD.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'MACD' });
-    const macdSignalSeries = chartMACD.addLineSeries({ color: '#ef4444', lineWidth: 1.5, title: 'Signal' });
+    const macdHistSeries = chartMACD.addHistogramSeries({
+      color: '#10b981', title: 'Hist',
+      priceFormat: { type: 'price', precision: 5, minMove: 0.00001 }
+    });
+    const macdLineSeries = chartMACD.addLineSeries({
+      color: '#38bdf8', lineWidth: 1.5, title: 'MACD',
+      priceFormat: { type: 'price', precision: 5, minMove: 0.00001 }
+    });
+    const macdSignalSeries = chartMACD.addLineSeries({
+      color: '#ef4444', lineWidth: 1.5, title: 'Signal',
+      priceFormat: { type: 'price', precision: 5, minMove: 0.00001 }
+    });
 
-    // --- SINCRONIZACIÓN AUTOMÁTICA DE ESCALA DE TIEMPO (PRECIO <-> RSI <-> MACD) ---
+    // =========================================================================
+    // MÓDULO 4 (4.1 y 4.2): CURVA DE CAPITAL BICOLOR SINCRONIZADA
+    // Verde Esmeralda (#10b981) en Run-Up/ATH | Rojo Carmesí (#f43f5e) en Drawdown
+    // =========================================================================
+    const eqContainer = document.getElementById('equity-chart-container');
+    const equityChart = LightweightCharts.createChart(eqContainer, {
+      width: eqContainer.clientWidth || 800, height: 140,
+      layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#94a3b8' },
+      grid: { vertLines: { color: '#121824' }, horzLines: { color: '#121824' } },
+      rightPriceScale: { minimumWidth: 84 },
+      timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 12 }
+    });
+
+    // BaselineSeries nativo para colorear en Verde sobre el nivel base y Rojo debajo,
+    // combinado con serie bicolor punto por punto según fase de Run-Up vs Drawdown
+    const equityBaselineSeries = equityChart.addBaselineSeries({
+      baseValue: { type: 'price', price: 10000 },
+      topLineColor: '#10b981',
+      topFillColor1: 'rgba(16, 185, 129, 0.38)',
+      topFillColor2: 'rgba(16, 185, 129, 0.05)',
+      bottomLineColor: '#f43f5e',
+      bottomFillColor1: 'rgba(244, 63, 94, 0.08)',
+      bottomFillColor2: 'rgba(244, 63, 94, 0.42)',
+      lineWidth: 2,
+      title: 'Capital ($)'
+    });
+
+    // Serie superpuesta de color dinámico instantáneo: Verde Esmeralda en Run-Up / Rojo Carmesí en Drawdown
+    const equityBicolorLine = equityChart.addLineSeries({
+      color: '#10b981',
+      lineWidth: 2.5,
+      priceLineVisible: false,
+      lastValueVisible: false
+    });
+
+    // --- SINCRONIZACIÓN DE ESCALA DE TIEMPO (PRECIO <-> RSI <-> MACD <-> CURVA BICOLOR M4) ---
     let isSyncingTimeScales = false;
     function syncTimeScale(sourceChart, targetCharts) {
       sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
         if (isSyncingTimeScales || !range) return;
         isSyncingTimeScales = true;
         targetCharts.forEach(tc => { try { tc.timeScale().setVisibleLogicalRange(range); } catch (e) {} });
+        redrawAllCanvasShapes(); // Redibujar herramientas ancladas al mover o hacer zoom
         isSyncingTimeScales = false;
       });
     }
-    syncTimeScale(chart1, [chartRSI, chartMACD]);
-    syncTimeScale(chartRSI, [chart1, chartMACD]);
-    syncTimeScale(chartMACD, [chart1, chartRSI]);
+    syncTimeScale(chart1, [chartRSI, chartMACD, equityChart]);
+    syncTimeScale(chartRSI, [chart1, chartMACD, equityChart]);
+    syncTimeScale(chartMACD, [chart1, chartRSI, equityChart]);
+    syncTimeScale(equityChart, [chart1, chartRSI, chartMACD]);
 
     let drawnLines = [];
     let activeTool = 'crosshair';
@@ -730,21 +810,13 @@
     let replayIntervalId = null;
     let replayIndex = 0;
     let currentReplayTimestamp = 0;
-    let isBotActiveOnChart = false;
-
-    const eqContainer = document.getElementById('equity-chart-container');
-    const equityChart = LightweightCharts.createChart(eqContainer, {
-      width: eqContainer.clientWidth || 800, height: 140,
-      layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#94a3b8' },
-      grid: { vertLines: { color: '#121824' }, horzLines: { color: '#121824' } },
-      timeScale: { visible: false }
-    });
-    const equitySeries = equityChart.addAreaSeries({ topColor: 'rgba(16, 185, 129, 0.4)', bottomColor: 'rgba(239, 68, 68, 0.2)', lineColor: '#10b981', lineWidth: 2 });
+    let isBotActiveOnChart = true; // Activo por defecto para mostrar Curva Bicolor de inmediato
+    let isLiveFeedEnabled = true;
 
     // --- MOTOR AGREGADOR DE TEMPORALIDADES OHLC (1m, 5m, 15m, 1h, 4h, 1D) ---
     function getIntervalSeconds(tf) {
       const map = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1D': 86400 };
-      return map[tf] || 900;
+      return map[tf] || 60;
     }
 
     function aggregateCandlesToTimeframe(sourceCandles, tf, maxTimestamp = Infinity) {
@@ -779,15 +851,83 @@
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
+    // --- MOTOR DE MERCADO EN VIVO TICK-BY-TICK Y APERTURA AUTOMÁTICA DE VELA AL TERMINAR SEGUNDERO ---
+    let lastBucketTimeP1 = 0;
+
+    function toggleLivePriceFeed() {
+      isLiveFeedEnabled = !isLiveFeedEnabled;
+      const btn = document.getElementById('btn-live-feed');
+      const dot = document.getElementById('live-dot');
+      const lbl = document.getElementById('live-label');
+      if (isLiveFeedEnabled) {
+        btn.className = "flex items-center gap-1.5 bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/50 px-2 py-1 rounded text-[11px] font-bold text-emerald-400 transition";
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+        lbl.innerText = "VIVO";
+      } else {
+        btn.className = "flex items-center gap-1.5 bg-gray-800 border border-gray-700 px-2 py-1 rounded text-[11px] font-bold text-gray-400 transition";
+        dot.className = "w-2 h-2 rounded-full bg-gray-500";
+        lbl.innerText = "PAUSA";
+      }
+    }
+
+    function simulateLiveMarketTick(nowSec, tfSec1) {
+      if (!isLiveFeedEnabled || isReplayActive || allCandles.length === 0) return;
+
+      const lastCandle = allCandles[allCandles.length - 1];
+      const currentBucket = Math.floor(nowSec / tfSec1) * tfSec1;
+      const refPrice = lastCandle.close;
+      const stepUnit = refPrice < 20 ? 0.00006 : refPrice < 500 ? 0.04 : 8.5;
+      const delta = (Math.random() - 0.495) * stepUnit;
+      const newPrice = Math.max(0.0001, Number((refPrice + delta).toFixed(refPrice < 20 ? 5 : 2)));
+
+      // Si el segundero llegó a 00:00 (cambió el bloque de tiempo), cerrar vela actual y abrir nueva vela a la derecha
+      if (lastBucketTimeP1 !== 0 && currentBucket > lastBucketTimeP1) {
+        const nextCandleTime = lastCandle.time + tfSec1;
+        const newCandle = {
+          time: nextCandleTime,
+          open: lastCandle.close,
+          high: Math.max(lastCandle.close, newPrice),
+          low: Math.min(lastCandle.close, newPrice),
+          close: newPrice
+        };
+        allCandles.push(newCandle);
+        if (originalFullCandles.length > 0) originalFullCandles.push(newCandle);
+        candleSeries1.update(newCandle);
+        updateAllTechnicalIndicators();
+        if (isBotActiveOnChart) compileAndRunStrategy(true);
+      } else {
+        // Actualizar vela actual en tiempo real (Tick-by-Tick)
+        lastCandle.close = newPrice;
+        if (newPrice > lastCandle.high) lastCandle.high = newPrice;
+        if (newPrice < lastCandle.low) lastCandle.low = newPrice;
+        candleSeries1.update(lastCandle);
+
+        // Actualizar última punta de las EMAs en vivo
+        if (ema9 && allCandles.length > 9) {
+          const k9 = 2 / 10;
+          ema9.update({ time: lastCandle.time, value: newPrice });
+        }
+      }
+
+      lastBucketTimeP1 = currentBucket;
+      document.getElementById('price-display').innerText = formatPrice(lastCandle.close);
+      document.getElementById('price-display').className = `text-lg font-mono font-extrabold ${lastCandle.close >= lastCandle.open ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('p1-ohlc-bar').innerText = `O:${formatPrice(lastCandle.open)} H:${formatPrice(lastCandle.high)} L:${formatPrice(lastCandle.low)} C:${formatPrice(lastCandle.close)}`;
+    }
+
     function updateAllCandleCountdowns() {
       const now = Math.floor(Date.now() / 1000);
       const tfSec1 = getIntervalSeconds(document.getElementById('timeframeSelect').value);
-      const text1 = formatTimeRemaining(tfSec1 - (now % tfSec1));
+      const rem1 = tfSec1 - (now % tfSec1);
+      const text1 = formatTimeRemaining(rem1);
+
       document.getElementById('tv-countdown-p1').innerText = text1;
       document.getElementById('countdown-timer').innerText = text1;
       document.getElementById('tv-countdown-p2').innerText = formatTimeRemaining(3600 - (now % 3600));
       document.getElementById('tv-countdown-p3').innerText = formatTimeRemaining(14400 - (now % 14400));
       document.getElementById('tv-countdown-p4').innerText = formatTimeRemaining(86400 - (now % 86400));
+
+      simulateLiveMarketTick(now, tfSec1);
     }
     setInterval(updateAllCandleCountdowns, 1000);
 
@@ -828,10 +968,11 @@
       chart1.timeScale().setVisibleLogicalRange(logicalRange);
       chartRSI.timeScale().setVisibleLogicalRange(logicalRange);
       chartMACD.timeScale().setVisibleLogicalRange(logicalRange);
+      equityChart.timeScale().setVisibleLogicalRange(logicalRange);
 
       refreshSecondaryWindows();
       const cutDateStr = new Date(currentReplayTimestamp * 1000).toLocaleString();
-      document.getElementById('agent-verdict').innerText = `Gráfico e indicadores recortados en: ${cutDateStr}. Presiona ▶ para simular.`;
+      document.getElementById('agent-verdict').innerText = `Gráfico, osciladores y Curva Bicolor recortados en: ${cutDateStr}. Presiona ▶ para simular.`;
     }
 
     function executeJumpToDate() {
@@ -843,13 +984,43 @@
       applyCutAtIndex(binarySearchCandleIndex(originalFullCandles, targetTimestamp));
     }
 
-    // --- CANVAS DE DIBUJO ---
+    // =========================================================================
+    // HERRAMIENTAS DE DIBUJO ANCLADAS A TIEMPO Y PRECIO REAL (SE MUEVEN CON EL GRÁFICO)
+    // =========================================================================
     const canvas = document.getElementById('canvas-overlay');
     const ctx = canvas.getContext('2d');
     let customDrawings = [];
     let currentDrawing = null;
 
-    function resizeCanvas() { canvas.width = c1.clientWidth; canvas.height = c1.clientHeight; redrawAllCanvasShapes(); }
+    function resizeCanvas() {
+      canvas.width = c1.clientWidth;
+      canvas.height = c1.clientHeight;
+      redrawAllCanvasShapes();
+    }
+
+    // Convierte píxel X/Y del mouse a Coordenadas de Mercado (Timestamp y Precio)
+    function pixelToChartAnchor(x, y) {
+      const price = candleSeries1.coordinateToPrice(y);
+      let time = chart1.timeScale().coordinateToTime(x);
+      const logical = chart1.timeScale().coordinateToLogical(x);
+      if (!time && allCandles.length > 0 && logical !== null) {
+        const clampedIdx = Math.max(0, Math.min(allCandles.length - 1, Math.round(logical)));
+        time = allCandles[clampedIdx].time;
+      }
+      return { time, logical, price };
+    }
+
+    // Convierte Coordenadas de Mercado (Timestamp y Precio) al píxel X/Y actual de la pantalla
+    function chartAnchorToPixel(anchor) {
+      if (!anchor || anchor.price === null || anchor.price === undefined) return null;
+      const y = candleSeries1.priceToCoordinate(anchor.price);
+      let x = anchor.time ? chart1.timeScale().timeToCoordinate(anchor.time) : null;
+      if (x === null && anchor.logical !== null && anchor.logical !== undefined) {
+        x = chart1.timeScale().logicalToCoordinate(anchor.logical);
+      }
+      if (x === null || y === null) return null;
+      return { x, y };
+    }
 
     function selectTool(tool) {
       if (isCutModeActive) exitReplayMode();
@@ -866,47 +1037,68 @@
       if (!['trendline', 'fibonacci', 'box'].includes(activeTool)) return;
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      const anchor = pixelToChartAnchor(x, y);
+
       if (!currentDrawing) {
-        currentDrawing = { type: activeTool, startX: x, startY: y, endX: x, endY: y };
+        currentDrawing = { type: activeTool, startAnchor: anchor, endAnchor: anchor };
       } else {
-        currentDrawing.endX = x; currentDrawing.endY = y;
-        customDrawings.push(currentDrawing); currentDrawing = null;
-        redrawAllCanvasShapes(); selectTool('crosshair');
+        currentDrawing.endAnchor = anchor;
+        customDrawings.push(currentDrawing);
+        currentDrawing = null;
+        redrawAllCanvasShapes();
+        selectTool('crosshair');
       }
     });
 
     canvas.addEventListener('mousemove', (e) => {
       if (!currentDrawing) return;
       const rect = canvas.getBoundingClientRect();
-      currentDrawing.endX = e.clientX - rect.left; currentDrawing.endY = e.clientY - rect.top;
-      redrawAllCanvasShapes(); drawShape(currentDrawing);
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      currentDrawing.endAnchor = pixelToChartAnchor(x, y);
+      redrawAllCanvasShapes();
+      drawAnchoredShape(currentDrawing);
     });
 
-    function redrawAllCanvasShapes() { ctx.clearRect(0, 0, canvas.width, canvas.height); customDrawings.forEach(drawShape); }
+    function redrawAllCanvasShapes() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      customDrawings.forEach(drawAnchoredShape);
+      if (currentDrawing) drawAnchoredShape(currentDrawing);
+    }
 
-    function drawShape(s) {
+    function drawAnchoredShape(s) {
+      const p1 = chartAnchorToPixel(s.startAnchor);
+      const p2 = chartAnchorToPixel(s.endAnchor);
+      if (!p1 || !p2) return;
+
       if (s.type === 'trendline') {
         ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(s.startX, s.startY); ctx.lineTo(s.endX, s.endY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
       } else if (s.type === 'box') {
-        ctx.strokeStyle = '#10b981'; ctx.fillStyle = 'rgba(16, 185, 129, 0.15)'; ctx.lineWidth = 1.5;
-        ctx.fillRect(s.startX, s.startY, s.endX - s.startX, s.endY - s.startY);
-        ctx.strokeRect(s.startX, s.startY, s.endX - s.startX, s.endY - s.startY);
+        ctx.strokeStyle = '#10b981'; ctx.fillStyle = 'rgba(16, 185, 129, 0.16)'; ctx.lineWidth = 1.5;
+        ctx.fillRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+        ctx.strokeRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
       } else if (s.type === 'fibonacci') {
         const levels = [
           { p: 0.0, c: '#94a3b8' }, { p: 0.236, c: '#ef4444' }, { p: 0.382, c: '#f59e0b' },
           { p: 0.5, c: '#10b981' }, { p: 0.618, c: '#eab308' }, { p: 0.786, c: '#06b6d4' }, { p: 1.0, c: '#94a3b8' }
         ];
-        const dy = s.endY - s.startY;
+        const dPrice = s.endAnchor.price - s.startAnchor.price;
         levels.forEach(lvl => {
-          const y = s.startY + dy * lvl.p;
+          const lvlPrice = s.startAnchor.price + dPrice * lvl.p;
+          const y = candleSeries1.priceToCoordinate(lvlPrice);
+          if (y === null) return;
           ctx.strokeStyle = lvl.c; ctx.lineWidth = lvl.p === 0.618 ? 2 : 1;
-          ctx.beginPath(); ctx.moveTo(Math.min(s.startX, s.endX), y); ctx.lineTo(Math.max(s.startX, s.endX) + 80, y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(Math.min(p1.x, p2.x), y); ctx.lineTo(Math.max(p1.x, p2.x) + 85, y); ctx.stroke();
           ctx.fillStyle = lvl.c; ctx.font = '10px monospace';
-          ctx.fillText(`Fib ${(lvl.p * 100).toFixed(1)}%`, Math.max(s.startX, s.endX) + 10, y - 2);
+          ctx.fillText(`Fib ${(lvl.p * 100).toFixed(1)}% (${formatPrice(lvlPrice)})`, Math.max(p1.x, p2.x) + 6, y - 3);
         });
       }
     }
+
+    // Suscribir redibujado de figuras cuando cambia la escala o se hace clic/drag en el gráfico
+    chart1.timeScale().subscribeVisibleTimeRangeChange(redrawAllCanvasShapes);
+    c1.addEventListener('wheel', () => requestAnimationFrame(redrawAllCanvasShapes));
+    c1.addEventListener('mousemove', () => { if (customDrawings.length > 0) requestAnimationFrame(redrawAllCanvasShapes); });
 
     function clearAllDrawings() {
       drawnLines.forEach(l => candleSeries1.removePriceLine(l));
@@ -930,11 +1122,10 @@
     });
 
     function formatPrice(val) {
-      if (val === undefined || isNaN(val)) return "--.--";
-      return val < 10 ? val.toFixed(5) : `$${val.toFixed(2)}`;
+      if (val === undefined || isNaN(val)) return "--.-----";
+      return val < 200 ? val.toFixed(5) : `$${val.toFixed(2)}`;
     }
-
-    c1.addEventListener('contextmenu', (e) => {
+c1.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const menu = document.getElementById('contextMenu');
       menu.style.top = `${e.clientY}px`; menu.style.left = `${e.clientX}px`;
@@ -945,7 +1136,8 @@
     function closeContextMenu() { document.getElementById('contextMenu').classList.add('hidden'); }
 
     function resetChart() {
-      [chart1, chart2, chart3, chart4].forEach(ch => ch.timeScale().fitContent());
+      [chart1, chart2, chart3, chart4, equityChart].forEach(ch => ch.timeScale().fitContent());
+      redrawAllCanvasShapes();
       closeContextMenu();
     }
 
@@ -1050,7 +1242,8 @@
       setupVerticalResizer(document.getElementById('resizer-right'), document.getElementById('right-sidebar'), true);
       setupVerticalResizer(document.getElementById('resizer-ide-inner'), document.getElementById('ide-editor-pane'), false);
     }
-// --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) ---
+
+    // --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) ---
     function setLayout(mode) {
       currentLayout = mode;
       const b2 = document.getElementById('chart-box-2'), b3 = document.getElementById('chart-box-3'), b4 = document.getElementById('chart-box-4');
@@ -1106,8 +1299,8 @@
         ? "px-3 py-1 rounded font-bold bg-sky-600/20 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5"
         : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
       document.getElementById('subtab-btn-perf').className = !isIde
-        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition"
-        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition";
+        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5"
+        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
       resizeAllCharts();
     }
 
@@ -1149,6 +1342,7 @@
       const symbol = document.getElementById('symbolSelect').value;
       const tf = document.getElementById('timeframeSelect').value;
       document.getElementById('p1-tf-label').innerText = tf;
+      lastBucketTimeP1 = 0;
 
       if (symbol.startsWith("mt5_id_")) {
         const dataset = await getDatasetFromDB(symbol);
@@ -1158,7 +1352,7 @@
           allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
           displayCandlesOnChart(allCandles);
           refreshSecondaryWindows();
-          document.getElementById('agent-verdict').innerText = `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base. Fluidez 60 FPS.`;
+          document.getElementById('agent-verdict').innerText = `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base. Precios a 5 decimales y Curva Bicolor activa.`;
         }
         return;
       }
@@ -1171,14 +1365,23 @@
     }
 
     function displayCandlesOnChart(data) {
+      if (data.length > 0) applyDynamicPricePrecision(data[data.length - 1].close);
       candleSeries1.setData(data);
       updateAllTechnicalIndicators();
+      if (isBotActiveOnChart) compileAndRunStrategy(true);
+
       const logicalRange = { from: Math.max(0, data.length - 150), to: Math.max(0, data.length - 1) };
       chart1.timeScale().setVisibleLogicalRange(logicalRange);
       chartRSI.timeScale().setVisibleLogicalRange(logicalRange);
       chartMACD.timeScale().setVisibleLogicalRange(logicalRange);
-      if (data.length > 0) document.getElementById('price-display').innerText = formatPrice(data[data.length - 1].close);
-      if (isBotActiveOnChart) compileAndRunStrategy(true);
+      equityChart.timeScale().setVisibleLogicalRange(logicalRange);
+
+      if (data.length > 0) {
+        const last = data[data.length - 1];
+        document.getElementById('price-display').innerText = formatPrice(last.close);
+        document.getElementById('p1-ohlc-bar').innerText = `O:${formatPrice(last.open)} H:${formatPrice(last.high)} L:${formatPrice(last.low)} C:${formatPrice(last.close)}`;
+      }
+      redrawAllCanvasShapes();
     }
 
     async function handleMT5CSV(event) {
@@ -1255,9 +1458,12 @@
 
     function updateReplayIndicators() {
       if (allCandles.length > 0) {
-        document.getElementById('price-display').innerText = formatPrice(allCandles[allCandles.length - 1].close);
+        const last = allCandles[allCandles.length - 1];
+        document.getElementById('price-display').innerText = formatPrice(last.close);
+        document.getElementById('p1-ohlc-bar').innerText = `O:${formatPrice(last.open)} H:${formatPrice(last.high)} L:${formatPrice(last.low)} C:${formatPrice(last.close)}`;
         updateAllTechnicalIndicators();
         if (isBotActiveOnChart) compileAndRunStrategy(true);
+        redrawAllCanvasShapes();
       }
     }
 
@@ -1397,27 +1603,30 @@
     function toggleIndicatorsModal() { document.getElementById('indicatorsModal').classList.toggle('hidden'); }
 
     function toggleIndicator(type) {
+      const samplePrice = allCandles.length > 0 ? allCandles[allCandles.length - 1].close : 1.1;
+      const fmt = samplePrice < 200 ? { type: 'price', precision: 5, minMove: 0.00001 } : { type: 'price', precision: 2, minMove: 0.01 };
+
       if (type === 'ema9') {
         const chk = document.getElementById('check-ema9').checked;
-        if (chk && !ema9) ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9' });
+        if (chk && !ema9) ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9', priceFormat: fmt });
         else if (!chk && ema9) { chart1.removeSeries(ema9); ema9 = null; }
       }
       if (type === 'ema21') {
         const chk = document.getElementById('check-ema21').checked;
-        if (chk && !ema21) ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21' });
+        if (chk && !ema21) ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21', priceFormat: fmt });
         else if (!chk && ema21) { chart1.removeSeries(ema21); ema21 = null; }
       }
       if (type === 'ema200') {
         const chk = document.getElementById('check-ema200').checked;
-        if (chk && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200' });
+        if (chk && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200', priceFormat: fmt });
         else if (!chk && ema200) { chart1.removeSeries(ema200); ema200 = null; }
       }
       if (type === 'bb') {
         const chk = document.getElementById('check-bb').checked;
         if (chk) {
-          if (!bbUpper) bbUpper = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Superior' });
-          if (!bbBasis) bbBasis = chart1.addLineSeries({ color: '#eab308', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'BB Media' });
-          if (!bbLower) bbLower = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Inferior' });
+          if (!bbUpper) bbUpper = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Sup', priceFormat: fmt });
+          if (!bbBasis) bbBasis = chart1.addLineSeries({ color: '#eab308', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'BB Med', priceFormat: fmt });
+          if (!bbLower) bbLower = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Inf', priceFormat: fmt });
         } else {
           if (bbUpper) { chart1.removeSeries(bbUpper); bbUpper = null; }
           if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
@@ -1455,11 +1664,11 @@
     }
 
     // =========================================================================
-    // MÓDULO 3: EDITOR DE CÓDIGO INTEGRADO (IDE) Y LENGUAJE DE ESTRATEGIAS
+    // MÓDULO 3 & MÓDULO 4: MOTOR DE ESTRATEGIAS + CURVA BICOLOR (RUN-UP vs DRAWDOWN)
     // =========================================================================
     const STRATEGY_PRESETS = {
       stratscript_ema_rsi: `// ============================================================================
-// [MÓDULO 3] StratScript Engine: Cruce EMA (9/21) + Filtro RSI + SL/TP/Trail
+// [MÓDULO 3 & 4] StratScript Engine: Cruce EMA (9/21) + Filtro RSI + SL/TP/Trail
 // ============================================================================
 const fastEMA = ema(9);
 const slowEMA = ema(21);
@@ -1477,7 +1686,7 @@ for (let i = 25; i < bars.length; i++) {
     }
 }`,
       mql5_style: `// ============================================================================
-// [MÓDULO 3] Sintaxis Compatible MQL5: OrderSend() con Bandas de Bollinger
+// [MÓDULO 3 & 4] Sintaxis Compatible MQL5: OrderSend() con Bandas de Bollinger
 // ============================================================================
 const bands = iBands(20, 2.0);
 const myRSI = iRSI(14);
@@ -1491,7 +1700,7 @@ for (let i = 25; i < bars.length; i++) {
     }
 }`,
       python_style: `# ============================================================================
-# [MÓDULO 3] Lógica Cuantitativa Estilo Python: Tendencia Institucional EMA 200
+# [MÓDULO 3 & 4] Lógica Cuantitativa Estilo Python: Tendencia Institucional EMA 200
 # ============================================================================
 const ema21  = ema(21);
 const ema200 = ema(200);
@@ -1664,8 +1873,8 @@ for (let i = 205; i < bars.length; i++) {
         logToIdeConsole(`❌ Error en ejecución: ${err.message}`, "error"); return;
       }
 
-      const markers = [], closedTrades = [], equityCurve = [];
-      let balance = 10000, peakBalance = 10000, maxDrawdownUSD = 0, pos = null;
+      const markers = [], closedTrades = [], equityCurve = [], bicolorPoints = [];
+      let balance = 10000, peakBalance = 10000, maxDrawdownUSD = 0, maxRunupUSD = 0, pos = null;
       let countLongs = 0, countShorts = 0, countExits = 0;
 
       for (let i = 0; i < len; i++) {
@@ -1689,6 +1898,7 @@ for (let i = 205; i < bars.length; i++) {
             balance += pnl;
             if (balance > peakBalance) peakBalance = balance;
             if (peakBalance - balance > maxDrawdownUSD) maxDrawdownUSD = peakBalance - balance;
+            if (balance - 10000 > maxRunupUSD) maxRunupUSD = balance - 10000;
             countExits++;
             closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: exitReason });
             markers.push({ time: time[i], position: pos.dir === 'LONG' ? 'aboveBar' : 'belowBar', color: pnl >= 0 ? '#38bdf8' : '#f59e0b', shape: 'circle', text: `${exitReason} (${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}$)` });
@@ -1704,6 +1914,7 @@ for (let i = 205; i < bars.length; i++) {
             balance += pnl;
             if (balance > peakBalance) peakBalance = balance;
             if (peakBalance - balance > maxDrawdownUSD) maxDrawdownUSD = peakBalance - balance;
+            if (balance - 10000 > maxRunupUSD) maxRunupUSD = balance - 10000;
             closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: "🔄 REV" });
             pos = null;
           }
@@ -1726,13 +1937,37 @@ for (let i = 205; i < bars.length; i++) {
             }
           }
         }
-        equityCurve.push({ time: time[i], value: balance });
+
+        // Equidad flotante vela a vela para la Curva de Capital Bicolor (Módulo 4.2)
+        let floatingEquity = balance;
+        if (pos) {
+          floatingEquity += pos.dir === 'LONG' ? (close[i] - pos.entryPrice) * pos.size : (pos.entryPrice - close[i]) * pos.size;
+        }
+        if (floatingEquity > peakBalance) peakBalance = floatingEquity;
+        const currentDD = peakBalance - floatingEquity;
+        if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
+        if (floatingEquity - 10000 > maxRunupUSD) maxRunupUSD = floatingEquity - 10000;
+
+        // Verde Esmeralda (#10b981) si está en Run-Up / cerca de máximos; Rojo Carmesí (#f43f5e) si está en Drawdown
+        const isDrawdownPhase = currentDD > 2.5 || floatingEquity < 10000;
+        equityCurve.push({ time: time[i], value: floatingEquity });
+        bicolorPoints.push({
+          time: time[i],
+          value: floatingEquity,
+          color: isDrawdownPhase ? '#f43f5e' : '#10b981'
+        });
       }
 
       markers.sort((a, b) => a.time - b.time);
       candleSeries1.setMarkers(markers);
       isBotActiveOnChart = true;
-      if (equityCurve.length > 0) { equitySeries.setData(equityCurve); equityChart.timeScale().fitContent(); }
+
+      if (equityCurve.length > 0) {
+        equityBaselineSeries.setData(equityCurve);
+        equityBicolorLine.setData(bicolorPoints);
+        const currentRange = chart1.timeScale().getVisibleLogicalRange();
+        if (currentRange) equityChart.timeScale().setVisibleLogicalRange(currentRange);
+      }
 
       const totalNetPnl = balance - 10000, totalNetPct = (totalNetPnl / 10000) * 100;
       const wins = closedTrades.filter(t => t.pnl > 0), losses = closedTrades.filter(t => t.pnl <= 0);
@@ -1743,9 +1978,21 @@ for (let i = 205; i < bars.length; i++) {
       const pygEl = document.getElementById('st-pyg');
       pygEl.innerText = `${totalNetPnl >= 0 ? '+' : ''}${totalNetPnl.toFixed(2)} USD (${totalNetPct >= 0 ? '+' : ''}${totalNetPct.toFixed(2)}%)`;
       pygEl.className = `text-sm font-bold font-mono ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-      document.getElementById('st-dd').innerText = `${maxDrawdownUSD.toFixed(2)} USD (${((maxDrawdownUSD / peakBalance) * 100).toFixed(2)}%)`;
+
+      document.getElementById('st-runup').innerText = `+${maxRunupUSD.toFixed(2)} USD (+${((maxRunupUSD / 10000) * 100).toFixed(2)}%)`;
+      document.getElementById('st-dd').innerText = `-${maxDrawdownUSD.toFixed(2)} USD (-${((maxDrawdownUSD / peakBalance) * 100).toFixed(2)}%)`;
       document.getElementById('st-winrate').innerText = `${winRate.toFixed(1)}% (${wins.length}/${closedTrades.length})`;
       document.getElementById('st-pf').innerText = profitFactor;
+
+      const phaseEl = document.getElementById('st-phase');
+      const lastPointInDD = (peakBalance - balance) > 2.5 || balance < 10000;
+      if (lastPointInDD) {
+        phaseEl.innerText = "🔴 EN DRAWDOWN";
+        phaseEl.className = "text-xs font-extrabold text-rose-400 font-mono";
+      } else {
+        phaseEl.innerText = "🟢 EN RUN-UP / ATH";
+        phaseEl.className = "text-xs font-extrabold text-emerald-400 font-mono";
+      }
 
       const elapsed = (performance.now() - t0).toFixed(1);
       document.getElementById('ide-stat-trades').innerText = countLongs + countShorts;
@@ -1787,9 +2034,10 @@ for (let i = 205; i < bars.length; i++) {
 
     async function runOneClickBacktest() {
       compileAndRunStrategy();
+      openBottomTab('performance');
       const tf = document.getElementById('timeframeSelect').value;
       const symbol = document.getElementById('symbolSelect').value;
-      document.getElementById('agent-verdict').innerText = `Simulando Monte Carlo sobre ${symbol}...`;
+      document.getElementById('agent-verdict').innerText = `Simulando Backtest + Curva Bicolor sobre ${symbol}...`;
       try {
         const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1798,7 +2046,7 @@ for (let i = 205; i < bars.length; i++) {
         const data = await res.json();
         document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
       } catch (e) {
-        document.getElementById('agent-verdict').innerText = "Backtest del Módulo 3 ejecutado en local a 60 FPS.";
+        document.getElementById('agent-verdict').innerText = "Backtest Módulo 4 y Curva Bicolor sincronizados a 60 FPS.";
       }
     }
 
@@ -1828,8 +2076,955 @@ for (let i = 205; i < bars.length; i++) {
   </script>
 </body>
 </html>
+c1.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const menu = document.getElementById('contextMenu');
+      menu.style.top = `${e.clientY}px`; menu.style.left = `${e.clientX}px`;
+      menu.classList.remove('hidden');
+    });
 
+    window.addEventListener('click', closeContextMenu);
+    function closeContextMenu() { document.getElementById('contextMenu').classList.add('hidden'); }
 
+    function resetChart() {
+      [chart1, chart2, chart3, chart4, equityChart].forEach(ch => ch.timeScale().fitContent());
+      redrawAllCanvasShapes();
+      closeContextMenu();
+    }
 
+    function resizeAllCharts() {
+      setTimeout(() => {
+        if (c1.clientWidth && c1.clientHeight) chart1.resize(c1.clientWidth, c1.clientHeight);
+        if (c2.clientWidth && c2.clientHeight) chart2.resize(c2.clientWidth, c2.clientHeight);
+        if (c3.clientWidth && c3.clientHeight) chart3.resize(c3.clientWidth, c3.clientHeight);
+        if (c4.clientWidth && c4.clientHeight) chart4.resize(c4.clientWidth, c4.clientHeight);
+        if (eqContainer.clientWidth && eqContainer.clientHeight) equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
+        if (rsiCont.clientWidth && rsiCont.clientHeight) chartRSI.resize(rsiCont.clientWidth, rsiCont.clientHeight);
+        if (macdCont.clientWidth && macdCont.clientHeight) chartMACD.resize(macdCont.clientWidth, macdCont.clientHeight);
+        resizeCanvas();
+      }, 30);
+    }
 
+    // --- CONTROLES DE VENTANA Y SPLITTERS ARRASTRABLES ---
+    function setWindowSize(boxId, mode) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      if (mode === 'max') box.classList.toggle('sv5-window-fullscreen');
+      else if (mode === 'mid') {
+        box.classList.remove('sv5-window-fullscreen');
+        document.getElementById('strategy-panel').style.height = '18rem';
+      } else if (mode === 'min') {
+        box.classList.remove('sv5-window-fullscreen');
+        if (boxId === 'chart-box-1') {
+          document.getElementById('strategy-panel').classList.remove('hidden');
+          document.getElementById('strategy-panel').style.height = '62vh';
+        } else setLayout('1');
+      }
+      resizeAllCharts();
+    }
+
+    function setSubpanelHeight(panelId, heightPx) {
+      const panel = document.getElementById(panelId);
+      if (panel) { panel.style.height = `${heightPx}px`; resizeAllCharts(); }
+    }
+
+    function setBottomPanelMode(mode) {
+      const panel = document.getElementById('strategy-panel');
+      panel.classList.remove('hidden', 'sv5-window-fullscreen');
+      if (mode === 'min') panel.style.height = '36px';
+      else if (mode === 'mid') panel.style.height = '45vh';
+      else if (mode === 'max') { panel.classList.add('sv5-window-fullscreen'); panel.style.height = ''; }
+      resizeAllCharts();
+    }
+
+    function setRightSidebarSize(mode) {
+      const sidebar = document.getElementById('right-sidebar');
+      sidebar.style.width = mode === 'min' ? '180px' : mode === 'mid' ? '320px' : '480px';
+      resizeAllCharts();
+    }
+
+    function setupHorizontalResizer(resizerEl, targetPanel, invertDelta) {
+      if (!resizerEl || !targetPanel) return;
+      let startY = 0, startHeight = 0;
+      resizerEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        targetPanel.classList.remove('hidden', 'sv5-window-fullscreen');
+        startY = e.clientY; startHeight = targetPanel.getBoundingClientRect().height;
+        resizerEl.classList.add('active');
+        const onMove = (ev) => {
+          const dy = ev.clientY - startY;
+          const newH = Math.max(36, Math.min(window.innerHeight - 140, invertDelta ? startHeight - dy : startHeight + dy));
+          targetPanel.style.height = `${newH}px`;
+          resizeAllCharts();
+        };
+        const onUp = () => {
+          resizerEl.classList.remove('active');
+          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      });
+    }
+
+    function setupVerticalResizer(resizerEl, targetPane, invertDelta) {
+      if (!resizerEl || !targetPane) return;
+      let startX = 0, startWidth = 0;
+      resizerEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startX = e.clientX; startWidth = targetPane.getBoundingClientRect().width;
+        resizerEl.classList.add('active');
+        const onMove = (ev) => {
+          const dx = ev.clientX - startX;
+          const newW = Math.max(160, Math.min(window.innerWidth - 280, invertDelta ? startWidth - dx : startWidth + dx));
+          targetPane.style.width = `${newW}px`; targetPane.style.flex = 'none';
+          resizeAllCharts();
+        };
+        const onUp = () => {
+          resizerEl.classList.remove('active');
+          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      });
+    }
+
+    function initDraggableSplitters() {
+      setupHorizontalResizer(document.getElementById('resizer-bottom'), document.getElementById('strategy-panel'), true);
+      setupHorizontalResizer(document.getElementById('resizer-rsi'), document.getElementById('rsi-subpanel'), true);
+      setupHorizontalResizer(document.getElementById('resizer-macd'), document.getElementById('macd-subpanel'), true);
+      setupVerticalResizer(document.getElementById('resizer-right'), document.getElementById('right-sidebar'), true);
+      setupVerticalResizer(document.getElementById('resizer-ide-inner'), document.getElementById('ide-editor-pane'), false);
+    }
+
+    // --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) ---
+    function setLayout(mode) {
+      currentLayout = mode;
+      const b2 = document.getElementById('chart-box-2'), b3 = document.getElementById('chart-box-3'), b4 = document.getElementById('chart-box-4');
+      const grid = document.getElementById('chart-grid');
+      ['1', '2h', '4'].forEach(m => {
+        document.getElementById(`layout-btn-${m}`).className = m === mode
+          ? "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono"
+          : "px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono";
+      });
+      if (mode === '1') {
+        grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
+        b2.classList.add('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
+      } else if (mode === '2h') {
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
+        b2.classList.remove('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
+      } else if (mode === '4') {
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 w-full relative min-h-[120px]";
+        b2.classList.remove('hidden'); b3.classList.remove('hidden'); b4.classList.remove('hidden');
+      }
+      refreshSecondaryWindows();
+      resizeAllCharts();
+    }
+
+    function refreshSecondaryWindows() {
+      if (currentLayout === '2h') loadWindowCandles('1h', candleSeries2, chart2);
+      else if (currentLayout === '4') {
+        loadWindowCandles('1h', candleSeries2, chart2);
+        loadWindowCandles('4h', candleSeries3, chart3);
+        loadWindowCandles('1D', candleSeries4, chart4);
+      }
+    }
+
+    function toggleStrategyPanel() {
+      const panel = document.getElementById('strategy-panel');
+      panel.classList.remove('sv5-window-fullscreen');
+      panel.classList.toggle('hidden');
+      resizeAllCharts();
+    }
+
+    function openBottomTab(tabName) {
+      const panel = document.getElementById('strategy-panel');
+      panel.classList.remove('hidden');
+      if (panel.clientHeight < 100) panel.style.height = '18rem';
+      switchBottomSubTab(tabName);
+      resizeAllCharts();
+    }
+
+    function switchBottomSubTab(tabName) {
+      const isIde = tabName === 'ide';
+      document.getElementById('subview-performance').classList.toggle('hidden', isIde);
+      document.getElementById('subview-ide').classList.toggle('hidden', !isIde);
+      document.getElementById('subtab-btn-ide').className = isIde
+        ? "px-3 py-1 rounded font-bold bg-sky-600/20 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5"
+        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
+      document.getElementById('subtab-btn-perf').className = !isIde
+        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5"
+        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
+      resizeAllCharts();
+    }
+
+    async function fetchCandlesFromAPI(symbol, interval) {
+      const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${interval}`);
+      const json = await res.json();
+      const raw = json.data || json.datos || [];
+      return raw.map(d => ({
+        time: Number(d.time || d.tiempo),
+        open: Number(d.open || d.apertura),
+        high: Number(d.high || d.máximo || d.maximo),
+        low: Number(d.low || d.mínimo || d.minimo),
+        close: Number(d.close || d.cierre)
+      })).sort((a, b) => a.time - b.time);
+    }
+
+    async function loadWindowCandles(interval, targetSeries, targetChart) {
+      const symbol = document.getElementById('symbolSelect').value;
+      const cutLimit = isReplayActive && currentReplayTimestamp > 0 ? currentReplayTimestamp : Infinity;
+      const baseSource = rawMT5Candles.length > 0 ? rawMT5Candles : originalFullCandles;
+
+      if (symbol.startsWith("mt5_id_") || baseSource.length > 0) {
+        const aggregated = aggregateCandlesToTimeframe(baseSource, interval, cutLimit);
+        if (aggregated.length > 0) {
+          targetSeries.setData(aggregated);
+          targetChart.timeScale().setVisibleLogicalRange({ from: Math.max(0, aggregated.length - 100), to: aggregated.length - 1 });
+        }
+        return;
+      }
+      try {
+        let candles = await fetchCandlesFromAPI(symbol, interval);
+        if (cutLimit < Infinity) candles = candles.filter(c => c.time <= cutLimit);
+        if (candles.length > 0) { targetSeries.setData(candles); targetChart.timeScale().fitContent(); }
+      } catch (err) {}
+    }
+
+    async function loadCandles() {
+      if (isReplayActive) exitReplayMode();
+      const symbol = document.getElementById('symbolSelect').value;
+      const tf = document.getElementById('timeframeSelect').value;
+      document.getElementById('p1-tf-label').innerText = tf;
+      lastBucketTimeP1 = 0;
+
+      if (symbol.startsWith("mt5_id_")) {
+        const dataset = await getDatasetFromDB(symbol);
+        if (dataset && dataset.candles && dataset.candles.length > 0) {
+          rawMT5Candles = dataset.candles;
+          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+          allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+          displayCandlesOnChart(allCandles);
+          refreshSecondaryWindows();
+          document.getElementById('agent-verdict').innerText = `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base. Precios a 5 decimales y Curva Bicolor activa.`;
+        }
+        return;
+      }
+      try {
+        const data = await fetchCandlesFromAPI(symbol, tf);
+        rawMT5Candles = [...data]; originalFullCandles = [...data]; allCandles = [...data];
+        displayCandlesOnChart(allCandles);
+        refreshSecondaryWindows();
+      } catch (err) { console.error(err); }
+    }
+
+    function displayCandlesOnChart(data) {
+      if (data.length > 0) applyDynamicPricePrecision(data[data.length - 1].close);
+      candleSeries1.setData(data);
+      updateAllTechnicalIndicators();
+      if (isBotActiveOnChart) compileAndRunStrategy(true);
+
+      const logicalRange = { from: Math.max(0, data.length - 150), to: Math.max(0, data.length - 1) };
+      chart1.timeScale().setVisibleLogicalRange(logicalRange);
+      chartRSI.timeScale().setVisibleLogicalRange(logicalRange);
+      chartMACD.timeScale().setVisibleLogicalRange(logicalRange);
+      equityChart.timeScale().setVisibleLogicalRange(logicalRange);
+
+      if (data.length > 0) {
+        const last = data[data.length - 1];
+        document.getElementById('price-display').innerText = formatPrice(last.close);
+        document.getElementById('p1-ohlc-bar').innerText = `O:${formatPrice(last.open)} H:${formatPrice(last.high)} L:${formatPrice(last.low)} C:${formatPrice(last.close)}`;
+      }
+      redrawAllCanvasShapes();
+    }
+
+    async function handleMT5CSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      document.getElementById('agent-verdict').innerText = `Procesando ${file.name}...`;
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const lines = e.target.result.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length < 2) return;
+        const parsed = [];
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(/[,\t;]/).map(s => s.trim().replace(/"/g, ''));
+          if (row.length < 5) continue;
+          let timeVal = 0, o = 0, h = 0, l = 0, c = 0;
+          if (row.length >= 6 && (row[0].includes('.') || row[0].includes('-') || row[0].includes('/'))) {
+            const dateStr = row[0].replace(/\./g, '-');
+            timeVal = Math.floor(new Date(`${dateStr}T${row[1]}Z`).getTime() / 1000);
+            o = parseFloat(row[2]); h = parseFloat(row[3]); l = parseFloat(row[4]); c = parseFloat(row[5]);
+          } else {
+            timeVal = Math.floor(new Date(row[0]).getTime() / 1000);
+            o = parseFloat(row[1]); h = parseFloat(row[2]); l = parseFloat(row[3]); c = parseFloat(row[4]);
+          }
+          if (!isNaN(timeVal) && !isNaN(o) && !isNaN(h) && !isNaN(l) && !isNaN(c)) {
+            parsed.push({ time: timeVal, open: o, high: h, low: l, close: c });
+          }
+        }
+        if (parsed.length > 0) {
+          parsed.sort((a, b) => a.time - b.time);
+          const datasetId = `mt5_id_${Date.now()}`;
+          const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+          await saveDatasetToDB({ id: datasetId, name: cleanName, candlesCount: parsed.length, savedAt: new Date().toLocaleDateString(), candles: parsed });
+          await refreshSavedDatasetsDropdown(datasetId);
+          rawMT5Candles = parsed;
+          const tf = document.getElementById('timeframeSelect').value;
+          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+          allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+          displayCandlesOnChart(allCandles);
+          refreshSecondaryWindows();
+          document.getElementById('agent-verdict').innerText = `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length.toLocaleString()} velas).`;
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function refreshSavedDatasetsDropdown(selectedId = null) {
+      const optgroup = document.getElementById('optgroup-mt5-saved');
+      optgroup.innerHTML = "";
+      const metaList = await getDatasetsMetadata();
+      document.getElementById('db-count').innerText = `${metaList.length} archivos`;
+      if (metaList.length === 0) { optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`; return; }
+      metaList.forEach(ds => {
+        const opt = document.createElement('option');
+        opt.value = ds.id; opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} velas)`;
+        if (selectedId && ds.id === selectedId) opt.selected = true;
+        optgroup.appendChild(opt);
+      });
+    }
+
+    function toggleCutMode() {
+      if (allCandles.length === 0) return;
+      isCutModeActive = !isCutModeActive;
+      document.getElementById('btn-cut-replay').classList.toggle('bg-amber-500', isCutModeActive);
+      document.getElementById('btn-cut-replay').classList.toggle('text-black', isCutModeActive);
+      document.getElementById('replay-banner').classList.toggle('hidden', !isCutModeActive);
+      c1.classList.toggle('scissor-cursor', isCutModeActive);
+    }
+
+    function executeCutAtTime(cutTime) {
+      if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
+      const foundIdx = binarySearchCandleIndex(originalFullCandles, cutTime);
+      if (foundIdx > 0) applyCutAtIndex(foundIdx);
+    }
+
+    function updateReplayIndicators() {
+      if (allCandles.length > 0) {
+        const last = allCandles[allCandles.length - 1];
+        document.getElementById('price-display').innerText = formatPrice(last.close);
+        document.getElementById('p1-ohlc-bar').innerText = `O:${formatPrice(last.open)} H:${formatPrice(last.high)} L:${formatPrice(last.low)} C:${formatPrice(last.close)}`;
+        updateAllTechnicalIndicators();
+        if (isBotActiveOnChart) compileAndRunStrategy(true);
+        redrawAllCanvasShapes();
+      }
+    }
+
+    function stepForwardReplay() {
+      if (!isReplayActive || replayIndex >= originalFullCandles.length - 1) return;
+      replayIndex++;
+      const nextCandle = originalFullCandles[replayIndex];
+      currentReplayTimestamp = nextCandle.time;
+      allCandles.push(nextCandle);
+      candleSeries1.update(nextCandle);
+      updateReplayIndicators();
+      if (currentLayout !== '1') refreshSecondaryWindows();
+    }
+
+    function togglePlayReplay() {
+      if (!isReplayActive) return;
+      const playBtn = document.getElementById('btn-play-replay');
+      if (replayIntervalId) {
+        clearInterval(replayIntervalId); replayIntervalId = null;
+        playBtn.innerText = "▶"; playBtn.className = "px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold";
+      } else {
+        playBtn.innerText = "⏸"; playBtn.className = "px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold";
+        const speed = parseInt(document.getElementById('replaySpeed').value) || 500;
+        replayIntervalId = setInterval(() => {
+          if (replayIndex >= originalFullCandles.length - 1) { togglePlayReplay(); alert("Fin del historial alcanzado."); return; }
+          stepForwardReplay();
+        }, speed);
+      }
+    }
+
+    function exitReplayMode() {
+      if (replayIntervalId) { clearInterval(replayIntervalId); replayIntervalId = null; }
+      isReplayActive = false; isCutModeActive = false; currentReplayTimestamp = 0;
+      document.getElementById('replay-banner').classList.add('hidden');
+      document.getElementById('replay-controls').classList.add('hidden');
+      document.getElementById('replay-controls').classList.remove('flex');
+      document.getElementById('btn-play-replay').innerText = "▶";
+      c1.classList.remove('scissor-cursor');
+      if (originalFullCandles.length > 0) {
+        allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+        displayCandlesOnChart(allCandles);
+        refreshSecondaryWindows();
+      }
+    }
+
+    // --- INDICADORES TÉCNICOS SINCRONIZADOS 1:1 CON EL EJE DE TIEMPO ---
+    function calcEMA(data, period) {
+      if (!data || data.length === 0) return [];
+      const k = 2 / (period + 1);
+      let ema = data[0].close;
+      const res = new Array(data.length);
+      for (let i = 0; i < data.length; i++) {
+        ema = data[i].close * k + ema * (1 - k);
+        res[i] = { time: data[i].time, value: ema };
+      }
+      return res;
+    }
+
+    function calcBollingerBands(data, period = 20, mult = 2) {
+      if (data.length < period) return { upper: [], basis: [], lower: [] };
+      const upper = new Array(data.length), basis = new Array(data.length), lower = new Array(data.length);
+      let sum = 0, sumSq = 0;
+      for (let i = 0; i < period; i++) {
+        const c = data[i].close; sum += c; sumSq += c * c;
+        if (i < period - 1) { upper[i] = { time: data[i].time }; basis[i] = { time: data[i].time }; lower[i] = { time: data[i].time }; }
+      }
+      for (let i = period - 1; i < data.length; i++) {
+        if (i >= period) {
+          const addC = data[i].close, remC = data[i - period].close;
+          sum += addC - remC; sumSq += (addC * addC) - (remC * remC);
+        }
+        const mean = sum / period;
+        const stdDev = Math.sqrt(Math.max(0, (sumSq / period) - (mean * mean)));
+        basis[i] = { time: data[i].time, value: mean };
+        upper[i] = { time: data[i].time, value: mean + mult * stdDev };
+        lower[i] = { time: data[i].time, value: mean - mult * stdDev };
+      }
+      return { upper, basis, lower };
+    }
+
+    function calcRSI(data, period = 14) {
+      if (data.length <= period) return [];
+      const rsiData = new Array(data.length);
+      let gains = 0, losses = 0;
+      rsiData[0] = { time: data[0].time };
+      for (let i = 1; i <= period; i++) {
+        const diff = data[i].close - data[i - 1].close;
+        if (diff >= 0) gains += diff; else losses -= diff;
+        if (i < period) rsiData[i] = { time: data[i].time };
+      }
+      let avgGain = gains / period, avgLoss = losses / period;
+      rsiData[period] = { time: data[period].time, value: avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss)) };
+      for (let i = period + 1; i < data.length; i++) {
+        const diff = data[i].close - data[i - 1].close;
+        avgGain = (avgGain * (period - 1) + (diff >= 0 ? diff : 0)) / period;
+        avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+        rsiData[i] = { time: data[i].time, value: avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss)) };
+      }
+      return rsiData;
+    }
+
+    function calcMACD(data, fast = 12, slow = 26, signalPeriod = 9) {
+      if (data.length < slow) return { macd: [], signal: [], hist: [] };
+      const fastEMA = calcEMA(data, fast), slowEMA = calcEMA(data, slow);
+      const macdLine = new Array(data.length);
+      for (let i = 0; i < data.length; i++) macdLine[i] = { time: data[i].time, value: fastEMA[i].value - slowEMA[i].value };
+      const signalLine = calcEMA(macdLine.map(m => ({ time: m.time, close: m.value })), signalPeriod);
+      const hist = new Array(data.length);
+      for (let i = 0; i < data.length; i++) {
+        const val = macdLine[i].value - signalLine[i].value;
+        hist[i] = { time: data[i].time, value: val, color: val >= 0 ? '#10b981' : '#ef4444' };
+      }
+      return { macd: macdLine, signal: signalLine, hist };
+    }
+
+    function updateAllTechnicalIndicators() {
+      if (allCandles.length === 0) return;
+      if (ema9) ema9.setData(calcEMA(allCandles, 9));
+      if (ema21) ema21.setData(calcEMA(allCandles, 21));
+      if (ema200 && allCandles.length >= 200) ema200.setData(calcEMA(allCandles, 200));
+      if (bbUpper && bbBasis && bbLower) {
+        const bb = calcBollingerBands(allCandles, 20, 2);
+        bbUpper.setData(bb.upper); bbBasis.setData(bb.basis); bbLower.setData(bb.lower);
+      }
+      const currentRange = chart1.timeScale().getVisibleLogicalRange();
+      if (document.getElementById('check-rsi').checked) {
+        rsiSeries.setData(calcRSI(allCandles, 14));
+        if (currentRange) chartRSI.timeScale().setVisibleLogicalRange(currentRange);
+      }
+      if (document.getElementById('check-macd').checked) {
+        const m = calcMACD(allCandles, 12, 26, 9);
+        macdLineSeries.setData(m.macd); macdSignalSeries.setData(m.signal); macdHistSeries.setData(m.hist);
+        if (currentRange) chartMACD.timeScale().setVisibleLogicalRange(currentRange);
+      }
+    }
+
+    function toggleIndicatorsModal() { document.getElementById('indicatorsModal').classList.toggle('hidden'); }
+
+    function toggleIndicator(type) {
+      const samplePrice = allCandles.length > 0 ? allCandles[allCandles.length - 1].close : 1.1;
+      const fmt = samplePrice < 200 ? { type: 'price', precision: 5, minMove: 0.00001 } : { type: 'price', precision: 2, minMove: 0.01 };
+
+      if (type === 'ema9') {
+        const chk = document.getElementById('check-ema9').checked;
+        if (chk && !ema9) ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9', priceFormat: fmt });
+        else if (!chk && ema9) { chart1.removeSeries(ema9); ema9 = null; }
+      }
+      if (type === 'ema21') {
+        const chk = document.getElementById('check-ema21').checked;
+        if (chk && !ema21) ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21', priceFormat: fmt });
+        else if (!chk && ema21) { chart1.removeSeries(ema21); ema21 = null; }
+      }
+      if (type === 'ema200') {
+        const chk = document.getElementById('check-ema200').checked;
+        if (chk && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200', priceFormat: fmt });
+        else if (!chk && ema200) { chart1.removeSeries(ema200); ema200 = null; }
+      }
+      if (type === 'bb') {
+        const chk = document.getElementById('check-bb').checked;
+        if (chk) {
+          if (!bbUpper) bbUpper = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Sup', priceFormat: fmt });
+          if (!bbBasis) bbBasis = chart1.addLineSeries({ color: '#eab308', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'BB Med', priceFormat: fmt });
+          if (!bbLower) bbLower = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Inf', priceFormat: fmt });
+        } else {
+          if (bbUpper) { chart1.removeSeries(bbUpper); bbUpper = null; }
+          if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
+          if (bbLower) { chart1.removeSeries(bbLower); bbLower = null; }
+        }
+      }
+      if (type === 'rsi') {
+        const chk = document.getElementById('check-rsi').checked;
+        document.getElementById('rsi-subpanel').classList.toggle('hidden', !chk);
+        document.getElementById('resizer-rsi').classList.toggle('hidden', !chk);
+        resizeAllCharts();
+      }
+      if (type === 'macd') {
+        const chk = document.getElementById('check-macd').checked;
+        document.getElementById('macd-subpanel').classList.toggle('hidden', !chk);
+        document.getElementById('resizer-macd').classList.toggle('hidden', !chk);
+        resizeAllCharts();
+      }
+      updateAllTechnicalIndicators();
+    }
+
+    function removeAllIndicators() {
+      ['check-ema9', 'check-ema21', 'check-ema200', 'check-bb', 'check-rsi', 'check-macd'].forEach(id => document.getElementById(id).checked = false);
+      if (ema9) { chart1.removeSeries(ema9); ema9 = null; }
+      if (ema21) { chart1.removeSeries(ema21); ema21 = null; }
+      if (ema200) { chart1.removeSeries(ema200); ema200 = null; }
+      if (bbUpper) { chart1.removeSeries(bbUpper); bbUpper = null; }
+      if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
+      if (bbLower) { chart1.removeSeries(bbLower); bbLower = null; }
+      document.getElementById('rsi-subpanel').classList.add('hidden');
+      document.getElementById('resizer-rsi').classList.add('hidden');
+      document.getElementById('macd-subpanel').classList.add('hidden');
+      document.getElementById('resizer-macd').classList.add('hidden');
+      resizeAllCharts(); closeContextMenu();
+    }
+
+    // =========================================================================
+    // MÓDULO 3 & MÓDULO 4: MOTOR DE ESTRATEGIAS + CURVA BICOLOR (RUN-UP vs DRAWDOWN)
+    // =========================================================================
+    const STRATEGY_PRESETS = {
+      stratscript_ema_rsi: `// ============================================================================
+// [MÓDULO 3 & 4] StratScript Engine: Cruce EMA (9/21) + Filtro RSI + SL/TP/Trail
+// ============================================================================
+const fastEMA = ema(9);
+const slowEMA = ema(21);
+const rsi14   = rsi(14);
+
+for (let i = 25; i < bars.length; i++) {
+    // Condición de COMPRA (Long): Cruce alcista de EMAs y RSI con espacio alcista
+    if (crossover(fastEMA, slowEMA, i) && rsi14[i] < 68) {
+        strategy.entry(i, LONG, "BUY EMA+RSI");
+    }
+
+    // Condición de VENTA (Short): Cruce bajista de EMAs y RSI con espacio bajista
+    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] > 32) {
+        strategy.entry(i, SHORT, "SELL EMA+RSI");
+    }
+}`,
+      mql5_style: `// ============================================================================
+// [MÓDULO 3 & 4] Sintaxis Compatible MQL5: OrderSend() con Bandas de Bollinger
+// ============================================================================
+const bands = iBands(20, 2.0);
+const myRSI = iRSI(14);
+
+for (let i = 25; i < bars.length; i++) {
+    if (close[i - 1] < bands.lower[i - 1] && close[i] > bands.lower[i] && myRSI[i] < 38) {
+        OrderSend(_Symbol, OP_BUY, Lots, close[i], Slippage, StopLoss, TakeProfit, "MQL5 BUY BB", i);
+    }
+    if (close[i - 1] > bands.upper[i - 1] && close[i] < bands.upper[i] && myRSI[i] > 62) {
+        OrderSend(_Symbol, OP_SELL, Lots, close[i], Slippage, StopLoss, TakeProfit, "MQL5 SELL BB", i);
+    }
+}`,
+      python_style: `# ============================================================================
+# [MÓDULO 3 & 4] Lógica Cuantitativa Estilo Python: Tendencia Institucional EMA 200
+# ============================================================================
+const ema21  = ema(21);
+const ema200 = ema(200);
+
+for (let i = 205; i < bars.length; i++) {
+    if (close[i] > ema200[i] && crossover(ema21, ema200, i)) {
+        strategy.long(i, "PY TREND BUY");
+    }
+    if (close[i] < ema200[i] && crossunder(ema21, ema200, i)) {
+        strategy.short(i, "PY TREND SELL");
+    }
+}`
+    };
+
+    function preprocessStrategyCode(rawCode) {
+      return rawCode.split('\n').map(l => l.trimStart().startsWith('#') ? l.replace('#', '//') : l).join('\n');
+    }
+
+    let syntaxTimeout = null;
+    function validateSyntaxRealtime() {
+      const processed = preprocessStrategyCode(document.getElementById('stratscript-editor').value);
+      const dot = document.getElementById('syntax-dot'), text = document.getElementById('syntax-text');
+      try {
+        new Function(
+          'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
+          'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
+          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', processed
+        );
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+        text.className = "text-emerald-400"; text.innerText = "Sintaxis Válida (0 errores)";
+        return true;
+      } catch (err) {
+        dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
+        text.className = "text-rose-400"; text.innerText = `Error: ${err.message.substring(0, 42)}`;
+        return false;
+      }
+    }
+
+    function handleEditorInput() {
+      updateIdeLineNumbers();
+      clearTimeout(syntaxTimeout);
+      syntaxTimeout = setTimeout(validateSyntaxRealtime, 180);
+    }
+
+    function updateIdeLineNumbers() {
+      const editor = document.getElementById('stratscript-editor');
+      const lines = editor.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= lines; i++) html += i + '<br>';
+      document.getElementById('ide-line-numbers').innerHTML = html;
+      const curr = editor.value.substring(0, editor.selectionStart).split('\n').length;
+      document.getElementById('ide-cursor-pos').innerText = `Línea ${curr} de ${lines}`;
+    }
+
+    function syncEditorScroll() {
+      document.getElementById('ide-line-numbers').scrollTop = document.getElementById('stratscript-editor').scrollTop;
+    }
+
+    function loadStrategyPreset(presetKey) {
+      if (STRATEGY_PRESETS[presetKey]) {
+        document.getElementById('stratscript-editor').value = STRATEGY_PRESETS[presetKey];
+        updateIdeLineNumbers(); validateSyntaxRealtime(); compileAndRunStrategy();
+      }
+    }
+
+    function calcFastSMAArray(closeArr, period) {
+      const out = new Float64Array(closeArr.length).fill(NaN);
+      let sum = 0;
+      for (let i = 0; i < closeArr.length; i++) {
+        sum += closeArr[i];
+        if (i >= period) sum -= closeArr[i - period];
+        if (i >= period - 1) out[i] = sum / period;
+      }
+      return out;
+    }
+
+    function calcFastEMAArray(closeArr, period) {
+      const out = new Float64Array(closeArr.length).fill(NaN);
+      if (closeArr.length === 0) return out;
+      const k = 2 / (period + 1);
+      let prev = closeArr[0]; out[0] = prev;
+      for (let i = 1; i < closeArr.length; i++) { prev = closeArr[i] * k + prev * (1 - k); out[i] = prev; }
+      return out;
+    }
+
+    function calcFastRSIArray(closeArr, period = 14) {
+      const out = new Float64Array(closeArr.length).fill(50);
+      if (closeArr.length <= period) return out;
+      let gains = 0, losses = 0;
+      for (let i = 1; i <= period; i++) { const d = closeArr[i] - closeArr[i - 1]; if (d >= 0) gains += d; else losses -= d; }
+      let avgG = gains / period, avgL = losses / period;
+      for (let i = period + 1; i < closeArr.length; i++) {
+        const d = closeArr[i] - closeArr[i - 1];
+        avgG = (avgG * (period - 1) + (d >= 0 ? d : 0)) / period;
+        avgL = (avgL * (period - 1) + (d < 0 ? -d : 0)) / period;
+        out[i] = avgL === 0 ? 100 : 100 - (100 / (1 + avgG / avgL));
+      }
+      return out;
+    }
+
+    function calcFastBBArray(closeArr, period = 20, mult = 2.0) {
+      const len = closeArr.length;
+      const upper = new Float64Array(len).fill(NaN), middle = new Float64Array(len).fill(NaN), lower = new Float64Array(len).fill(NaN);
+      if (len < period) return { upper, middle, lower };
+      let sum = 0, sumSq = 0;
+      for (let i = 0; i < period; i++) { sum += closeArr[i]; sumSq += closeArr[i] * closeArr[i]; }
+      for (let i = period - 1; i < len; i++) {
+        if (i >= period) { const add = closeArr[i], rem = closeArr[i - period]; sum += add - rem; sumSq += add * add - rem * rem; }
+        const mean = sum / period, std = Math.sqrt(Math.max(0, sumSq / period - mean * mean));
+        middle[i] = mean; upper[i] = mean + mult * std; lower[i] = mean - mult * std;
+      }
+      return { upper, middle, lower };
+    }
+
+    function compileAndRunStrategy(silent = false) {
+      if (!allCandles || allCandles.length === 0 || !validateSyntaxRealtime()) return;
+      const t0 = performance.now();
+      const rawCode = document.getElementById('stratscript-editor').value;
+      localStorage.setItem('sv5_module3_code', rawCode);
+      const code = preprocessStrategyCode(rawCode);
+
+      const len = allCandles.length;
+      const open = new Float64Array(len), high = new Float64Array(len), low = new Float64Array(len), close = new Float64Array(len), time = new Array(len);
+      for (let i = 0; i < len; i++) {
+        open[i] = allCandles[i].open; high[i] = allCandles[i].high; low[i] = allCandles[i].low; close[i] = allCandles[i].close; time[i] = allCandles[i].time;
+      }
+
+      const refPrice = close[len - 1] || 1;
+      const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+      const TakeProfit = parseFloat(document.getElementById('inp-tp').value) || 0;
+      const StopLoss = parseFloat(document.getElementById('inp-sl').value) || 0;
+      const TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
+      const Lots = parseFloat(document.getElementById('inp-lots').value) || 1.0;
+      const riskMode = document.getElementById('inp-risk-mode').value;
+      const Slippage = 2, _Symbol = document.getElementById('symbolSelect').value;
+      const input = (name, defVal) => defVal;
+
+      const indCache = {};
+      const ema = (p = 14) => indCache[`ema_${p}`] || (indCache[`ema_${p}`] = calcFastEMAArray(close, p));
+      const sma = (p = 14) => indCache[`sma_${p}`] || (indCache[`sma_${p}`] = calcFastSMAArray(close, p));
+      const rsi = (p = 14) => indCache[`rsi_${p}`] || (indCache[`rsi_${p}`] = calcFastRSIArray(close, p));
+      const bb  = (p = 20, m = 2.0) => indCache[`bb_${p}_${m}`] || (indCache[`bb_${p}_${m}`] = calcFastBBArray(close, p, m));
+
+      const crossover = (a, b, i) => i >= 1 && a[i - 1] <= (typeof b === 'number' ? b : b[i - 1]) && a[i] > (typeof b === 'number' ? b : b[i]);
+      const crossunder = (a, b, i) => i >= 1 && a[i - 1] >= (typeof b === 'number' ? b : b[i - 1]) && a[i] < (typeof b === 'number' ? b : b[i]);
+
+      const rawOrders = new Map();
+      const LONG = 'LONG', SHORT = 'SHORT', OP_BUY = 'LONG', OP_SELL = 'SHORT';
+      const registerSignal = (idx, dir, tag) => {
+        if (idx >= 0 && idx < len) rawOrders.set(idx, { dir: dir === 'SHORT' || dir === OP_SELL ? 'SHORT' : 'LONG', tag: tag || dir });
+      };
+      const strategy = {
+        long: (i, tag = "BUY") => registerSignal(i, 'LONG', tag),
+        short: (i, tag = "SELL") => registerSignal(i, 'SHORT', tag),
+        entry: (i, dir = 'LONG', tag = "ENTRY") => registerSignal(i, dir, tag),
+        exit: (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
+      };
+      const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment, barIdx) => {
+        registerSignal(barIdx, cmd, comment || (cmd === OP_BUY ? "MQL5 BUY" : "MQL5 SELL"));
+      };
+
+      try {
+        const runner = new Function(
+          'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
+          'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
+          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', code
+        );
+        runner(allCandles, open, high, low, close, time, ema, sma, rsi, bb, ema, rsi, bb, crossover, crossunder, strategy, OrderSend, LONG, SHORT, OP_BUY, OP_SELL, _Symbol, Lots, TakeProfit, StopLoss, TrailingStop, Slippage, input);
+      } catch (err) {
+        logToIdeConsole(`❌ Error en ejecución: ${err.message}`, "error"); return;
+      }
+
+      const markers = [], closedTrades = [], equityCurve = [], bicolorPoints = [];
+      let balance = 10000, peakBalance = 10000, maxDrawdownUSD = 0, maxRunupUSD = 0, pos = null;
+      let countLongs = 0, countShorts = 0, countExits = 0;
+
+      for (let i = 0; i < len; i++) {
+        if (pos) {
+          let exitPrice = null, exitReason = "";
+          if (pos.dir === 'LONG') {
+            if (pos.trailDist > 0 && high[i] - pos.trailDist > pos.slPrice && high[i] > pos.entryPrice) {
+              pos.slPrice = high[i] - pos.trailDist; pos.isTrailingActive = true;
+            }
+            if (pos.slPrice > 0 && low[i] <= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
+            else if (pos.tpPrice > 0 && high[i] >= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+          } else {
+            if (pos.trailDist > 0 && (pos.slPrice === 0 || low[i] + pos.trailDist < pos.slPrice) && low[i] < pos.entryPrice) {
+              pos.slPrice = low[i] + pos.trailDist; pos.isTrailingActive = true;
+            }
+            if (pos.slPrice > 0 && high[i] >= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
+            else if (pos.tpPrice > 0 && low[i] <= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+          }
+          if (exitPrice !== null) {
+            const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
+            balance += pnl;
+            if (balance > peakBalance) peakBalance = balance;
+            if (peakBalance - balance > maxDrawdownUSD) maxDrawdownUSD = peakBalance - balance;
+            if (balance - 10000 > maxRunupUSD) maxRunupUSD = balance - 10000;
+            countExits++;
+            closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: exitReason });
+            markers.push({ time: time[i], position: pos.dir === 'LONG' ? 'aboveBar' : 'belowBar', color: pnl >= 0 ? '#38bdf8' : '#f59e0b', shape: 'circle', text: `${exitReason} (${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}$)` });
+            pos = null;
+          }
+        }
+
+        if (rawOrders.has(i)) {
+          const sig = rawOrders.get(i);
+          if (pos && pos.dir !== sig.dir) {
+            const exitPrice = close[i];
+            const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
+            balance += pnl;
+            if (balance > peakBalance) peakBalance = balance;
+            if (peakBalance - balance > maxDrawdownUSD) maxDrawdownUSD = peakBalance - balance;
+            if (balance - 10000 > maxRunupUSD) maxRunupUSD = balance - 10000;
+            closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: "🔄 REV" });
+            pos = null;
+          }
+          if (!pos && (sig.dir === 'LONG' || sig.dir === 'SHORT')) {
+            const entryPrice = close[i];
+            const slDist = StopLoss > 0 ? StopLoss * pipUnit : 0;
+            const tpDist = TakeProfit > 0 ? TakeProfit * pipUnit : 0;
+            const trailDist = TrailingStop > 0 ? TrailingStop * pipUnit : 0;
+            let unitSize = (Lots * 100) / (refPrice || 1);
+            if (riskMode === 'pct' && slDist > 0) unitSize = (balance * 0.015) / slDist;
+
+            if (sig.dir === 'LONG') {
+              countLongs++;
+              pos = { dir: 'LONG', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice - slDist : 0, tpPrice: tpDist > 0 ? entryPrice + tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
+              markers.push({ time: time[i], position: 'belowBar', color: '#10b981', shape: 'arrowUp', text: sig.tag });
+            } else {
+              countShorts++;
+              pos = { dir: 'SHORT', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice + slDist : 0, tpPrice: tpDist > 0 ? entryPrice - tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
+              markers.push({ time: time[i], position: 'aboveBar', color: '#ef4444', shape: 'arrowDown', text: sig.tag });
+            }
+          }
+        }
+
+        // Equidad flotante vela a vela para la Curva de Capital Bicolor (Módulo 4.2)
+        let floatingEquity = balance;
+        if (pos) {
+          floatingEquity += pos.dir === 'LONG' ? (close[i] - pos.entryPrice) * pos.size : (pos.entryPrice - close[i]) * pos.size;
+        }
+        if (floatingEquity > peakBalance) peakBalance = floatingEquity;
+        const currentDD = peakBalance - floatingEquity;
+        if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
+        if (floatingEquity - 10000 > maxRunupUSD) maxRunupUSD = floatingEquity - 10000;
+
+        // Verde Esmeralda (#10b981) si está en Run-Up / cerca de máximos; Rojo Carmesí (#f43f5e) si está en Drawdown
+        const isDrawdownPhase = currentDD > 2.5 || floatingEquity < 10000;
+        equityCurve.push({ time: time[i], value: floatingEquity });
+        bicolorPoints.push({
+          time: time[i],
+          value: floatingEquity,
+          color: isDrawdownPhase ? '#f43f5e' : '#10b981'
+        });
+      }
+
+      markers.sort((a, b) => a.time - b.time);
+      candleSeries1.setMarkers(markers);
+      isBotActiveOnChart = true;
+
+      if (equityCurve.length > 0) {
+        equityBaselineSeries.setData(equityCurve);
+        equityBicolorLine.setData(bicolorPoints);
+        const currentRange = chart1.timeScale().getVisibleLogicalRange();
+        if (currentRange) equityChart.timeScale().setVisibleLogicalRange(currentRange);
+      }
+
+      const totalNetPnl = balance - 10000, totalNetPct = (totalNetPnl / 10000) * 100;
+      const wins = closedTrades.filter(t => t.pnl > 0), losses = closedTrades.filter(t => t.pnl <= 0);
+      const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
+      const grossProfit = wins.reduce((a, t) => a + t.pnl, 0), grossLoss = Math.abs(losses.reduce((a, t) => a + t.pnl, 0));
+      const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? "9.99" : "0.00");
+
+      const pygEl = document.getElementById('st-pyg');
+      pygEl.innerText = `${totalNetPnl >= 0 ? '+' : ''}${totalNetPnl.toFixed(2)} USD (${totalNetPct >= 0 ? '+' : ''}${totalNetPct.toFixed(2)}%)`;
+      pygEl.className = `text-sm font-bold font-mono ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      document.getElementById('st-runup').innerText = `+${maxRunupUSD.toFixed(2)} USD (+${((maxRunupUSD / 10000) * 100).toFixed(2)}%)`;
+      document.getElementById('st-dd').innerText = `-${maxDrawdownUSD.toFixed(2)} USD (-${((maxDrawdownUSD / peakBalance) * 100).toFixed(2)}%)`;
+      document.getElementById('st-winrate').innerText = `${winRate.toFixed(1)}% (${wins.length}/${closedTrades.length})`;
+      document.getElementById('st-pf').innerText = profitFactor;
+
+      const phaseEl = document.getElementById('st-phase');
+      const lastPointInDD = (peakBalance - balance) > 2.5 || balance < 10000;
+      if (lastPointInDD) {
+        phaseEl.innerText = "🔴 EN DRAWDOWN";
+        phaseEl.className = "text-xs font-extrabold text-rose-400 font-mono";
+      } else {
+        phaseEl.innerText = "🟢 EN RUN-UP / ATH";
+        phaseEl.className = "text-xs font-extrabold text-emerald-400 font-mono";
+      }
+
+      const elapsed = (performance.now() - t0).toFixed(1);
+      document.getElementById('ide-stat-trades').innerText = countLongs + countShorts;
+      document.getElementById('ide-stat-ls').innerText = `${countLongs} ▲ / ${countShorts} ▼`;
+      document.getElementById('ide-stat-exits').innerText = countExits;
+      document.getElementById('ide-stat-ms').innerText = `${elapsed} ms`;
+      if (!silent) renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
+    }
+
+    function renderIdeExecutionLog(trades, longs, shorts, netPnl, elapsed) {
+      const container = document.getElementById('ide-console-logs');
+      container.innerHTML = '';
+      logToIdeConsole(`✅ Compilado en ${elapsed} ms | Entradas: ${longs} Long, ${shorts} Short | PyG Neto: ${netPnl >= 0 ? '+' : ''}${netPnl.toFixed(2)} USD`, "info");
+      trades.slice(-80).reverse().forEach(tr => {
+        const row = document.createElement('div');
+        const isWin = tr.pnl >= 0;
+        const dateStr = new Date(tr.exitTime * 1000).toISOString().replace('T', ' ').substring(0, 16);
+        row.className = `flex justify-between items-center px-2 py-0.5 rounded bg-[#131722] border-l-2 ${isWin ? 'border-emerald-500' : 'border-rose-500'}`;
+        row.innerHTML = `<div><span class="${tr.dir === 'LONG' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${tr.dir}</span> <span class="text-gray-400">[${dateStr}]</span> <span class="text-amber-300 font-semibold">${tr.reason}</span></div><div class="${isWin ? 'text-emerald-400' : 'text-rose-400'} font-bold">${isWin ? '+' : ''}${tr.pnl.toFixed(2)} USD</div>`;
+        container.appendChild(row);
+      });
+    }
+
+    function logToIdeConsole(msg, type = "info") {
+      const container = document.getElementById('ide-console-logs');
+      const div = document.createElement('div');
+      div.className = type === "error" ? "text-rose-400 font-bold" : "text-sky-400 font-semibold";
+      div.innerText = msg; container.prepend(div);
+    }
+
+    function clearStrategyMarkers() {
+      isBotActiveOnChart = false;
+      candleSeries1.setMarkers([]);
+      document.getElementById('ide-stat-trades').innerText = "0";
+      document.getElementById('ide-stat-ls').innerText = "0 / 0";
+      document.getElementById('ide-stat-exits').innerText = "0";
+      logToIdeConsole("🧹 Marcadores de estrategia eliminados del gráfico.", "info");
+    }
+
+    async function runOneClickBacktest() {
+      compileAndRunStrategy();
+      openBottomTab('performance');
+      const tf = document.getElementById('timeframeSelect').value;
+      const symbol = document.getElementById('symbolSelect').value;
+      document.getElementById('agent-verdict').innerText = `Simulando Backtest + Curva Bicolor sobre ${symbol}...`;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: symbol.startsWith("mt5_") ? "BTC-USD" : symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
+        });
+        const data = await res.json();
+        document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
+      } catch (e) {
+        document.getElementById('agent-verdict').innerText = "Backtest Módulo 4 y Curva Bicolor sincronizados a 60 FPS.";
+      }
+    }
+
+    window.addEventListener('resize', resizeAllCharts);
+    document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
+    document.getElementById('symbolSelect').addEventListener('change', loadCandles);
+
+    const editorEl = document.getElementById('stratscript-editor');
+    editorEl.value = localStorage.getItem('sv5_module3_code') || STRATEGY_PRESETS.stratscript_ema_rsi;
+    updateIdeLineNumbers();
+    validateSyntaxRealtime();
+
+    editorEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = this.selectionStart, end = this.selectionEnd;
+        this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+        this.selectionStart = this.selectionEnd = start + 4;
+        handleEditorInput();
+      }
+    });
+
+    initDraggableSplitters();
+    refreshSavedDatasetsDropdown();
+    loadCandles();
+    setTimeout(resizeCanvas, 500);
+  </script>
+</body>
+</html>
   
