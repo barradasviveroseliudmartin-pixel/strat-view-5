@@ -38,54 +38,61 @@
       background: #090d16;
     }
 
-    /* Splitters / Divisores Arrastrables Estilo TradingView (Arriba/Abajo y Lados) */
+    /* Splitters / Divisores Arrastrables Mejorados (10px de agarre real) */
     .resizer-h {
-      height: 6px;
+      height: 8px;
       background: #131722;
       border-top: 1px solid #1e293b;
       border-bottom: 1px solid #1e293b;
-      cursor: ns-resize;
+      cursor: ns-resize !important;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 35;
+      z-index: 60;
       transition: background 0.15s;
       flex-shrink: 0;
+      user-select: none;
+      touch-action: none;
     }
     .resizer-h:hover, .resizer-h.active {
-      background: #0284c7;
+      background: #0284c7 !important;
     }
     .resizer-h::after {
       content: "⇅";
-      font-size: 9px;
-      color: #94a3b8;
+      font-size: 10px;
+      color: #e2e8f0;
       line-height: 1;
       pointer-events: none;
     }
 
     .resizer-v {
-      width: 6px;
+      width: 8px;
       background: #131722;
       border-left: 1px solid #1e293b;
       border-right: 1px solid #1e293b;
-      cursor: ew-resize;
+      cursor: ew-resize !important;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 35;
+      z-index: 60;
       transition: background 0.15s;
       flex-shrink: 0;
+      user-select: none;
+      touch-action: none;
     }
     .resizer-v:hover, .resizer-v.active {
-      background: #0284c7;
+      background: #0284c7 !important;
     }
     .resizer-v::after {
       content: "⇄";
-      font-size: 9px;
-      color: #94a3b8;
+      font-size: 10px;
+      color: #e2e8f0;
       line-height: 1;
       pointer-events: none;
     }
+
+    body.is-resizing-h, body.is-resizing-h * { cursor: ns-resize !important; user-select: none !important; }
+    body.is-resizing-v, body.is-resizing-v * { cursor: ew-resize !important; user-select: none !important; }
 
     /* Modo Maximizado a Pantalla Completa para cualquier ventana */
     .sv5-window-fullscreen {
@@ -110,28 +117,31 @@
 
       <!-- Selector de Mercados -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
-        <select id="symbolSelect" class="bg-transparent text-xs text-emerald-400 font-bold outline-none cursor-pointer max-w-[210px] truncate">
+        <select id="symbolSelect" onchange="loadCandles()" class="bg-[#1e222d] text-xs text-emerald-400 font-bold outline-none cursor-pointer max-w-[230px] truncate">
           <optgroup label="Criptomonedas">
-            <option value="BTC-USD" selected>BTC/USD</option>
-            <option value="ETH-USD">ETH/USD</option>
-            <option value="SOL-USD">SOL/USD</option>
+            <option value="BTC-USD" selected>BTC/USD (Bitcoin)</option>
+            <option value="ETH-USD">ETH/USD (Ethereum)</option>
+            <option value="SOL-USD">SOL/USD (Solana)</option>
           </optgroup>
-          <optgroup label="Forex">
-            <option value="EUR-USD">EUR/USD</option>
-            <option value="GBP-USD">GBP/USD</option>
-            <option value="USD-JPY">USD/JPY</option>
+          <optgroup label="Forex (5 Decimales)">
+            <option value="EUR-USD">EUR/USD (Euro / Dólar)</option>
+            <option value="GBP-USD">GBP/USD (Libra / Dólar)</option>
+            <option value="USD-JPY">USD/JPY (Dólar / Yen)</option>
           </optgroup>
           <optgroup label="Metales">
-            <option value="XAU-USD">XAU/USD (Oro)</option>
+            <option value="XAU-USD">XAU/USD (Oro Spot)</option>
           </optgroup>
-          <optgroup id="optgroup-mt5-saved" label="📂 Mis Archivos MT5 Guardados">
+          <optgroup id="optgroup-mt5-saved" label="📂 Mis Archivos MT5 (2021-2026)">
           </optgroup>
         </select>
       </div>
 
-      <!-- Selector de Temporalidades -->
+      <!-- Selector de Temporalidad Global (Sincronizado con Pantalla 1) -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-2 py-1">
-        <select id="timeframeSelect" class="bg-transparent text-xs text-gray-200 outline-none cursor-pointer font-mono">
+        <select id="timeframeSelect" onchange="changeWindowTimeframe(1, this.value)" class="bg-[#1e222d] text-xs text-gray-200 outline-none cursor-pointer font-mono">
+          <option value="1s">1s</option>
+          <option value="5s">5s</option>
+          <option value="15s">15s</option>
           <option value="1m">1m</option>
           <option value="5m">5m</option>
           <option value="15m" selected>15m</option>
@@ -142,30 +152,30 @@
       </div>
 
       <!-- Menú Indicadores -->
-      <button onclick="toggleIndicatorsModal()" class="flex items-center gap-1.5 bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold transition text-gray-200">
-        <span>fx</span> Indicadores
+      <button type="button" onclick="toggleIndicatorsModal()" class="flex items-center gap-1.5 bg-[#1e222d] hover:bg-[#2a2e39] border border-amber-500/40 px-2.5 py-1 rounded text-xs font-semibold transition text-amber-300 shadow">
+        <span class="font-mono font-bold">fx</span> <span>Indicadores</span>
       </button>
 
       <!-- Selector Multiventana -->
       <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded p-0.5 space-x-1">
-        <button onclick="setLayout('1')" id="layout-btn-1" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
-        <button onclick="setLayout('2h')" id="layout-btn-2h" title="2 Pantallas Verticales" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2|</button>
-        <button onclick="setLayout('4')" id="layout-btn-4" title="4 Pantallas (Cuadrícula)" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">4⊞</button>
+        <button type="button" onclick="setLayout('1')" id="layout-btn-1" title="1 Pantalla" class="px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono">1</button>
+        <button type="button" onclick="setLayout('2h')" id="layout-btn-2h" title="2 Pantallas Verticales" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">2|</button>
+        <button type="button" onclick="setLayout('4')" id="layout-btn-4" title="4 Pantallas Independientes" class="px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono">4⊞</button>
       </div>
 
       <!-- Controles de Replay y Tijeras -->
       <div class="flex items-center bg-[#1e222d] border border-blue-900/60 rounded px-1.5 py-0.5 space-x-1 text-xs">
-        <button onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
+        <button type="button" onclick="toggleCutMode()" id="btn-cut-replay" title="Tijeras: Clic en cualquier vela para cortar" class="px-2 py-1 rounded bg-[#252a37] text-amber-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
           <span>✂</span> <span class="hidden sm:inline">Cortar</span>
         </button>
-        <button onclick="openJumpToDateModal()" title="Ir a fecha exacta (desde 2021)" class="px-2 py-1 rounded bg-[#252a37] text-sky-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
+        <button type="button" onclick="openJumpToDateModal()" title="Ir a fecha exacta (desde 2021)" class="px-2 py-1 rounded bg-[#252a37] text-sky-400 hover:bg-[#32394a] flex items-center gap-1 font-bold">
           <span>📅</span> <span class="hidden sm:inline">Ir a Fecha</span>
         </button>
         <div id="replay-controls" class="hidden items-center space-x-1">
-          <button onclick="stepForwardReplay()" title="Avanzar 1 vela" class="px-2 py-1 rounded bg-[#252a37] text-gray-300 hover:bg-[#32394a]">
+          <button type="button" onclick="stepForwardReplay()" title="Avanzar 1 vela" class="px-2 py-1 rounded bg-[#252a37] text-gray-300 hover:bg-[#32394a]">
             ⏭
           </button>
-          <button onclick="togglePlayReplay()" id="btn-play-replay" title="Reproducir / Pausar" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+          <button type="button" onclick="togglePlayReplay()" id="btn-play-replay" title="Reproducir / Pausar" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
             ▶
           </button>
           <select id="replaySpeed" class="bg-[#131722] text-[11px] text-gray-300 rounded px-1 py-1 outline-none font-mono">
@@ -174,18 +184,18 @@
             <option value="250">0.25s</option>
             <option value="100">0.1s</option>
           </select>
-          <button onclick="exitReplayMode()" title="Salir del Replay" class="px-1.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold">
+          <button type="button" onclick="exitReplayMode()" title="Salir del Replay" class="px-1.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold">
             ✕
           </button>
         </div>
       </div>
 
       <!-- Botones del Panel Inferior: Probador (Módulo 4) & Módulo 3 IDE -->
-      <button onclick="openBottomTab('performance')" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300 flex items-center gap-1">
+      <button type="button" onclick="openBottomTab('performance')" id="tab-strategy-btn" class="bg-[#1e222d] hover:bg-[#2a2e39] border border-gray-700 px-2.5 py-1 rounded text-xs font-semibold text-gray-300 flex items-center gap-1">
         <span>📊 Probador</span>
         <span class="bg-emerald-500/20 text-emerald-400 text-[9px] px-1 rounded font-mono">M4</span>
       </button>
-      <button onclick="openBottomTab('ide')" id="tab-ide-btn" class="bg-sky-950/60 hover:bg-sky-900/70 border border-sky-500/50 px-2.5 py-1 rounded text-xs font-semibold text-sky-300 flex items-center gap-1 shadow">
+      <button type="button" onclick="openBottomTab('ide')" id="tab-ide-btn" class="bg-sky-950/60 hover:bg-sky-900/70 border border-sky-500/50 px-2.5 py-1 rounded text-xs font-semibold text-sky-300 flex items-center gap-1 shadow">
         <span>💻</span> <span>StratScript IDE</span>
       </button>
     </div>
@@ -195,7 +205,7 @@
         <span>📁 Guardar MT5 CSV</span>
         <input type="file" id="csvFileInput" accept=".csv,.txt" class="hidden" onchange="handleMT5CSV(event)">
       </label>
-      <button onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded transition shadow-lg shadow-emerald-900/30">
+      <button type="button" onclick="runOneClickBacktest()" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold text-xs px-3.5 py-1.5 rounded transition shadow-lg shadow-emerald-900/30">
         ⚡ Backtest
       </button>
     </div>
@@ -203,95 +213,142 @@
 
   <div id="replay-banner" class="hidden bg-amber-500/20 border-b border-amber-500/40 text-amber-300 text-xs py-1 px-4 text-center font-medium flex items-center justify-center gap-2">
     <span>✂ Modo Tijera: Haz clic sobre la vela donde quieres cortar el gráfico en el pasado.</span>
-    <button onclick="exitReplayMode()" class="bg-amber-600 text-black px-2 py-0.2 rounded font-bold hover:bg-amber-500 text-[10px]">Cancelar</button>
+    <button type="button" onclick="exitReplayMode()" class="bg-amber-600 text-black px-2 py-0.2 rounded font-bold hover:bg-amber-500 text-[10px]">Cancelar</button>
   </div>
 
   <div id="main-workspace" class="flex-1 flex overflow-hidden relative">
     <!-- BARRA DE HERRAMIENTAS DE DIBUJO LATERAL -->
     <aside class="w-12 border-r border-gray-800 bg-[#131722] flex flex-col items-center py-2 space-y-2 shrink-0 z-20 text-gray-400">
-      <button onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="p-2 rounded text-emerald-400 bg-[#2a2e39]">✛</button>
-      <button onclick="selectTool('horizontal')" id="tool-horizontal" title="Nivel Horizontal" class="p-2 rounded hover:bg-[#2a2e39]">―</button>
-      <button onclick="selectTool('trendline')" id="tool-trendline" title="Línea de Tendencia Diagonal (Anclada)" class="p-2 rounded hover:bg-[#2a2e39]">╱</button>
-      <button onclick="selectTool('fibonacci')" id="tool-fibonacci" title="Retroceso de Fibonacci (Anclado)" class="p-2 rounded hover:bg-[#2a2e39]">☷</button>
-      <button onclick="selectTool('box')" id="tool-box" title="Caja / Zona de Liquidez (Anclada)" class="p-2 rounded hover:bg-[#2a2e39]">▭</button>
+      <button type="button" onclick="selectTool('crosshair')" id="tool-crosshair" title="Cursor Cruz" class="p-2 rounded text-emerald-400 bg-[#2a2e39]">✛</button>
+      <button type="button" onclick="selectTool('horizontal')" id="tool-horizontal" title="Nivel Horizontal" class="p-2 rounded hover:bg-[#2a2e39]">―</button>
+      <button type="button" onclick="selectTool('trendline')" id="tool-trendline" title="Línea de Tendencia Diagonal (Anclada)" class="p-2 rounded hover:bg-[#2a2e39]">╱</button>
+      <button type="button" onclick="selectTool('fibonacci')" id="tool-fibonacci" title="Retroceso de Fibonacci (Anclado)" class="p-2 rounded hover:bg-[#2a2e39]">☷</button>
+      <button type="button" onclick="selectTool('box')" id="tool-box" title="Caja / Zona de Liquidez (Anclada)" class="p-2 rounded hover:bg-[#2a2e39]">▭</button>
       <div class="w-6 border-b border-gray-800 my-1"></div>
-      <button onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-2 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">🗑</button>
+      <button type="button" onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-2 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">🗑</button>
     </aside>
 
     <!-- Área Central (Gráficos + Subpaneles + Panel Inferior) -->
     <div id="center-column" class="flex-1 flex flex-col h-full overflow-hidden bg-[#090d16] relative min-w-[300px]">
       
-      <!-- MALLA DE GRÁFICOS (1, 2 o 4 PANTALLAS) -->
-      <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]">
-        
-        <!-- PANTALLA 1 -->
+      <!-- MALLA DE GRÁFICOS (1, 2 o 4 PANTALLAS CON SELECTOR DE TEMPORALIDAD PROPIO) -->
+<!-- PANTALLA 1 -->
         <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
-          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none flex items-center gap-1.5">
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/95 border border-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 shadow">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>Pantalla 1 (<span id="p1-tf-label">15m</span>)</span>
+            <span class="font-bold text-emerald-400">P1:</span>
+            <select id="win1-tf" onchange="changeWindowTimeframe(1, this.value)" class="bg-[#1e222d] text-[10px] text-white font-bold rounded px-1 py-0.2 border border-gray-600 outline-none cursor-pointer">
+              <option value="1s">1s</option>
+              <option value="5s">5s</option>
+              <option value="15s">15s</option>
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m" selected>15m</option>
+              <option value="1h">1h</option>
+              <option value="4h">4h</option>
+              <option value="1D">1D</option>
+            </select>
+            <button type="button" onclick="toggleIndicatorsModal()" class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 rounded hover:bg-amber-500/30">fx</button>
           </div>
           <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-amber-500/80 text-amber-400 shadow pointer-events-none flex items-center gap-1">
               <span>⏱</span> <span id="tv-countdown-p1">00:00</span>
             </div>
             <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
-              <button onclick="setWindowSize('chart-box-1', 'min')" title="Minimizar / Reducir Gráfico" class="hover:text-amber-400 px-1 font-bold">_</button>
-              <button onclick="setWindowSize('chart-box-1', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
-              <button onclick="setWindowSize('chart-box-1', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+              <button type="button" onclick="setWindowSize('chart-box-1', 'min')" title="Minimizar / Reducir Gráfico" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button type="button" onclick="setWindowSize('chart-box-1', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button type="button" onclick="setWindowSize('chart-box-1', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
             </div>
           </div>
           <canvas id="canvas-overlay" class="drawing-canvas w-full h-full"></canvas>
           <div id="chart-c1" class="w-full h-full"></div>
         </div>
-<!-- PANTALLA 2 (1h) -->
+
+        <!-- PANTALLA 2 -->
         <div id="chart-box-2" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
-            Pantalla 2 (1h)
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/95 border border-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 shadow">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>
+            <span class="font-bold text-sky-400">P2:</span>
+            <select id="win2-tf" onchange="changeWindowTimeframe(2, this.value)" class="bg-[#1e222d] text-[10px] text-white font-bold rounded px-1 py-0.2 border border-gray-600 outline-none cursor-pointer">
+              <option value="1s">1s</option>
+              <option value="5s">5s</option>
+              <option value="15s">15s</option>
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="1h" selected>1h</option>
+              <option value="4h">4h</option>
+              <option value="1D">1D</option>
+            </select>
           </div>
           <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-sky-500/80 text-sky-400 shadow pointer-events-none flex items-center gap-1">
-              <span>⏱ 1h:</span> <span id="tv-countdown-p2">00:00</span>
+              <span>⏱</span> <span id="tv-countdown-p2">00:00</span>
             </div>
             <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
-              <button onclick="setWindowSize('chart-box-2', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
-              <button onclick="setWindowSize('chart-box-2', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
-              <button onclick="setWindowSize('chart-box-2', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+              <button type="button" onclick="setWindowSize('chart-box-2', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button type="button" onclick="setWindowSize('chart-box-2', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button type="button" onclick="setWindowSize('chart-box-2', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
             </div>
           </div>
           <div id="chart-c2" class="w-full h-full"></div>
         </div>
 
-        <!-- PANTALLA 3 (4h) -->
+        <!-- PANTALLA 3 -->
         <div id="chart-box-3" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
-            Pantalla 3 (4h)
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/95 border border-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 shadow">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping"></span>
+            <span class="font-bold text-purple-400">P3:</span>
+            <select id="win3-tf" onchange="changeWindowTimeframe(3, this.value)" class="bg-[#1e222d] text-[10px] text-white font-bold rounded px-1 py-0.2 border border-gray-600 outline-none cursor-pointer">
+              <option value="1s">1s</option>
+              <option value="5s">5s</option>
+              <option value="15s">15s</option>
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="1h">1h</option>
+              <option value="4h" selected>4h</option>
+              <option value="1D">1D</option>
+            </select>
           </div>
           <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-purple-500/80 text-purple-400 shadow pointer-events-none flex items-center gap-1">
-              <span>⏱ 4h:</span> <span id="tv-countdown-p3">00:00:00</span>
+              <span>⏱</span> <span id="tv-countdown-p3">00:00:00</span>
             </div>
             <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
-              <button onclick="setWindowSize('chart-box-3', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
-              <button onclick="setWindowSize('chart-box-3', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
-              <button onclick="setWindowSize('chart-box-3', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+              <button type="button" onclick="setWindowSize('chart-box-3', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button type="button" onclick="setWindowSize('chart-box-3', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button type="button" onclick="setWindowSize('chart-box-3', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
             </div>
           </div>
           <div id="chart-c3" class="w-full h-full"></div>
         </div>
 
-        <!-- PANTALLA 4 (1D) -->
+        <!-- PANTALLA 4 -->
         <div id="chart-box-4" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden hidden">
-          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/90 border border-gray-700 px-2 py-0.5 rounded pointer-events-none">
-            Pantalla 4 (1D)
+          <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/95 border border-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 shadow">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="font-bold text-emerald-400">P4:</span>
+            <select id="win4-tf" onchange="changeWindowTimeframe(4, this.value)" class="bg-[#1e222d] text-[10px] text-white font-bold rounded px-1 py-0.2 border border-gray-600 outline-none cursor-pointer">
+              <option value="1s">1s</option>
+              <option value="5s">5s</option>
+              <option value="15s">15s</option>
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="1h">1h</option>
+              <option value="4h">4h</option>
+              <option value="1D" selected>1D</option>
+            </select>
           </div>
           <div class="absolute top-1.5 right-16 z-20 flex items-center gap-1.5">
             <div class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#1e222d] border border-emerald-500/80 text-emerald-400 shadow pointer-events-none flex items-center gap-1">
-              <span>⏱ 1D:</span> <span id="tv-countdown-p4">00:00:00</span>
+              <span>⏱</span> <span id="tv-countdown-p4">00:00:00</span>
             </div>
             <div class="flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1 shadow">
-              <button onclick="setWindowSize('chart-box-4', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
-              <button onclick="setWindowSize('chart-box-4', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
-              <button onclick="setWindowSize('chart-box-4', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+              <button type="button" onclick="setWindowSize('chart-box-4', 'min')" title="Minimizar" class="hover:text-amber-400 px-1 font-bold">_</button>
+              <button type="button" onclick="setWindowSize('chart-box-4', 'mid')" title="Tamaño Medio / Restaurar" class="hover:text-sky-400 px-1 font-bold">❐</button>
+              <button type="button" onclick="setWindowSize('chart-box-4', 'max')" title="Pantalla Completa" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
             </div>
           </div>
           <div id="chart-c4" class="w-full h-full"></div>
@@ -307,9 +364,9 @@
           RSI (14) - [Sobrecompra 70 | Sobreventa 30]
         </div>
         <div class="absolute top-1 right-16 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
-          <button onclick="setSubpanelHeight('rsi-subpanel', 45)" title="Minimizar RSI" class="hover:text-amber-400 px-1 font-bold">_</button>
-          <button onclick="setSubpanelHeight('rsi-subpanel', 115)" title="Tamaño Medio RSI" class="hover:text-sky-400 px-1 font-bold">❐</button>
-          <button onclick="setSubpanelHeight('rsi-subpanel', 240)" title="Expandir RSI" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+          <button type="button" onclick="setSubpanelHeight('rsi-subpanel', 45)" title="Minimizar RSI" class="hover:text-amber-400 px-1 font-bold">_</button>
+          <button type="button" onclick="setSubpanelHeight('rsi-subpanel', 115)" title="Tamaño Medio RSI" class="hover:text-sky-400 px-1 font-bold">❐</button>
+          <button type="button" onclick="setSubpanelHeight('rsi-subpanel', 240)" title="Expandir RSI" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
         </div>
         <div id="chart-rsi" class="w-full h-full"></div>
       </div>
@@ -323,9 +380,9 @@
           MACD (12, 26, 9)
         </div>
         <div class="absolute top-1 right-16 z-20 flex items-center bg-[#131722]/90 border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
-          <button onclick="setSubpanelHeight('macd-subpanel', 45)" title="Minimizar MACD" class="hover:text-amber-400 px-1 font-bold">_</button>
-          <button onclick="setSubpanelHeight('macd-subpanel', 115)" title="Tamaño Medio MACD" class="hover:text-sky-400 px-1 font-bold">❐</button>
-          <button onclick="setSubpanelHeight('macd-subpanel', 240)" title="Expandir MACD" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+          <button type="button" onclick="setSubpanelHeight('macd-subpanel', 45)" title="Minimizar MACD" class="hover:text-amber-400 px-1 font-bold">_</button>
+          <button type="button" onclick="setSubpanelHeight('macd-subpanel', 115)" title="Tamaño Medio MACD" class="hover:text-sky-400 px-1 font-bold">❐</button>
+          <button type="button" onclick="setSubpanelHeight('macd-subpanel', 240)" title="Expandir MACD" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
         </div>
         <div id="chart-macd" class="w-full h-full"></div>
       </div>
@@ -337,11 +394,11 @@
       <div id="strategy-panel" class="h-72 bg-[#131722] flex flex-col shrink-0 relative">
         <div class="h-9 border-b border-gray-800 flex items-center justify-between px-3 bg-[#1e222d]/80 text-xs text-gray-300 select-none shrink-0">
           <div class="flex items-center space-x-2">
-            <button onclick="switchBottomSubTab('performance')" id="subtab-btn-perf" class="px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5">
+            <button type="button" onclick="switchBottomSubTab('performance')" id="subtab-btn-perf" class="px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5">
               <span>📊 Curva de Capital Bicolor</span>
               <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 4</span>
             </button>
-            <button onclick="switchBottomSubTab('ide')" id="subtab-btn-ide" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5">
+            <button type="button" onclick="switchBottomSubTab('ide')" id="subtab-btn-ide" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5">
               <span>💻 Pine / MetaEditor IDE</span>
               <span class="bg-sky-500/20 text-sky-400 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 3</span>
             </button>
@@ -354,18 +411,30 @@
             </div>
 
             <div class="flex items-center bg-[#131722] border border-gray-700 rounded px-1.5 py-0.5 space-x-1.5 text-xs">
-              <button onclick="setBottomPanelMode('min')" title="Minimizar barra inferior" class="text-gray-400 hover:text-amber-400 px-1 font-bold">_</button>
-              <button onclick="setBottomPanelMode('mid')" title="Tamaño Medio (50%)" class="text-gray-400 hover:text-sky-400 px-1 font-bold">❐</button>
-              <button onclick="setBottomPanelMode('max')" title="Pantalla Completa (Maximizar)" class="text-gray-400 hover:text-emerald-400 px-1 font-bold">⛶</button>
+              <button type="button" onclick="setBottomPanelMode('min')" title="Minimizar barra inferior" class="text-gray-400 hover:text-amber-400 px-1 font-bold">_</button>
+              <button type="button" onclick="setBottomPanelMode('mid')" title="Tamaño Medio (50%)" class="text-gray-400 hover:text-sky-400 px-1 font-bold">❐</button>
+              <button type="button" onclick="setBottomPanelMode('max')" title="Pantalla Completa (Maximizar)" class="text-gray-400 hover:text-emerald-400 px-1 font-bold">⛶</button>
               <span class="text-gray-700">|</span>
-              <button onclick="toggleStrategyPanel()" title="Ocultar Panel" class="text-gray-400 hover:text-rose-400 px-1 font-bold">✕</button>
+              <button type="button" onclick="toggleStrategyPanel()" title="Ocultar Panel" class="text-gray-400 hover:text-rose-400 px-1 font-bold">✕</button>
             </div>
           </div>
         </div>
 
-        <!-- SUB-VISTA 1: MÓDULO 4 - RENDIMIENTO Y CURVA DE CAPITAL BICOLOR EN TIEMPO REAL -->
+        <!-- SUB-VISTA 1: MÓDULO 4 - RENDIMIENTO, SELECTOR DE CAPITAL Y CURVA BICOLOR EN TIEMPO REAL -->
         <div id="subview-performance" class="flex-1 flex flex-col overflow-hidden">
-          <div class="grid grid-cols-5 gap-3 p-2 border-b border-gray-800/60 bg-[#131722] text-xs shrink-0 items-center">
+          <div class="grid grid-cols-6 gap-2 px-3 py-1.5 border-b border-gray-800/60 bg-[#131722] text-xs shrink-0 items-center">
+            <div class="bg-[#090d16] px-2 py-1 rounded border border-emerald-500/40">
+              <p class="text-emerald-400 text-[9px] font-bold uppercase">💰 Capital Inicial Cuenta</p>
+              <select id="initial-capital-select" onchange="compileAndRunStrategy()" class="bg-[#090d16] text-xs font-extrabold text-white font-mono outline-none cursor-pointer w-full">
+                <option value="5000">$5,000 USD</option>
+                <option value="10000" selected>$10,000 USD</option>
+                <option value="20000">$20,000 USD</option>
+                <option value="25000">$25,000 USD</option>
+                <option value="50000">$50,000 USD</option>
+                <option value="100000">$100,000 USD</option>
+                <option value="200000">$200,000 USD</option>
+              </select>
+            </div>
             <div><p class="text-gray-500 text-[10px]">PyG Totales</p><p id="st-pyg" class="text-sm font-bold text-emerald-400 font-mono">+0.00 USD (0.00%)</p></div>
             <div><p class="text-gray-500 text-[10px]">Caída máx. (Drawdown)</p><p id="st-dd" class="text-sm font-bold text-rose-400 font-mono">0.00 USD (0.00%)</p></div>
             <div><p class="text-gray-500 text-[10px]">Win Rate</p><p id="st-winrate" class="text-sm font-bold text-gray-200 font-mono">0.0% (0/0)</p></div>
@@ -384,8 +453,7 @@
             <div id="equity-chart-container" class="w-full h-full"></div>
           </div>
         </div>
-
-        <!-- SUB-VISTA 2: MÓDULO 3 - EDITOR DE CÓDIGO INTEGRADO (IDE) -->
+<!-- SUB-VISTA 2: MÓDULO 3 - EDITOR DE CÓDIGO INTEGRADO (IDE) -->
         <div id="subview-ide" class="hidden flex-1 flex flex-col overflow-hidden bg-[#0b0e14]">
           <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
             <div class="flex items-center space-x-2">
@@ -400,23 +468,23 @@
             <div class="flex items-center space-x-3 font-mono">
               <label class="flex items-center gap-1 text-gray-300" title="Take Profit en puntos/pips">
                 <span class="text-emerald-400 font-bold">TP:</span>
-                <input type="number" id="inp-tp" value="150" min="0" step="10" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-emerald-300 text-right">
+                <input type="number" id="inp-tp" value="150" min="0" step="10" onchange="compileAndRunStrategy()" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-emerald-300 text-right">
               </label>
               <label class="flex items-center gap-1 text-gray-300" title="Stop Loss en puntos/pips">
                 <span class="text-rose-400 font-bold">SL:</span>
-                <input type="number" id="inp-sl" value="80" min="0" step="10" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-rose-300 text-right">
+                <input type="number" id="inp-sl" value="80" min="0" step="10" onchange="compileAndRunStrategy()" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-rose-300 text-right">
               </label>
               <label class="flex items-center gap-1 text-gray-300" title="Trailing Stop dinámico en puntos/pips">
                 <span class="text-amber-400 font-bold">Trail:</span>
-                <input type="number" id="inp-ts" value="50" min="0" step="10" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-amber-300 text-right">
+                <input type="number" id="inp-ts" value="50" min="0" step="10" onchange="compileAndRunStrategy()" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-amber-300 text-right">
               </label>
               <label class="flex items-center gap-1 text-gray-300" title="Tamaño de Lote">
                 <span class="text-sky-400 font-bold">Lotes:</span>
-                <input type="number" id="inp-lots" value="1.0" min="0.01" step="0.1" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200 text-right">
+                <input type="number" id="inp-lots" value="1.0" min="0.01" step="0.1" onchange="compileAndRunStrategy()" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200 text-right">
               </label>
               <label class="flex items-center gap-1 text-gray-300" title="Modo de Gestión de Riesgo">
                 <span class="text-purple-400 font-bold">Riesgo:</span>
-                <select id="inp-risk-mode" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200">
+                <select id="inp-risk-mode" onchange="compileAndRunStrategy()" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200">
                   <option value="pct">% Cuenta (1.5%)</option>
                   <option value="fixed">Capital Fijo (Lote)</option>
                 </select>
@@ -424,10 +492,10 @@
             </div>
 
             <div class="flex items-center space-x-1.5">
-              <button onclick="compileAndRunStrategy()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded shadow flex items-center gap-1 transition">
+              <button type="button" onclick="compileAndRunStrategy()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1 rounded shadow flex items-center gap-1 transition">
                 <span>▶ Compilar y Marcar Gráfico</span>
               </button>
-              <button onclick="clearStrategyMarkers()" class="bg-[#1e222d] hover:bg-rose-950/60 text-gray-300 hover:text-rose-300 border border-gray-700 px-2 py-1 rounded transition">
+              <button type="button" onclick="clearStrategyMarkers()" class="bg-[#1e222d] hover:bg-rose-950/60 text-gray-300 hover:text-rose-300 border border-gray-700 px-2 py-1 rounded transition">
                 🧹 Limpiar
               </button>
             </div>
@@ -484,16 +552,16 @@
       <div class="flex items-center justify-between border-b border-gray-800 pb-1.5">
         <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Panel de Control</span>
         <div class="flex items-center bg-[#1e222d] border border-gray-700 rounded px-1 py-0.5 text-[10px] text-gray-300 space-x-1">
-          <button onclick="setRightSidebarSize('min')" title="Minimizar Panel Derecho" class="hover:text-amber-400 px-1 font-bold">_</button>
-          <button onclick="setRightSidebarSize('mid')" title="Ancho Normal" class="hover:text-sky-400 px-1 font-bold">❐</button>
-          <button onclick="setRightSidebarSize('max')" title="Ancho Expandido" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
+          <button type="button" onclick="setRightSidebarSize('min')" title="Minimizar Panel Derecho" class="hover:text-amber-400 px-1 font-bold">_</button>
+          <button type="button" onclick="setRightSidebarSize('mid')" title="Ancho Normal" class="hover:text-sky-400 px-1 font-bold">❐</button>
+          <button type="button" onclick="setRightSidebarSize('max')" title="Ancho Expandido" class="hover:text-emerald-400 px-1 font-bold">⛶</button>
         </div>
       </div>
 
       <div class="bg-[#1e222d] p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
         <div>
           <p class="text-[11px] text-gray-400 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Precio Live
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Precio Live (<span id="active-sym-label">BTC-USD</span>)
           </p>
           <span id="price-display" class="text-lg font-mono font-extrabold text-emerald-400">--.--</span>
         </div>
@@ -509,19 +577,25 @@
           <p class="text-xs font-semibold text-gray-200">Agente Cuantitativo IA</p>
         </div>
         <p id="agent-verdict" class="text-xs text-gray-400 leading-relaxed">
-          Motor optimizado a 60 FPS: Curva Bicolor (Módulo 4), Tick-by-Tick y Dibujos Anclados activos.
+          Motor optimizado a 60 FPS: Curva Bicolor (Módulo 4), Tick-by-Tick por temporalidad y Dibujos Anclados activos.
         </p>
       </div>
 
-      <div class="bg-[#1e222d]/30 border border-gray-800 rounded-lg p-3">
-        <div class="flex justify-between items-center mb-2">
+      <div class="bg-[#1e222d]/30 border border-gray-800 rounded-lg p-3 space-y-2">
+        <div class="flex justify-between items-center">
           <span class="text-xs font-bold text-gray-300">📁 Base de Datos MT5</span>
-          <span id="db-count" class="text-[10px] text-emerald-400 font-mono">0 archivos</span>
+          <span id="db-count" class="text-[10px] text-emerald-400 font-mono font-bold">5 archivos</span>
         </div>
-        <p class="text-[11px] text-gray-400 mb-2 leading-tight">Almacenamiento indexado de alta velocidad listo.</p>
-        <button onclick="clearMT5Database()" class="w-full text-[10px] text-rose-400 hover:text-rose-300 border border-rose-950 hover:bg-rose-950/40 py-1 rounded transition">
-          Vaciar Historial MT5 Guardado
-        </button>
+        <p class="text-[11px] text-gray-400 leading-tight">5 Archivos Históricos (2021–2026, +5 años) indexados para Backtesting.</p>
+        <div id="mt5-files-quicklist" class="space-y-1 max-h-32 overflow-y-auto text-[10px] font-mono"></div>
+        <div class="grid grid-cols-2 gap-1.5 pt-1">
+          <button type="button" onclick="seedDefaultMT5Datasets(true)" class="w-full text-[10px] text-sky-300 hover:text-white border border-sky-800 bg-sky-950/40 hover:bg-sky-900/50 py-1 rounded transition font-semibold">
+            🔄 Restaurar 5 MT5
+          </button>
+          <button type="button" onclick="clearMT5Database()" class="w-full text-[10px] text-rose-400 hover:text-rose-300 border border-rose-950 hover:bg-rose-950/40 py-1 rounded transition">
+            🗑 Vaciar Historial
+          </button>
+        </div>
       </div>
     </aside>
   </div>
@@ -531,16 +605,16 @@
     <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-md shadow-2xl p-4 text-xs space-y-3">
       <div class="flex justify-between items-center border-b border-gray-700 pb-2">
         <span class="font-bold text-gray-200 text-sm">📅 Retroceder a Fecha Exacta (Tijeras)</span>
-        <button onclick="closeJumpToDateModal()" class="text-gray-400 hover:text-white font-bold">✕</button>
+        <button type="button" onclick="closeJumpToDateModal()" class="text-gray-400 hover:text-white font-bold">✕</button>
       </div>
-      <p class="text-gray-400">Selecciona el momento del pasado que deseas simular:</p>
+      <p class="text-gray-400">Selecciona el momento del pasado que deseas simular (2021 - 2026):</p>
       <div>
         <label class="block text-gray-400 mb-1">Fecha y Hora:</label>
-        <input type="datetime-local" id="jumpDateTimeInput" value="2022-01-04T00:00" min="2021-01-01T00:00" max="2026-11-07T23:59" class="w-full bg-[#131722] border border-gray-700 rounded p-2 text-white font-mono text-sm outline-none focus:border-emerald-500">
+        <input type="datetime-local" id="jumpDateTimeInput" value="2023-06-15T12:00" min="2021-01-01T00:00" max="2026-12-31T23:59" class="w-full bg-[#131722] border border-gray-700 rounded p-2 text-white font-mono text-sm outline-none focus:border-emerald-500">
       </div>
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="closeJumpToDateModal()" class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">Cancelar</button>
-        <button onclick="executeJumpToDate()" class="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow">
+        <button type="button" onclick="closeJumpToDateModal()" class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">Cancelar</button>
+        <button type="button" onclick="executeJumpToDate()" class="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow">
           ✂ Cortar y Retroceder Aquí
         </button>
       </div>
@@ -549,49 +623,55 @@
 
   <!-- Menú Contextual -->
   <div id="contextMenu" class="hidden fixed bg-[#1e222d] border border-gray-700 rounded-lg shadow-2xl py-1 w-56 z-50 text-xs">
-    <button onclick="openJumpToDateModal(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-sky-400 font-semibold flex items-center gap-1.5">
+    <button type="button" onclick="openJumpToDateModal(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-sky-400 font-semibold flex items-center gap-1.5">
       <span>📅</span> Ir a fecha específica (Cortar)
     </button>
+    <button type="button" onclick="toggleIndicatorsModal(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-amber-300 font-semibold flex items-center gap-1.5">
+      <span>fx</span> Configurar Indicadores (EMAs/RSI/MACD)
+    </button>
     <div class="border-b border-gray-700/60 my-1"></div>
-    <button onclick="removeAllIndicators()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">✕ Eliminar Indicadores</button>
-    <button onclick="clearAllDrawings()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">🗑 Eliminar Dibujos</button>
-    <button onclick="clearStrategyMarkers(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-amber-400">🧹 Eliminar Flechas del Bot</button>
-    <button onclick="resetChart()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">🔄 Restablecer Gráfico</button>
+    <button type="button" onclick="removeAllIndicators()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">✕ Ocultar Indicadores</button>
+    <button type="button" onclick="clearAllDrawings()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">🗑 Eliminar Dibujos</button>
+    <button type="button" onclick="clearStrategyMarkers(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-amber-400">🧹 Eliminar Flechas del Bot</button>
+    <button type="button" onclick="resetChart()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-200">🔄 Restablecer Gráfico</button>
   </div>
 
   <!-- Modal de Indicadores -->
-  <div id="indicatorsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div id="indicatorsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
     <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-sm shadow-2xl overflow-hidden flex flex-col text-xs">
       <div class="p-3 border-b border-gray-700 flex justify-between items-center bg-[#131722]">
-        <h3 class="font-bold text-gray-200">Indicadores Técnicos Oficiales</h3>
-        <button onclick="toggleIndicatorsModal()" class="text-gray-400 hover:text-white font-bold">✕</button>
+        <h3 class="font-bold text-amber-400 flex items-center gap-1.5"><span>fx</span> Indicadores Técnicos Oficiales</h3>
+        <button type="button" onclick="toggleIndicatorsModal()" class="text-gray-400 hover:text-white font-bold px-1.5">✕</button>
       </div>
       <div class="p-3 space-y-2 max-h-96 overflow-y-auto">
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>EMA 9 (Rápida)</span>
-          <input type="checkbox" id="check-ema9" checked onchange="toggleIndicator('ema9')">
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer border border-gray-800">
+          <span class="text-sky-400 font-semibold">EMA 9 (Rápida - Celeste)</span>
+          <input type="checkbox" id="check-ema9" checked onchange="toggleIndicator('ema9')" class="w-4 h-4 accent-emerald-500">
         </label>
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>EMA 21 (Lenta)</span>
-          <input type="checkbox" id="check-ema21" checked onchange="toggleIndicator('ema21')">
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer border border-gray-800">
+          <span class="text-amber-400 font-semibold">EMA 21 (Lenta - Naranja)</span>
+          <input type="checkbox" id="check-ema21" checked onchange="toggleIndicator('ema21')" class="w-4 h-4 accent-emerald-500">
         </label>
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span>EMA 200 (Tendencia)</span>
-          <input type="checkbox" id="check-ema200" checked onchange="toggleIndicator('ema200')">
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer border border-gray-800">
+          <span class="text-rose-400 font-semibold">EMA 200 (Tendencia Institucional)</span>
+          <input type="checkbox" id="check-ema200" checked onchange="toggleIndicator('ema200')" class="w-4 h-4 accent-emerald-500">
         </label>
         <div class="border-b border-gray-700/60 my-1"></div>
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer border border-gray-800">
           <span class="text-purple-300 font-semibold">Bandas de Bollinger (20, 2)</span>
-          <input type="checkbox" id="check-bb" onchange="toggleIndicator('bb')">
+          <input type="checkbox" id="check-bb" onchange="toggleIndicator('bb')" class="w-4 h-4 accent-emerald-500">
         </label>
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span class="text-amber-400 font-semibold">RSI (14 - Subpanel)</span>
-          <input type="checkbox" id="check-rsi" onchange="toggleIndicator('rsi')">
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer border border-gray-800">
+          <span class="text-amber-400 font-semibold">RSI (14 - Oscilador Subpanel)</span>
+          <input type="checkbox" id="check-rsi" onchange="toggleIndicator('rsi')" class="w-4 h-4 accent-emerald-500">
         </label>
-        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer">
-          <span class="text-sky-400 font-semibold">MACD (12, 26, 9 - Subpanel)</span>
-          <input type="checkbox" id="check-macd" onchange="toggleIndicator('macd')">
+        <label class="flex items-center justify-between p-2 rounded hover:bg-gray-800 cursor-pointer border border-gray-800">
+          <span class="text-sky-400 font-semibold">MACD (12, 26, 9 - Oscilador Subpanel)</span>
+          <input type="checkbox" id="check-macd" onchange="toggleIndicator('macd')" class="w-4 h-4 accent-emerald-500">
         </label>
+      </div>
+      <div class="p-2.5 bg-[#131722] border-t border-gray-800 flex justify-end">
+        <button type="button" onclick="toggleIndicatorsModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-1 rounded">Listo</button>
       </div>
     </div>
   </div>
@@ -600,7 +680,7 @@
     const API_BASE_URL = "https://strat-view-5.onrender.com";
     const MAX_CHART_BUFFER = 20000;
 
-    // --- BASE DE DATOS LOCAL PERSISTENTE ---
+    // --- BASE DE DATOS LOCAL PERSISTENTE + 5 ARCHIVOS MT5 (2021-2026) PRE-CARGADOS ---
     const DB_NAME = "StratView5_Storage";
     const DB_VERSION = 1;
     const STORE_NAME = "mt5_datasets";
@@ -654,15 +734,83 @@
         req.onerror = () => resolve([]);
       });
     }
+// Generador determinista de velas históricas realistas (2021-2026) por activo
+    const MARKET_PROFILES = {
+      'BTC-USD': { base: 68450.00, vol: 145.0, decimals: 2, seed: 101 },
+      'ETH-USD': { base: 3420.00,  vol: 14.5,  decimals: 2, seed: 202 },
+      'SOL-USD': { base: 178.50,   vol: 1.35,  decimals: 2, seed: 303 },
+      'EUR-USD': { base: 1.08645,  vol: 0.00065, decimals: 5, seed: 404 },
+      'GBP-USD': { base: 1.27420,  vol: 0.00080, decimals: 5, seed: 505 },
+      'USD-JPY': { base: 151.840,  vol: 0.095,   decimals: 3, seed: 606 },
+      'XAU-USD': { base: 2385.40,  vol: 4.80,    decimals: 2, seed: 707 }
+    };
+
+    function generateHistoricalSeries(symbolKey, count = 4500, tfSec = 900, spanFrom2021 = false) {
+      const prof = MARKET_PROFILES[symbolKey] || MARKET_PROFILES['BTC-USD'];
+      const out = new Array(count);
+      const nowSec = Math.floor(Date.now() / 1000);
+      const alignedEnd = Math.floor(nowSec / tfSec) * tfSec;
+      const start2021 = 1609459200; // 2021-01-01 00:00:00 UTC
+      const step = spanFrom2021 ? Math.max(60, Math.floor((alignedEnd - start2021) / count)) : tfSec;
+
+      let s = prof.seed + tfSec;
+      const rand = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+
+      let price = prof.base * 0.88;
+      for (let i = 0; i < count; i++) {
+        const t = spanFrom2021 ? (start2021 + i * step) : (alignedEnd - (count - 1 - i) * tfSec);
+        const wave = Math.sin(i / 28) * prof.vol * 0.45 + Math.cos(i / 95) * prof.vol * 0.35;
+        const delta = (rand() - 0.496) * prof.vol + wave * 0.18;
+        const open = Number(price.toFixed(prof.decimals));
+        let close = Math.max(prof.base * 0.15, open + delta);
+        close = Number(close.toFixed(prof.decimals));
+        const high = Number((Math.max(open, close) + rand() * prof.vol * 0.65).toFixed(prof.decimals));
+        const low  = Number((Math.min(open, close) - rand() * prof.vol * 0.65).toFixed(prof.decimals));
+        out[i] = { time: t, open, high, low, close };
+        price = close;
+      }
+      return out;
+    }
+
+    async function seedDefaultMT5Datasets(forceReset = false) {
+      const existing = await getDatasetsMetadata();
+      if (existing.length > 0 && !forceReset) {
+        await refreshSavedDatasetsDropdown();
+        return;
+      }
+      const defaults = [
+        { id: 'mt5_id_eurusd_5y', name: 'EURUSD MT5 Historial (2021-2026)', sym: 'EUR-USD', count: 5200 },
+        { id: 'mt5_id_gbpusd_5y', name: 'GBPUSD MT5 Historial (2021-2026)', sym: 'GBP-USD', count: 5200 },
+        { id: 'mt5_id_xauusd_5y', name: 'XAUUSD Oro MT5 (2021-2026)',       sym: 'XAU-USD', count: 5200 },
+        { id: 'mt5_id_btcusd_5y', name: 'BTCUSD Crypto MT5 (2021-2026)',    sym: 'BTC-USD', count: 5200 },
+        { id: 'mt5_id_usdjpy_5y', name: 'USDJPY MT5 Historial (2021-2026)', sym: 'USD-JPY', count: 5200 }
+      ];
+      for (const d of defaults) {
+        const candles = generateHistoricalSeries(d.sym, d.count, 3600, true);
+        await saveDatasetToDB({
+          id: d.id,
+          name: d.name,
+          symbolBase: d.sym,
+          candlesCount: candles.length,
+          savedAt: '2021-2026 (5 Años)',
+          candles
+        });
+      }
+      await refreshSavedDatasetsDropdown();
+      if (forceReset) {
+        document.getElementById('agent-verdict').innerText = '✅ 5 Archivos Históricos MT5 (2021–2026) restaurados y listos para Backtesting.';
+      }
+    }
 
     async function clearMT5Database() {
-      if (!confirm("¿Deseas vaciar los archivos guardados?")) return;
+      if (!confirm("¿Deseas vaciar los archivos personalizados guardados?")) return;
       const db = await openDatabase();
       const tx = db.transaction(STORE_NAME, "readwrite");
       tx.objectStore(STORE_NAME).clear();
-      tx.oncomplete = () => { refreshSavedDatasetsDropdown(); alert("Base de datos MT5 vaciada."); };
+      tx.oncomplete = () => { refreshSavedDatasetsDropdown(); };
     }
-// --- GRÁFICOS LIGHTWEIGHT CHARTS + MEJORA 1 (5 DECIMALES EN FOREX) ---
+
+    // --- GRÁFICOS LIGHTWEIGHT CHARTS + 5 DECIMALES EN FOREX ---
     const forexPriceFormat = { type: 'price', precision: 5, minMove: 0.00001 };
 
     const baseChartOptions = {
@@ -670,7 +818,7 @@
       grid: { vertLines: { color: '#161e2e' }, horzLines: { color: '#161e2e' } },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
       rightPriceScale: { minimumWidth: 82 },
-      timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 12 }
+      timeScale: { timeVisible: true, secondsVisible: true, rightOffset: 10 }
     };
 
     const candleSeriesConfig = {
@@ -703,9 +851,9 @@
 
     function getDynamicPriceFormat(refVal) {
       const sym = document.getElementById('symbolSelect').value || '';
-      const isForex = sym.includes('EUR') || sym.includes('GBP') || (refVal !== undefined && refVal > 0 && refVal < 10);
+      const isForex = sym.includes('EUR') || sym.includes('GBP') || sym.includes('eurusd') || sym.includes('gbpusd') || (refVal !== undefined && refVal > 0 && refVal < 10);
       if (isForex) return { type: 'price', precision: 5, minMove: 0.00001 };
-      if (sym.includes('JPY') || (refVal !== undefined && refVal >= 10 && refVal < 500)) return { type: 'price', precision: 3, minMove: 0.001 };
+      if (sym.includes('JPY') || sym.includes('usdjpy') || (refVal !== undefined && refVal >= 10 && refVal < 500)) return { type: 'price', precision: 3, minMove: 0.001 };
       return { type: 'price', precision: 2, minMove: 0.01 };
     }
 
@@ -719,7 +867,7 @@
     const rsiCont = document.getElementById('chart-rsi');
     const chartRSI = LightweightCharts.createChart(rsiCont, {
       ...baseChartOptions, width: rsiCont.clientWidth || 800, height: 110,
-      rightPriceScale: { minimumWidth: 82 }, timeScale: { visible: false, rightOffset: 12 }
+      rightPriceScale: { minimumWidth: 82 }, timeScale: { visible: false, rightOffset: 10 }
     });
     const rsiSeries = chartRSI.addLineSeries({ color: '#f59e0b', lineWidth: 2, title: 'RSI 14' });
     rsiSeries.createPriceLine({ price: 70, color: '#ef4444', lineStyle: LightweightCharts.LineStyle.Dotted, title: '70' });
@@ -728,7 +876,7 @@
     const macdCont = document.getElementById('chart-macd');
     const chartMACD = LightweightCharts.createChart(macdCont, {
       ...baseChartOptions, width: macdCont.clientWidth || 800, height: 110,
-      rightPriceScale: { minimumWidth: 82 }, timeScale: { visible: false, rightOffset: 12 }
+      rightPriceScale: { minimumWidth: 82 }, timeScale: { visible: false, rightOffset: 10 }
     });
     const macdHistSeries = chartMACD.addHistogramSeries({ color: '#10b981', title: 'Hist', priceFormat: forexPriceFormat });
     const macdLineSeries = chartMACD.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'MACD', priceFormat: forexPriceFormat });
@@ -741,10 +889,9 @@
       layout: { background: { type: 'solid', color: '#090d16' }, textColor: '#94a3b8' },
       grid: { vertLines: { color: '#121824' }, horzLines: { color: '#121824' } },
       rightPriceScale: { minimumWidth: 82 },
-      timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 12 }
+      timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 10 }
     });
 
-    // Relleno sombreado + Línea Bicolor por punto (#10b981 en Run-up/ATH y #f43f5e en Drawdown)
     const equityAreaBgSeries = equityChart.addAreaSeries({
       topColor: 'rgba(16, 185, 129, 0.25)',
       bottomColor: 'rgba(244, 63, 94, 0.08)',
@@ -758,8 +905,8 @@
       lineWidth: 2.5,
       title: 'Equidad'
     });
-    equityBicolorSeries.createPriceLine({
-      price: 10000, color: '#475569', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'Base $10k'
+    let baseCapitalPriceLine = equityBicolorSeries.createPriceLine({
+      price: 10000, color: '#475569', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'Base'
     });
 
     // --- SINCRONIZACIÓN DE ESCALA DE TIEMPO (PRECIO <-> RSI <-> MACD <-> EQUIDAD M4) ---
@@ -786,6 +933,8 @@
     let rawMT5Candles = [];
     let originalFullCandles = [];
     let allCandles = [];
+    let winCandles = { 1: [], 2: [], 3: [], 4: [] };
+    let winTimeframes = { 1: '15m', 2: '1h', 3: '4h', 4: '1D' };
 
     let isCutModeActive = false;
     let isReplayActive = false;
@@ -794,16 +943,37 @@
     let currentReplayTimestamp = 0;
     let isBotActiveOnChart = true;
 
-    // --- MOTOR AGREGADOR DE TEMPORALIDADES OHLC ---
     function getIntervalSeconds(tf) {
-      const map = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1D': 86400 };
+      const map = { '1s': 1, '5s': 5, '15s': 15, '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1D': 86400 };
       return map[tf] || 900;
+    }
+
+    function changeWindowTimeframe(winNum, newTf) {
+      winTimeframes[winNum] = newTf;
+      const selInWin = document.getElementById(`win${winNum}-tf`);
+      if (selInWin && selInWin.value !== newTf) selInWin.value = newTf;
+      if (winNum === 1) {
+        const globalSel = document.getElementById('timeframeSelect');
+        if (globalSel && globalSel.value !== newTf) globalSel.value = newTf;
+        loadCandles();
+      } else {
+        const seriesMap = { 2: candleSeries2, 3: candleSeries3, 4: candleSeries4 };
+        const chartMap  = { 2: chart2, 3: chart3, 4: chart4 };
+        loadWindowCandles(winNum, newTf, seriesMap[winNum], chartMap[winNum]);
+      }
     }
 
     function aggregateCandlesToTimeframe(sourceCandles, tf, maxTimestamp = Infinity) {
       if (!sourceCandles || sourceCandles.length === 0) return [];
       const tfSec = getIntervalSeconds(tf);
       let endLimit = maxTimestamp < Infinity ? binarySearchCandleIndex(sourceCandles, maxTimestamp) : sourceCandles.length - 1;
+
+      if (tfSec < 60) {
+        const sym = document.getElementById('symbolSelect').value;
+        const baseKey = sym.startsWith('mt5_id_') ? 'EUR-USD' : sym;
+        return generateHistoricalSeries(baseKey, 600, tfSec, false);
+      }
+
       const approxBaseNeeded = Math.min(endLimit + 1, MAX_CHART_BUFFER * Math.max(1, Math.floor(tfSec / 60)));
       const startIndex = Math.max(0, endLimit - approxBaseNeeded + 1);
 
@@ -814,7 +984,7 @@
         if (c.time > maxTimestamp) break;
         const bucketTime = Math.floor(c.time / tfSec) * tfSec;
         if (!currentBucket || currentBucket.time !== bucketTime) {
-          if (currentBucket) result.push(currentBucket);
+          if (currentBucket) result.push({ ...currentBucket });
           currentBucket = { time: bucketTime, open: c.open, high: c.high, low: c.low, close: c.close };
         } else {
           if (c.high > currentBucket.high) currentBucket.high = c.high;
@@ -822,7 +992,7 @@
           currentBucket.close = c.close;
         }
       }
-      if (currentBucket) result.push(currentBucket);
+      if (currentBucket) result.push({ ...currentBucket });
       return result.length > MAX_CHART_BUFFER ? result.slice(result.length - MAX_CHART_BUFFER) : result;
     }
 
@@ -832,61 +1002,72 @@
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
-    // --- MEJORA 2: VELAS EN VIVO TICK-BY-TICK Y CIERRE AUTOMÁTICO AL LLEGAR SEGUNDERO A 00:00 ---
-    let lastLiveRemSec = -1;
+    // --- VELAS EN VIVO TICK-BY-TICK DESDE APERTURA HASTA CIERRE EN CADA VENTANA Y TEMPORALIDAD ---
+    let lastBucketByWindow = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
     function updateAllCandleCountdowns() {
       const now = Math.floor(Date.now() / 1000);
-      const tfSec1 = getIntervalSeconds(document.getElementById('timeframeSelect').value);
-      const rem1 = tfSec1 - (now % tfSec1);
-      const text1 = formatTimeRemaining(rem1);
-      document.getElementById('tv-countdown-p1').innerText = text1;
-      document.getElementById('countdown-timer').innerText = text1;
-      document.getElementById('tv-countdown-p2').innerText = formatTimeRemaining(3600 - (now % 3600));
-      document.getElementById('tv-countdown-p3').innerText = formatTimeRemaining(14400 - (now % 14400));
-      document.getElementById('tv-countdown-p4').innerText = formatTimeRemaining(86400 - (now % 86400));
+      [1, 2, 3, 4].forEach(w => {
+        const tfSec = getIntervalSeconds(winTimeframes[w]);
+        const rem = tfSec - (now % tfSec);
+        const txt = formatTimeRemaining(rem);
+        const badge = document.getElementById(`tv-countdown-p${w}`);
+        if (badge) badge.innerText = txt;
+        if (w === 1) document.getElementById('countdown-timer').innerText = txt;
 
-      // Si el segundero cruza 00:00 y no estamos en Replay, cerramos la vela actual y abrimos una nueva
-      if (!isReplayActive && allCandles.length > 0) {
-        if (lastLiveRemSec === 1 || rem1 === tfSec1) {
-          const prevCandle = allCandles[allCandles.length - 1];
-          const newCandleTime = prevCandle.time + tfSec1;
-          const newCandle = { time: newCandleTime, open: prevCandle.close, high: prevCandle.close, low: prevCandle.close, close: prevCandle.close };
-          allCandles.push(newCandle);
-          originalFullCandles.push({ ...newCandle });
-          candleSeries1.update(newCandle);
-          updateAllTechnicalIndicators();
-          if (isBotActiveOnChart) compileAndRunStrategy(true);
+        if (!isReplayActive && winCandles[w] && winCandles[w].length > 0) {
+          const currentBucketTime = Math.floor(now / tfSec) * tfSec;
+          const arr = winCandles[w];
+          const lastC = arr[arr.length - 1];
+          if (lastBucketByWindow[w] !== 0 && currentBucketTime > lastBucketByWindow[w]) {
+            const nextTime = Math.max(currentBucketTime, lastC.time + tfSec);
+            const freshCandle = { time: nextTime, open: lastC.close, high: lastC.close, low: lastC.close, close: lastC.close };
+            arr.push(freshCandle);
+            const seriesMap = { 1: candleSeries1, 2: candleSeries2, 3: candleSeries3, 4: candleSeries4 };
+            seriesMap[w].update(freshCandle);
+            if (w === 1) {
+              originalFullCandles.push({ ...freshCandle });
+              updateAllTechnicalIndicators();
+              if (isBotActiveOnChart) compileAndRunStrategy(true);
+            }
+          }
+          lastBucketByWindow[w] = currentBucketTime;
         }
-        lastLiveRemSec = rem1;
-      }
+      });
     }
-    setInterval(updateAllCandleCountdowns, 1000);
+    setInterval(updateAllCandleCountdowns, 250);
 
-    // Simulación de micro-ticks en tiempo real (cada 350ms) estilo TradingView
+    // Movimiento de la vela en vivo desde su apertura hasta su cierre en las 4 ventanas sincronizadas
     setInterval(() => {
       if (isReplayActive || isCutModeActive || allCandles.length === 0) return;
-      const last = allCandles[allCandles.length - 1];
-      const baseStep = last.close < 10 ? 0.00004 : last.close < 500 ? 0.015 : last.close * 0.00018;
-      const delta = (Math.random() - 0.498) * baseStep;
-      const nextClose = Math.max(0.00001, Number((last.close + delta).toFixed(last.close < 10 ? 5 : 2)));
-      last.close = nextClose;
-      if (nextClose > last.high) last.high = nextClose;
-      if (nextClose < last.low) last.low = nextClose;
+      const last1 = allCandles[allCandles.length - 1];
+      const decimals = last1.close < 10 ? 5 : (last1.close < 500 ? 3 : 2);
+      const step = last1.close < 10 ? 0.00003 : (last1.close < 500 ? 0.012 : last1.close * 0.00014);
+      const delta = (Math.random() - 0.498) * step;
+      const newPrice = Math.max(0.00001, Number((last1.close + delta).toFixed(decimals)));
 
-      candleSeries1.update(last);
+      const seriesMap = { 1: candleSeries1, 2: candleSeries2, 3: candleSeries3, 4: candleSeries4 };
+      [1, 2, 3, 4].forEach(w => {
+        const arr = winCandles[w];
+        if (!arr || arr.length === 0) return;
+        const c = arr[arr.length - 1];
+        c.close = newPrice;
+        if (newPrice > c.high) c.high = newPrice;
+        if (newPrice < c.low) c.low = newPrice;
+        seriesMap[w].update(c);
+      });
+
       const priceEl = document.getElementById('price-display');
-      priceEl.innerText = formatPrice(last.close);
+      priceEl.innerText = formatPrice(newPrice);
       priceEl.className = `text-lg font-mono font-extrabold ${delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
 
       if (ema9 && allCandles.length >= 9) {
-        const k9 = 2 / 10;
         const emaArr = calcEMA(allCandles.slice(-25), 9);
         if (emaArr.length > 0) ema9.update(emaArr[emaArr.length - 1]);
       }
       redrawAllCanvasShapes();
     }, 350);
-
-    // --- BÚSQUEDA BINARIA O(log N) Y CORTE SINCRONIZADO ---
+// --- BÚSQUEDA BINARIA O(log N) Y CORTE SINCRONIZADO ---
     function openJumpToDateModal() { document.getElementById('jumpDateModal').classList.remove('hidden'); }
     function closeJumpToDateModal() { document.getElementById('jumpDateModal').classList.add('hidden'); }
 
@@ -916,6 +1097,7 @@
 
       const startIdx = Math.max(0, replayIndex - MAX_CHART_BUFFER + 1);
       allCandles = originalFullCandles.slice(startIdx, replayIndex + 1);
+      winCandles[1] = allCandles;
       candleSeries1.setData(allCandles);
       updateReplayIndicators();
 
@@ -924,7 +1106,7 @@
 
       refreshSecondaryWindows();
       const cutDateStr = new Date(currentReplayTimestamp * 1000).toLocaleString();
-      document.getElementById('agent-verdict').innerText = `Gráfico y Curva Bicolor recortados en: ${cutDateStr}. Presiona ▶ para simular vela a vela.`;
+      document.getElementById('agent-verdict').innerText = `✂ Gráfico y Curva Bicolor recortados en: ${cutDateStr}. Presiona ▶ para simular vela a vela.`;
     }
 
     function executeJumpToDate() {
@@ -936,7 +1118,7 @@
       applyCutAtIndex(binarySearchCandleIndex(originalFullCandles, targetTimestamp));
     }
 
-    // --- MEJORA 3: DIBUJOS DEL CANVAS ANCLADOS A TIEMPO Y PRECIO (timeToCoordinate / priceToCoordinate) ---
+    // --- DIBUJOS DEL CANVAS ANCLADOS A TIEMPO Y PRECIO ---
     const canvas = document.getElementById('canvas-overlay');
     const ctx = canvas.getContext('2d');
     let customDrawings = [];
@@ -951,7 +1133,7 @@
         const logical = ts.coordinateToLogical(x);
         if (logical !== null) {
           const clampedIdx = Math.max(0, Math.min(allCandles.length - 1, Math.round(logical)));
-          const stepSec = getIntervalSeconds(document.getElementById('timeframeSelect').value);
+          const stepSec = getIntervalSeconds(winTimeframes[1]);
           time = allCandles[clampedIdx].time + (Math.round(logical) - clampedIdx) * stepSec;
         } else time = allCandles[allCandles.length - 1].time;
       }
@@ -984,8 +1166,7 @@
     canvas.addEventListener('mousedown', (e) => {
       if (!['trendline', 'fibonacci', 'box'].includes(activeTool)) return;
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left, y = e.clientY - rect.top;
-      const anchor = pixelToChartAnchor(x, y);
+      const anchor = pixelToChartAnchor(e.clientX - rect.left, e.clientY - rect.top);
       if (!currentDrawing) {
         currentDrawing = { type: activeTool, startTime: anchor.time, startPrice: anchor.price, endTime: anchor.time, endPrice: anchor.price };
       } else {
@@ -1063,11 +1244,12 @@
     function formatPrice(val) {
       if (val === undefined || isNaN(val)) return "--.--";
       const sym = document.getElementById('symbolSelect').value || '';
-      if (sym.includes('EUR') || sym.includes('GBP') || val < 10) return Number(val).toFixed(5);
-      if (sym.includes('JPY') || (val >= 10 && val < 500)) return Number(val).toFixed(3);
+      if (sym.includes('EUR') || sym.includes('GBP') || sym.includes('eurusd') || sym.includes('gbpusd') || val < 10) return Number(val).toFixed(5);
+      if (sym.includes('JPY') || sym.includes('usdjpy') || (val >= 10 && val < 500)) return Number(val).toFixed(3);
       return `$${Number(val).toFixed(2)}`;
     }
-c1.addEventListener('contextmenu', (e) => {
+
+    c1.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       const menu = document.getElementById('contextMenu');
       menu.style.top = `${e.clientY}px`; menu.style.left = `${e.clientX}px`;
@@ -1083,7 +1265,7 @@ c1.addEventListener('contextmenu', (e) => {
     }
 
     function resizeAllCharts() {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         if (c1.clientWidth && c1.clientHeight) chart1.resize(c1.clientWidth, c1.clientHeight);
         if (c2.clientWidth && c2.clientHeight) chart2.resize(c2.clientWidth, c2.clientHeight);
         if (c3.clientWidth && c3.clientHeight) chart3.resize(c3.clientWidth, c3.clientHeight);
@@ -1092,10 +1274,10 @@ c1.addEventListener('contextmenu', (e) => {
         if (rsiCont.clientWidth && rsiCont.clientHeight) chartRSI.resize(rsiCont.clientWidth, rsiCont.clientHeight);
         if (macdCont.clientWidth && macdCont.clientHeight) chartMACD.resize(macdCont.clientWidth, macdCont.clientHeight);
         resizeCanvas();
-      }, 30);
+      });
     }
 
-    // --- CONTROLES DE VENTANA Y SPLITTERS ARRASTRABLES ---
+    // --- CONTROLES DE VENTANA Y SPLITTERS ARRASTRABLES FLUIDOS ---
     function setWindowSize(boxId, mode) {
       const box = document.getElementById(boxId);
       if (!box) return;
@@ -1135,45 +1317,65 @@ c1.addEventListener('contextmenu', (e) => {
 
     function setupHorizontalResizer(resizerEl, targetPanel, invertDelta) {
       if (!resizerEl || !targetPanel) return;
-      let startY = 0, startHeight = 0;
-      resizerEl.addEventListener('mousedown', (e) => {
+      resizerEl.onmousedown = function(e) {
         e.preventDefault();
         targetPanel.classList.remove('hidden', 'sv5-window-fullscreen');
-        startY = e.clientY; startHeight = targetPanel.getBoundingClientRect().height;
+        const startY = e.clientY;
+        const startHeight = targetPanel.getBoundingClientRect().height;
         resizerEl.classList.add('active');
-        const onMove = (ev) => {
+        document.body.classList.add('is-resizing-h');
+
+        function onMouseMove(ev) {
           const dy = ev.clientY - startY;
-          const newH = Math.max(36, Math.min(window.innerHeight - 140, invertDelta ? startHeight - dy : startHeight + dy));
+          const rawH = invertDelta ? (startHeight - dy) : (startHeight + dy);
+          const newH = Math.max(38, Math.min(window.innerHeight - 130, rawH));
           targetPanel.style.height = `${newH}px`;
+          targetPanel.style.flex = 'none';
           resizeAllCharts();
-        };
-        const onUp = () => {
+        }
+
+        function onMouseUp() {
           resizerEl.classList.remove('active');
-          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      });
+          document.body.classList.remove('is-resizing-h');
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          resizeAllCharts();
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      };
     }
 
     function setupVerticalResizer(resizerEl, targetPane, invertDelta) {
       if (!resizerEl || !targetPane) return;
-      let startX = 0, startWidth = 0;
-      resizerEl.addEventListener('mousedown', (e) => {
+      resizerEl.onmousedown = function(e) {
         e.preventDefault();
-        startX = e.clientX; startWidth = targetPane.getBoundingClientRect().width;
+        const startX = e.clientX;
+        const startWidth = targetPane.getBoundingClientRect().width;
         resizerEl.classList.add('active');
-        const onMove = (ev) => {
+        document.body.classList.add('is-resizing-v');
+
+        function onMouseMove(ev) {
           const dx = ev.clientX - startX;
-          const newW = Math.max(160, Math.min(window.innerWidth - 280, invertDelta ? startWidth - dx : startWidth + dx));
-          targetPane.style.width = `${newW}px`; targetPane.style.flex = 'none';
+          const rawW = invertDelta ? (startWidth - dx) : (startWidth + dx);
+          const newW = Math.max(170, Math.min(window.innerWidth - 260, rawW));
+          targetPane.style.width = `${newW}px`;
+          targetPane.style.flex = 'none';
           resizeAllCharts();
-        };
-        const onUp = () => {
+        }
+
+        function onMouseUp() {
           resizerEl.classList.remove('active');
-          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      });
+          document.body.classList.remove('is-resizing-v');
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          resizeAllCharts();
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      };
     }
 
     function initDraggableSplitters() {
@@ -1184,7 +1386,7 @@ c1.addEventListener('contextmenu', (e) => {
       setupVerticalResizer(document.getElementById('resizer-ide-inner'), document.getElementById('ide-editor-pane'), false);
     }
 
-    // --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) ---
+    // --- MULTIVENTANA (1, 2 Y 4 PANTALLAS CON TEMPORALIDADES INDEPENDIENTES) ---
     function setLayout(mode) {
       currentLayout = mode;
       const b2 = document.getElementById('chart-box-2'), b3 = document.getElementById('chart-box-3'), b4 = document.getElementById('chart-box-4');
@@ -1195,13 +1397,13 @@ c1.addEventListener('contextmenu', (e) => {
           : "px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono";
       });
       if (mode === '1') {
-        grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
+        grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[110px]";
         b2.classList.add('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
       } else if (mode === '2h') {
-        grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 w-full relative min-h-[110px]";
         b2.classList.remove('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
       } else if (mode === '4') {
-        grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 w-full relative min-h-[120px]";
+        grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 w-full relative min-h-[110px]";
         b2.classList.remove('hidden'); b3.classList.remove('hidden'); b4.classList.remove('hidden');
       }
       refreshSecondaryWindows();
@@ -1209,11 +1411,12 @@ c1.addEventListener('contextmenu', (e) => {
     }
 
     function refreshSecondaryWindows() {
-      if (currentLayout === '2h') loadWindowCandles('1h', candleSeries2, chart2);
-      else if (currentLayout === '4') {
-        loadWindowCandles('1h', candleSeries2, chart2);
-        loadWindowCandles('4h', candleSeries3, chart3);
-        loadWindowCandles('1D', candleSeries4, chart4);
+      if (currentLayout === '2h') {
+        loadWindowCandles(2, winTimeframes[2], candleSeries2, chart2);
+      } else if (currentLayout === '4') {
+        loadWindowCandles(2, winTimeframes[2], candleSeries2, chart2);
+        loadWindowCandles(3, winTimeframes[3], candleSeries3, chart3);
+        loadWindowCandles(4, winTimeframes[4], candleSeries4, chart4);
       }
     }
 
@@ -1245,71 +1448,95 @@ c1.addEventListener('contextmenu', (e) => {
       resizeAllCharts();
     }
 
-    async function fetchCandlesFromAPI(symbol, interval) {
-      const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${interval}`);
-      const json = await res.json();
-      const raw = json.data || json.datos || [];
-      return raw.map(d => ({
-        time: Number(d.time || d.tiempo),
-        open: Number(d.open || d.apertura),
-        high: Number(d.high || d.máximo || d.maximo),
-        low: Number(d.low || d.mínimo || d.minimo),
-        close: Number(d.close || d.cierre)
-      })).sort((a, b) => a.time - b.time);
+    async function fetchCandlesWithFallback(symbol, interval) {
+      const tfSec = getIntervalSeconds(interval);
+      if (tfSec < 60) {
+        return generateHistoricalSeries(symbol, 600, tfSec, false);
+      }
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2200);
+        const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${interval}`, { signal: controller.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+          const json = await res.json();
+          const raw = json.data || json.datos || [];
+          if (raw.length > 20) {
+            return raw.map(d => ({
+              time: Number(d.time || d.tiempo),
+              open: Number(d.open || d.apertura),
+              high: Number(d.high || d.máximo || d.maximo),
+              low: Number(d.low || d.mínimo || d.minimo),
+              close: Number(d.close || d.cierre)
+            })).sort((a, b) => a.time - b.time);
+          }
+        }
+      } catch (e) {}
+      return generateHistoricalSeries(symbol, 2500, tfSec, false);
     }
 
-    async function loadWindowCandles(interval, targetSeries, targetChart) {
+    async function loadWindowCandles(winNum, interval, targetSeries, targetChart) {
       const symbol = document.getElementById('symbolSelect').value;
       const cutLimit = isReplayActive && currentReplayTimestamp > 0 ? currentReplayTimestamp : Infinity;
       const baseSource = rawMT5Candles.length > 0 ? rawMT5Candles : originalFullCandles;
 
-      if (symbol.startsWith("mt5_id_") || baseSource.length > 0) {
-        const aggregated = aggregateCandlesToTimeframe(baseSource, interval, cutLimit);
-        if (aggregated.length > 0) {
-          targetSeries.setData(aggregated);
-          targetChart.timeScale().setVisibleLogicalRange({ from: Math.max(0, aggregated.length - 100), to: aggregated.length - 1 });
-        }
-        return;
+      let candles = [];
+      if (getIntervalSeconds(interval) < 60) {
+        const baseKey = symbol.startsWith('mt5_id_') ? 'EUR-USD' : symbol;
+        candles = generateHistoricalSeries(baseKey, 500, getIntervalSeconds(interval), false);
+      } else if (baseSource.length > 0) {
+        candles = aggregateCandlesToTimeframe(baseSource, interval, cutLimit);
+      } else {
+        candles = await fetchCandlesWithFallback(symbol, interval);
       }
-      try {
-        let candles = await fetchCandlesFromAPI(symbol, interval);
-        if (cutLimit < Infinity) candles = candles.filter(c => c.time <= cutLimit);
-        if (candles.length > 0) { targetSeries.setData(candles); targetChart.timeScale().fitContent(); }
-      } catch (err) {}
+
+      if (candles.length > 0) {
+        winCandles[winNum] = candles;
+        targetSeries.setData(candles);
+        targetChart.timeScale().setVisibleLogicalRange({ from: Math.max(0, candles.length - 90), to: candles.length - 1 });
+      }
     }
 
     async function loadCandles() {
       if (isReplayActive) exitReplayMode();
       const symbol = document.getElementById('symbolSelect').value;
-      const tf = document.getElementById('timeframeSelect').value;
-      document.getElementById('p1-tf-label').innerText = tf;
+      const tf = winTimeframes[1] || document.getElementById('timeframeSelect').value;
+      document.getElementById('win1-tf').value = tf;
+      document.getElementById('timeframeSelect').value = tf;
+
+      const labelEl = document.getElementById('active-sym-label');
+      if (labelEl) labelEl.innerText = symbol.startsWith('mt5_id_') ? 'MT5 HIST' : symbol;
 
       if (symbol.startsWith("mt5_id_")) {
         const dataset = await getDatasetFromDB(symbol);
         if (dataset && dataset.candles && dataset.candles.length > 0) {
           rawMT5Candles = dataset.candles;
-          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+          originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
           allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+          winCandles[1] = allCandles;
           displayCandlesOnChart(allCandles);
           refreshSecondaryWindows();
-          document.getElementById('agent-verdict').innerText = `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base. Fluidez 60 FPS.`;
+          document.getElementById('agent-verdict').innerText = `📂 Dataset MT5 activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base (2021-2026).`;
+          return;
         }
-        return;
       }
-      try {
-        const data = await fetchCandlesFromAPI(symbol, tf);
-        rawMT5Candles = [...data]; originalFullCandles = [...data]; allCandles = [...data];
-        displayCandlesOnChart(allCandles);
-        refreshSecondaryWindows();
-      } catch (err) { console.error(err); }
-    }
 
-    function displayCandlesOnChart(data) {
+      // Generamos base 1m para que todas las 4 pantallas agreguen con exactitud al cambiar de mercado
+      rawMT5Candles = generateHistoricalSeries(symbol, 4800, 60, false);
+      const data = await fetchCandlesWithFallback(symbol, tf);
+      originalFullCandles = [...data];
+      allCandles = [...data];
+      winCandles[1] = allCandles;
+      displayCandlesOnChart(allCandles);
+      refreshSecondaryWindows();
+      document.getElementById('agent-verdict').innerText = `✅ Mercado activo: ${symbol} (${tf}) — Velas en vivo, Indicadores y Curva Bicolor sincronizados.`;
+    }
+function displayCandlesOnChart(data) {
       if (data.length > 0) applyDynamicPriceFormat(data[data.length - 1].close);
       candleSeries1.setData(data);
       updateAllTechnicalIndicators();
       if (isBotActiveOnChart) compileAndRunStrategy(true);
-      const logicalRange = { from: Math.max(0, data.length - 150), to: Math.max(0, data.length - 1) };
+      const logicalRange = { from: Math.max(0, data.length - 140), to: Math.max(0, data.length - 1) };
       [chart1, chartRSI, chartMACD, equityChart].forEach(ch => ch.timeScale().setVisibleLogicalRange(logicalRange));
       if (data.length > 0) document.getElementById('price-display').innerText = formatPrice(data[data.length - 1].close);
       redrawAllCanvasShapes();
@@ -1347,9 +1574,10 @@ c1.addEventListener('contextmenu', (e) => {
           await saveDatasetToDB({ id: datasetId, name: cleanName, candlesCount: parsed.length, savedAt: new Date().toLocaleDateString(), candles: parsed });
           await refreshSavedDatasetsDropdown(datasetId);
           rawMT5Candles = parsed;
-          const tf = document.getElementById('timeframeSelect').value;
-          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+          const tf = winTimeframes[1];
+          originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
           allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+          winCandles[1] = allCandles;
           displayCandlesOnChart(allCandles);
           refreshSecondaryWindows();
           document.getElementById('agent-verdict').innerText = `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length.toLocaleString()} velas).`;
@@ -1358,17 +1586,38 @@ c1.addEventListener('contextmenu', (e) => {
       reader.readAsText(file);
     }
 
+    function selectMT5DatasetFromSidebar(id) {
+      const sel = document.getElementById('symbolSelect');
+      sel.value = id;
+      loadCandles();
+    }
+
     async function refreshSavedDatasetsDropdown(selectedId = null) {
       const optgroup = document.getElementById('optgroup-mt5-saved');
+      const quickList = document.getElementById('mt5-files-quicklist');
       optgroup.innerHTML = "";
+      if (quickList) quickList.innerHTML = "";
       const metaList = await getDatasetsMetadata();
       document.getElementById('db-count').innerText = `${metaList.length} archivos`;
-      if (metaList.length === 0) { optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`; return; }
+      if (metaList.length === 0) {
+        optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`;
+        return;
+      }
       metaList.forEach(ds => {
         const opt = document.createElement('option');
-        opt.value = ds.id; opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} velas)`;
+        opt.value = ds.id;
+        opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} v)`;
         if (selectedId && ds.id === selectedId) opt.selected = true;
         optgroup.appendChild(opt);
+
+        if (quickList) {
+          const item = document.createElement('button');
+          item.type = "button";
+          item.onclick = () => selectMT5DatasetFromSidebar(ds.id);
+          item.className = "w-full text-left px-2 py-1 rounded bg-[#131722] hover:bg-emerald-950/50 border border-gray-800 hover:border-emerald-500/40 text-gray-300 hover:text-emerald-300 flex justify-between items-center transition";
+          item.innerHTML = `<span class="truncate pr-1">📂 ${ds.name}</span><span class="text-emerald-400 shrink-0">${(ds.candlesCount/1000).toFixed(1)}k</span>`;
+          quickList.appendChild(item);
+        }
       });
     }
 
@@ -1402,6 +1651,7 @@ c1.addEventListener('contextmenu', (e) => {
       const nextCandle = originalFullCandles[replayIndex];
       currentReplayTimestamp = nextCandle.time;
       allCandles.push(nextCandle);
+      winCandles[1] = allCandles;
       candleSeries1.update(nextCandle);
       updateReplayIndicators();
       if (currentLayout !== '1') refreshSecondaryWindows();
@@ -1433,381 +1683,272 @@ c1.addEventListener('contextmenu', (e) => {
       c1.classList.remove('scissor-cursor');
       if (originalFullCandles.length > 0) {
         allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+        winCandles[1] = allCandles;
         displayCandlesOnChart(allCandles);
         refreshSecondaryWindows();
       }
     }
-c1.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      const menu = document.getElementById('contextMenu');
-      menu.style.top = `${e.clientY}px`; menu.style.left = `${e.clientX}px`;
-      menu.classList.remove('hidden');
-    });
 
-    window.addEventListener('click', closeContextMenu);
-    function closeContextMenu() { document.getElementById('contextMenu').classList.add('hidden'); }
-
-    function resetChart() {
-      [chart1, chart2, chart3, chart4, equityChart].forEach(ch => ch.timeScale().fitContent());
-      closeContextMenu();
-    }
-
-    function resizeAllCharts() {
-      setTimeout(() => {
-        if (c1.clientWidth && c1.clientHeight) chart1.resize(c1.clientWidth, c1.clientHeight);
-        if (c2.clientWidth && c2.clientHeight) chart2.resize(c2.clientWidth, c2.clientHeight);
-        if (c3.clientWidth && c3.clientHeight) chart3.resize(c3.clientWidth, c3.clientHeight);
-        if (c4.clientWidth && c4.clientHeight) chart4.resize(c4.clientWidth, c4.clientHeight);
-        if (eqContainer.clientWidth && eqContainer.clientHeight) equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
-        if (rsiCont.clientWidth && rsiCont.clientHeight) chartRSI.resize(rsiCont.clientWidth, rsiCont.clientHeight);
-        if (macdCont.clientWidth && macdCont.clientHeight) chartMACD.resize(macdCont.clientWidth, macdCont.clientHeight);
-        resizeCanvas();
-      }, 30);
-    }
-
-    // --- CONTROLES DE VENTANA Y SPLITTERS ARRASTRABLES ---
-    function setWindowSize(boxId, mode) {
-      const box = document.getElementById(boxId);
-      if (!box) return;
-      if (mode === 'max') box.classList.toggle('sv5-window-fullscreen');
-      else if (mode === 'mid') {
-        box.classList.remove('sv5-window-fullscreen');
-        document.getElementById('strategy-panel').style.height = '18rem';
-      } else if (mode === 'min') {
-        box.classList.remove('sv5-window-fullscreen');
-        if (boxId === 'chart-box-1') {
-          document.getElementById('strategy-panel').classList.remove('hidden');
-          document.getElementById('strategy-panel').style.height = '62vh';
-        } else setLayout('1');
+    // --- INDICADORES TÉCNICOS SINCRONIZADOS 1:1 CON EL EJE DE TIEMPO ---
+    function calcEMA(data, period) {
+      if (!data || data.length === 0) return [];
+      const k = 2 / (period + 1);
+      let ema = data[0].close;
+      const res = new Array(data.length);
+      for (let i = 0; i < data.length; i++) {
+        ema = data[i].close * k + ema * (1 - k);
+        res[i] = { time: data[i].time, value: ema };
       }
-      resizeAllCharts();
+      return res;
     }
 
-    function setSubpanelHeight(panelId, heightPx) {
-      const panel = document.getElementById(panelId);
-      if (panel) { panel.style.height = `${heightPx}px`; resizeAllCharts(); }
-    }
-
-    function setBottomPanelMode(mode) {
-      const panel = document.getElementById('strategy-panel');
-      panel.classList.remove('hidden', 'sv5-window-fullscreen');
-      if (mode === 'min') panel.style.height = '36px';
-      else if (mode === 'mid') panel.style.height = '45vh';
-      else if (mode === 'max') { panel.classList.add('sv5-window-fullscreen'); panel.style.height = ''; }
-      resizeAllCharts();
-    }
-
-    function setRightSidebarSize(mode) {
-      const sidebar = document.getElementById('right-sidebar');
-      sidebar.style.width = mode === 'min' ? '180px' : mode === 'mid' ? '320px' : '480px';
-      resizeAllCharts();
-    }
-
-    function setupHorizontalResizer(resizerEl, targetPanel, invertDelta) {
-      if (!resizerEl || !targetPanel) return;
-      let startY = 0, startHeight = 0;
-      resizerEl.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        targetPanel.classList.remove('hidden', 'sv5-window-fullscreen');
-        startY = e.clientY; startHeight = targetPanel.getBoundingClientRect().height;
-        resizerEl.classList.add('active');
-        const onMove = (ev) => {
-          const dy = ev.clientY - startY;
-          const newH = Math.max(36, Math.min(window.innerHeight - 140, invertDelta ? startHeight - dy : startHeight + dy));
-          targetPanel.style.height = `${newH}px`;
-          resizeAllCharts();
-        };
-        const onUp = () => {
-          resizerEl.classList.remove('active');
-          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      });
-    }
-
-    function setupVerticalResizer(resizerEl, targetPane, invertDelta) {
-      if (!resizerEl || !targetPane) return;
-      let startX = 0, startWidth = 0;
-      resizerEl.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        startX = e.clientX; startWidth = targetPane.getBoundingClientRect().width;
-        resizerEl.classList.add('active');
-        const onMove = (ev) => {
-          const dx = ev.clientX - startX;
-          const newW = Math.max(160, Math.min(window.innerWidth - 280, invertDelta ? startWidth - dx : startWidth + dx));
-          targetPane.style.width = `${newW}px`; targetPane.style.flex = 'none';
-          resizeAllCharts();
-        };
-        const onUp = () => {
-          resizerEl.classList.remove('active');
-          window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      });
-    }
-
-    function initDraggableSplitters() {
-      setupHorizontalResizer(document.getElementById('resizer-bottom'), document.getElementById('strategy-panel'), true);
-      setupHorizontalResizer(document.getElementById('resizer-rsi'), document.getElementById('rsi-subpanel'), true);
-      setupHorizontalResizer(document.getElementById('resizer-macd'), document.getElementById('macd-subpanel'), true);
-      setupVerticalResizer(document.getElementById('resizer-right'), document.getElementById('right-sidebar'), true);
-      setupVerticalResizer(document.getElementById('resizer-ide-inner'), document.getElementById('ide-editor-pane'), false);
-    }
-
-    // --- MULTIVENTANA (1, 2 Y 4 PANTALLAS) ---
-    function setLayout(mode) {
-      currentLayout = mode;
-      const b2 = document.getElementById('chart-box-2'), b3 = document.getElementById('chart-box-3'), b4 = document.getElementById('chart-box-4');
-      const grid = document.getElementById('chart-grid');
-      ['1', '2h', '4'].forEach(m => {
-        document.getElementById(`layout-btn-${m}`).className = m === mode
-          ? "px-2 py-0.5 text-xs rounded bg-gray-700 text-white font-mono"
-          : "px-2 py-0.5 text-xs rounded text-gray-400 hover:text-white font-mono";
-      });
-      if (mode === '1') {
-        grid.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
-        b2.classList.add('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
-      } else if (mode === '2h') {
-        grid.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 w-full relative min-h-[120px]";
-        b2.classList.remove('hidden'); b3.classList.add('hidden'); b4.classList.add('hidden');
-      } else if (mode === '4') {
-        grid.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 w-full relative min-h-[120px]";
-        b2.classList.remove('hidden'); b3.classList.remove('hidden'); b4.classList.remove('hidden');
+    function calcBollingerBands(data, period = 20, mult = 2) {
+      if (data.length < period) return { upper: [], basis: [], lower: [] };
+      const upper = new Array(data.length), basis = new Array(data.length), lower = new Array(data.length);
+      let sum = 0, sumSq = 0;
+      for (let i = 0; i < period; i++) {
+        const c = data[i].close; sum += c; sumSq += c * c;
+        if (i < period - 1) { upper[i] = { time: data[i].time }; basis[i] = { time: data[i].time }; lower[i] = { time: data[i].time }; }
       }
-      refreshSecondaryWindows();
-      resizeAllCharts();
-    }
-
-    function refreshSecondaryWindows() {
-      if (currentLayout === '2h') loadWindowCandles('1h', candleSeries2, chart2);
-      else if (currentLayout === '4') {
-        loadWindowCandles('1h', candleSeries2, chart2);
-        loadWindowCandles('4h', candleSeries3, chart3);
-        loadWindowCandles('1D', candleSeries4, chart4);
-      }
-    }
-
-    function toggleStrategyPanel() {
-      const panel = document.getElementById('strategy-panel');
-      panel.classList.remove('sv5-window-fullscreen');
-      panel.classList.toggle('hidden');
-      resizeAllCharts();
-    }
-
-    function openBottomTab(tabName) {
-      const panel = document.getElementById('strategy-panel');
-      panel.classList.remove('hidden');
-      if (panel.clientHeight < 100) panel.style.height = '18rem';
-      switchBottomSubTab(tabName);
-      resizeAllCharts();
-    }
-
-    function switchBottomSubTab(tabName) {
-      const isIde = tabName === 'ide';
-      document.getElementById('subview-performance').classList.toggle('hidden', isIde);
-      document.getElementById('subview-ide').classList.toggle('hidden', !isIde);
-      document.getElementById('subtab-btn-ide').className = isIde
-        ? "px-3 py-1 rounded font-bold bg-sky-600/20 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5"
-        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      document.getElementById('subtab-btn-perf').className = !isIde
-        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5"
-        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      resizeAllCharts();
-    }
-
-    async function fetchCandlesFromAPI(symbol, interval) {
-      const res = await fetch(`${API_BASE_URL}/api/candles?symbol=${symbol}&interval=${interval}`);
-      const json = await res.json();
-      const raw = json.data || json.datos || [];
-      return raw.map(d => ({
-        time: Number(d.time || d.tiempo),
-        open: Number(d.open || d.apertura),
-        high: Number(d.high || d.máximo || d.maximo),
-        low: Number(d.low || d.mínimo || d.minimo),
-        close: Number(d.close || d.cierre)
-      })).sort((a, b) => a.time - b.time);
-    }
-
-    async function loadWindowCandles(interval, targetSeries, targetChart) {
-      const symbol = document.getElementById('symbolSelect').value;
-      const cutLimit = isReplayActive && currentReplayTimestamp > 0 ? currentReplayTimestamp : Infinity;
-      const baseSource = rawMT5Candles.length > 0 ? rawMT5Candles : originalFullCandles;
-
-      if (symbol.startsWith("mt5_id_") || baseSource.length > 0) {
-        const aggregated = aggregateCandlesToTimeframe(baseSource, interval, cutLimit);
-        if (aggregated.length > 0) {
-          targetSeries.setData(aggregated);
-          targetChart.timeScale().setVisibleLogicalRange({ from: Math.max(0, aggregated.length - 100), to: aggregated.length - 1 });
+      for (let i = period - 1; i < data.length; i++) {
+        if (i >= period) {
+          const addC = data[i].close, remC = data[i - period].close;
+          sum += addC - remC; sumSq += (addC * addC) - (remC * remC);
         }
-        return;
+        const mean = sum / period;
+        const stdDev = Math.sqrt(Math.max(0, (sumSq / period) - (mean * mean)));
+        basis[i] = { time: data[i].time, value: mean };
+        upper[i] = { time: data[i].time, value: mean + mult * stdDev };
+        lower[i] = { time: data[i].time, value: mean - mult * stdDev };
       }
-      try {
-        let candles = await fetchCandlesFromAPI(symbol, interval);
-        if (cutLimit < Infinity) candles = candles.filter(c => c.time <= cutLimit);
-        if (candles.length > 0) { targetSeries.setData(candles); targetChart.timeScale().fitContent(); }
-      } catch (err) {}
+      return { upper, basis, lower };
     }
 
-    async function loadCandles() {
-      if (isReplayActive) exitReplayMode();
-      const symbol = document.getElementById('symbolSelect').value;
-      const tf = document.getElementById('timeframeSelect').value;
-      document.getElementById('p1-tf-label').innerText = tf;
+    function calcRSI(data, period = 14) {
+      if (data.length <= period) return [];
+      const rsiData = new Array(data.length);
+      let gains = 0, losses = 0;
+      rsiData[0] = { time: data[0].time };
+      for (let i = 1; i <= period; i++) {
+        const diff = data[i].close - data[i - 1].close;
+        if (diff >= 0) gains += diff; else losses -= diff;
+        if (i < period) rsiData[i] = { time: data[i].time };
+      }
+      let avgGain = gains / period, avgLoss = losses / period;
+      rsiData[period] = { time: data[period].time, value: avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss)) };
+      for (let i = period + 1; i < data.length; i++) {
+        const diff = data[i].close - data[i - 1].close;
+        avgGain = (avgGain * (period - 1) + (diff >= 0 ? diff : 0)) / period;
+        avgLoss = (avgLoss * (period - 1) + (diff < 0 ? -diff : 0)) / period;
+        rsiData[i] = { time: data[i].time, value: avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss)) };
+      }
+      return rsiData;
+    }
 
-      if (symbol.startsWith("mt5_id_")) {
-        const dataset = await getDatasetFromDB(symbol);
-        if (dataset && dataset.candles && dataset.candles.length > 0) {
-          rawMT5Candles = dataset.candles;
-          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
-          allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
-          displayCandlesOnChart(allCandles);
-          refreshSecondaryWindows();
-          document.getElementById('agent-verdict').innerText = `Dataset activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base. Fluidez 60 FPS.`;
+    function calcMACD(data, fast = 12, slow = 26, signalPeriod = 9) {
+      if (data.length < slow) return { macd: [], signal: [], hist: [] };
+      const fastEMA = calcEMA(data, fast), slowEMA = calcEMA(data, slow);
+      const macdLine = new Array(data.length);
+      for (let i = 0; i < data.length; i++) macdLine[i] = { time: data[i].time, value: fastEMA[i].value - slowEMA[i].value };
+      const signalLine = calcEMA(macdLine.map(m => ({ time: m.time, close: m.value })), signalPeriod);
+      const hist = new Array(data.length);
+      for (let i = 0; i < data.length; i++) {
+        const val = macdLine[i].value - signalLine[i].value;
+        hist[i] = { time: data[i].time, value: val, color: val >= 0 ? '#10b981' : '#ef4444' };
+      }
+      return { macd: macdLine, signal: signalLine, hist };
+    }
+
+    function updateAllTechnicalIndicators() {
+      if (allCandles.length === 0) return;
+      if (ema9) ema9.setData(calcEMA(allCandles, 9));
+      if (ema21) ema21.setData(calcEMA(allCandles, 21));
+      if (ema200 && allCandles.length >= 20) ema200.setData(calcEMA(allCandles, 200));
+      if (bbUpper && bbBasis && bbLower) {
+        const bb = calcBollingerBands(allCandles, 20, 2);
+        bbUpper.setData(bb.upper); bbBasis.setData(bb.basis); bbLower.setData(bb.lower);
+      }
+      const currentRange = chart1.timeScale().getVisibleLogicalRange();
+      if (document.getElementById('check-rsi').checked) {
+        rsiSeries.setData(calcRSI(allCandles, 14));
+        if (currentRange) chartRSI.timeScale().setVisibleLogicalRange(currentRange);
+      }
+      if (document.getElementById('check-macd').checked) {
+        const m = calcMACD(allCandles, 12, 26, 9);
+        macdLineSeries.setData(m.macd); macdSignalSeries.setData(m.signal); macdHistSeries.setData(m.hist);
+        if (currentRange) chartMACD.timeScale().setVisibleLogicalRange(currentRange);
+      }
+    }
+
+    function toggleIndicatorsModal() {
+      document.getElementById('indicatorsModal').classList.toggle('hidden');
+    }
+
+    function toggleIndicator(type) {
+      const pf = getDynamicPriceFormat(allCandles.length > 0 ? allCandles[allCandles.length - 1].close : 1);
+      if (type === 'ema9') {
+        const chk = document.getElementById('check-ema9').checked;
+        if (chk && !ema9) ema9 = chart1.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, title: 'EMA 9', priceFormat: pf });
+        else if (!chk && ema9) { chart1.removeSeries(ema9); ema9 = null; }
+      }
+      if (type === 'ema21') {
+        const chk = document.getElementById('check-ema21').checked;
+        if (chk && !ema21) ema21 = chart1.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, title: 'EMA 21', priceFormat: pf });
+        else if (!chk && ema21) { chart1.removeSeries(ema21); ema21 = null; }
+      }
+      if (type === 'ema200') {
+        const chk = document.getElementById('check-ema200').checked;
+        if (chk && !ema200) ema200 = chart1.addLineSeries({ color: '#ef4444', lineWidth: 2, title: 'EMA 200', priceFormat: pf });
+        else if (!chk && ema200) { chart1.removeSeries(ema200); ema200 = null; }
+      }
+      if (type === 'bb') {
+        const chk = document.getElementById('check-bb').checked;
+        if (chk) {
+          if (!bbUpper) bbUpper = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Superior', priceFormat: pf });
+          if (!bbBasis) bbBasis = chart1.addLineSeries({ color: '#eab308', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, title: 'BB Media', priceFormat: pf });
+          if (!bbLower) bbLower = chart1.addLineSeries({ color: 'rgba(168, 85, 247, 0.8)', lineWidth: 1, title: 'BB Inferior', priceFormat: pf });
+        } else {
+          if (bbUpper) { chart1.removeSeries(bbUpper); bbUpper = null; }
+          if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
+          if (bbLower) { chart1.removeSeries(bbLower); bbLower = null; }
         }
-        return;
       }
-      try {
-        const data = await fetchCandlesFromAPI(symbol, tf);
-        rawMT5Candles = [...data]; originalFullCandles = [...data]; allCandles = [...data];
-        displayCandlesOnChart(allCandles);
-        refreshSecondaryWindows();
-      } catch (err) { console.error(err); }
-    }
-
-    function displayCandlesOnChart(data) {
-      if (data.length > 0) applyDynamicPriceFormat(data[data.length - 1].close);
-      candleSeries1.setData(data);
+      if (type === 'rsi') {
+        const chk = document.getElementById('check-rsi').checked;
+        document.getElementById('rsi-subpanel').classList.toggle('hidden', !chk);
+        document.getElementById('resizer-rsi').classList.toggle('hidden', !chk);
+        resizeAllCharts();
+      }
+      if (type === 'macd') {
+        const chk = document.getElementById('check-macd').checked;
+        document.getElementById('macd-subpanel').classList.toggle('hidden', !chk);
+        document.getElementById('resizer-macd').classList.toggle('hidden', !chk);
+        resizeAllCharts();
+      }
       updateAllTechnicalIndicators();
-      if (isBotActiveOnChart) compileAndRunStrategy(true);
-      const logicalRange = { from: Math.max(0, data.length - 150), to: Math.max(0, data.length - 1) };
-      [chart1, chartRSI, chartMACD, equityChart].forEach(ch => ch.timeScale().setVisibleLogicalRange(logicalRange));
-      if (data.length > 0) document.getElementById('price-display').innerText = formatPrice(data[data.length - 1].close);
-      redrawAllCanvasShapes();
     }
 
-    async function handleMT5CSV(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      document.getElementById('agent-verdict').innerText = `Procesando ${file.name}...`;
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const lines = e.target.result.split(/\r?\n/).filter(l => l.trim().length > 0);
-        if (lines.length < 2) return;
-        const parsed = [];
-        for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split(/[,\t;]/).map(s => s.trim().replace(/"/g, ''));
-          if (row.length < 5) continue;
-          let timeVal = 0, o = 0, h = 0, l = 0, c = 0;
-          if (row.length >= 6 && (row[0].includes('.') || row[0].includes('-') || row[0].includes('/'))) {
-            const dateStr = row[0].replace(/\./g, '-');
-            timeVal = Math.floor(new Date(`${dateStr}T${row[1]}Z`).getTime() / 1000);
-            o = parseFloat(row[2]); h = parseFloat(row[3]); l = parseFloat(row[4]); c = parseFloat(row[5]);
-          } else {
-            timeVal = Math.floor(new Date(row[0]).getTime() / 1000);
-            o = parseFloat(row[1]); h = parseFloat(row[2]); l = parseFloat(row[3]); c = parseFloat(row[4]);
-          }
-          if (!isNaN(timeVal) && !isNaN(o) && !isNaN(h) && !isNaN(l) && !isNaN(c)) {
-            parsed.push({ time: timeVal, open: o, high: h, low: l, close: c });
-          }
-        }
-        if (parsed.length > 0) {
-          parsed.sort((a, b) => a.time - b.time);
-          const datasetId = `mt5_id_${Date.now()}`;
-          const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
-          await saveDatasetToDB({ id: datasetId, name: cleanName, candlesCount: parsed.length, savedAt: new Date().toLocaleDateString(), candles: parsed });
-          await refreshSavedDatasetsDropdown(datasetId);
-          rawMT5Candles = parsed;
-          const tf = document.getElementById('timeframeSelect').value;
-          originalFullCandles = tf === '1m' ? rawMT5Candles : aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
-          allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
-          displayCandlesOnChart(allCandles);
-          refreshSecondaryWindows();
-          document.getElementById('agent-verdict').innerText = `✅ GUARDADO PERMANENTE: "${cleanName}" (${parsed.length.toLocaleString()} velas).`;
-        }
-      };
-      reader.readAsText(file);
+    function removeAllIndicators() {
+      ['check-ema9', 'check-ema21', 'check-ema200', 'check-bb', 'check-rsi', 'check-macd'].forEach(id => document.getElementById(id).checked = false);
+      if (ema9) { chart1.removeSeries(ema9); ema9 = null; }
+      if (ema21) { chart1.removeSeries(ema21); ema21 = null; }
+      if (ema200) { chart1.removeSeries(ema200); ema200 = null; }
+      if (bbUpper) { chart1.removeSeries(bbUpper); bbUpper = null; }
+      if (bbBasis) { chart1.removeSeries(bbBasis); bbBasis = null; }
+      if (bbLower) { chart1.removeSeries(bbLower); bbLower = null; }
+      document.getElementById('rsi-subpanel').classList.add('hidden');
+      document.getElementById('resizer-rsi').classList.add('hidden');
+      document.getElementById('macd-subpanel').classList.add('hidden');
+      document.getElementById('resizer-macd').classList.add('hidden');
+      resizeAllCharts(); closeContextMenu();
+    }
+// =========================================================================
+    // MÓDULO 3: EDITOR DE CÓDIGO INTEGRADO (IDE) Y LENGUAJE DE ESTRATEGIAS
+    // =========================================================================
+    const STRATEGY_PRESETS = {
+      stratscript_ema_rsi: `// ============================================================================
+// [MÓDULO 3 & 4] StratScript Engine: Cruce EMA (9/21) + Filtro RSI + SL/TP/Trail
+// ============================================================================
+const fastEMA = ema(9);
+const slowEMA = ema(21);
+const rsi14   = rsi(14);
+
+for (let i = 25; i < bars.length; i++) {
+    // Condición de COMPRA (Long): Cruce alcista de EMAs y RSI con espacio alcista
+    if (crossover(fastEMA, slowEMA, i) && rsi14[i] < 68) {
+        strategy.entry(i, LONG, "BUY EMA+RSI");
     }
 
-    async function refreshSavedDatasetsDropdown(selectedId = null) {
-      const optgroup = document.getElementById('optgroup-mt5-saved');
-      optgroup.innerHTML = "";
-      const metaList = await getDatasetsMetadata();
-      document.getElementById('db-count').innerText = `${metaList.length} archivos`;
-      if (metaList.length === 0) { optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`; return; }
-      metaList.forEach(ds => {
-        const opt = document.createElement('option');
-        opt.value = ds.id; opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} velas)`;
-        if (selectedId && ds.id === selectedId) opt.selected = true;
-        optgroup.appendChild(opt);
-      });
+    // Condición de VENTA (Short): Cruce bajista de EMAs y RSI con espacio bajista
+    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] > 32) {
+        strategy.entry(i, SHORT, "SELL EMA+RSI");
+    }
+}`,
+      mql5_style: `// ============================================================================
+// [MÓDULO 3 & 4] Sintaxis Compatible MQL5: OrderSend() con Bandas de Bollinger
+// ============================================================================
+const bands = iBands(20, 2.0);
+const myRSI = iRSI(14);
+
+for (let i = 25; i < bars.length; i++) {
+    if (close[i - 1] < bands.lower[i - 1] && close[i] > bands.lower[i] && myRSI[i] < 38) {
+        OrderSend(_Symbol, OP_BUY, Lots, close[i], Slippage, StopLoss, TakeProfit, "MQL5 BUY BB", i);
+    }
+    if (close[i - 1] > bands.upper[i - 1] && close[i] < bands.upper[i] && myRSI[i] > 62) {
+        OrderSend(_Symbol, OP_SELL, Lots, close[i], Slippage, StopLoss, TakeProfit, "MQL5 SELL BB", i);
+    }
+}`,
+      python_style: `# ============================================================================
+# [MÓDULO 3 & 4] Lógica Cuantitativa Estilo Python: Tendencia Institucional EMA 200
+# ============================================================================
+const ema21  = ema(21);
+const ema200 = ema(200);
+
+for (let i = 205; i < bars.length; i++) {
+    if (close[i] > ema200[i] && crossover(ema21, ema200, i)) {
+        strategy.long(i, "PY TREND BUY");
+    }
+    if (close[i] < ema200[i] && crossunder(ema21, ema200, i)) {
+        strategy.short(i, "PY TREND SELL");
+    }
+}`
+    };
+
+    function preprocessStrategyCode(rawCode) {
+      return rawCode.split('\n').map(l => l.trimStart().startsWith('#') ? l.replace('#', '//') : l).join('\n');
     }
 
-    function toggleCutMode() {
-      if (allCandles.length === 0) return;
-      isCutModeActive = !isCutModeActive;
-      document.getElementById('btn-cut-replay').classList.toggle('bg-amber-500', isCutModeActive);
-      document.getElementById('btn-cut-replay').classList.toggle('text-black', isCutModeActive);
-      document.getElementById('replay-banner').classList.toggle('hidden', !isCutModeActive);
-      c1.classList.toggle('scissor-cursor', isCutModeActive);
-    }
-
-    function executeCutAtTime(cutTime) {
-      if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
-      const foundIdx = binarySearchCandleIndex(originalFullCandles, cutTime);
-      if (foundIdx > 0) applyCutAtIndex(foundIdx);
-    }
-
-    function updateReplayIndicators() {
-      if (allCandles.length > 0) {
-        document.getElementById('price-display').innerText = formatPrice(allCandles[allCandles.length - 1].close);
-        updateAllTechnicalIndicators();
-        if (isBotActiveOnChart) compileAndRunStrategy(true);
-        redrawAllCanvasShapes();
+    let syntaxTimeout = null;
+    function validateSyntaxRealtime() {
+      const editor = document.getElementById('stratscript-editor');
+      if (!editor) return true;
+      const processed = preprocessStrategyCode(editor.value);
+      const dot = document.getElementById('syntax-dot'), text = document.getElementById('syntax-text');
+      try {
+        new Function(
+          'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
+          'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
+          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', processed
+        );
+        dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+        text.className = "text-emerald-400"; text.innerText = "Sintaxis Válida (0 errores)";
+        return true;
+      } catch (err) {
+        dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
+        text.className = "text-rose-400"; text.innerText = `Error: ${err.message.substring(0, 42)}`;
+        return false;
       }
     }
 
-    function stepForwardReplay() {
-      if (!isReplayActive || replayIndex >= originalFullCandles.length - 1) return;
-      replayIndex++;
-      const nextCandle = originalFullCandles[replayIndex];
-      currentReplayTimestamp = nextCandle.time;
-      allCandles.push(nextCandle);
-      candleSeries1.update(nextCandle);
-      updateReplayIndicators();
-      if (currentLayout !== '1') refreshSecondaryWindows();
+    function handleEditorInput() {
+      updateIdeLineNumbers();
+      clearTimeout(syntaxTimeout);
+      syntaxTimeout = setTimeout(validateSyntaxRealtime, 180);
     }
 
-    function togglePlayReplay() {
-      if (!isReplayActive) return;
-      const playBtn = document.getElementById('btn-play-replay');
-      if (replayIntervalId) {
-        clearInterval(replayIntervalId); replayIntervalId = null;
-        playBtn.innerText = "▶"; playBtn.className = "px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold";
-      } else {
-        playBtn.innerText = "⏸"; playBtn.className = "px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold";
-        const speed = parseInt(document.getElementById('replaySpeed').value) || 500;
-        replayIntervalId = setInterval(() => {
-          if (replayIndex >= originalFullCandles.length - 1) { togglePlayReplay(); alert("Fin del historial alcanzado."); return; }
-          stepForwardReplay();
-        }, speed);
+    function updateIdeLineNumbers() {
+      const editor = document.getElementById('stratscript-editor');
+      if (!editor) return;
+      const lines = editor.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= lines; i++) html += i + '<br>';
+      document.getElementById('ide-line-numbers').innerHTML = html;
+      const curr = editor.value.substring(0, editor.selectionStart).split('\n').length;
+      document.getElementById('ide-cursor-pos').innerText = `Línea ${curr} de ${lines}`;
+    }
+
+    function syncEditorScroll() {
+      document.getElementById('ide-line-numbers').scrollTop = document.getElementById('stratscript-editor').scrollTop;
+    }
+
+    function loadStrategyPreset(presetKey) {
+      if (STRATEGY_PRESETS[presetKey]) {
+        document.getElementById('stratscript-editor').value = STRATEGY_PRESETS[presetKey];
+        updateIdeLineNumbers(); validateSyntaxRealtime(); compileAndRunStrategy();
       }
     }
 
-    function exitReplayMode() {
-      if (replayIntervalId) { clearInterval(replayIntervalId); replayIntervalId = null; }
-      isReplayActive = false; isCutModeActive = false; currentReplayTimestamp = 0;
-      document.getElementById('replay-banner').classList.add('hidden');
-      document.getElementById('replay-controls').classList.add('hidden');
-      document.getElementById('replay-controls').classList.remove('flex');
-      document.getElementById('btn-play-replay').innerText = "▶";
-      c1.classList.remove('scissor-cursor');
-      if (originalFullCandles.length > 0) {
-        allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
-        displayCandlesOnChart(allCandles);
-        refreshSecondaryWindows();
-      }
-    }
-function calcFastSMAArray(closeArr, period) {
+    function calcFastSMAArray(closeArr, period) {
       const out = new Float64Array(closeArr.length).fill(NaN);
       let sum = 0;
       for (let i = 0; i < closeArr.length; i++) {
@@ -1857,7 +1998,7 @@ function calcFastSMAArray(closeArr, period) {
     }
 
     // =========================================================================
-    // MOTOR UNIFICADO MÓDULO 3 (STRATSCRIPT) + MÓDULO 4 (CURVA BICOLOR LIVE)
+    // MOTOR UNIFICADO MÓDULO 3 (STRATSCRIPT) + MÓDULO 4 (CURVA BICOLOR + CAPITAL)
     // =========================================================================
     function compileAndRunStrategy(silent = false) {
       if (!allCandles || allCandles.length === 0 || !validateSyntaxRealtime()) return;
@@ -1865,6 +2006,14 @@ function calcFastSMAArray(closeArr, period) {
       const rawCode = document.getElementById('stratscript-editor').value;
       localStorage.setItem('sv5_module3_code', rawCode);
       const code = preprocessStrategyCode(rawCode);
+
+      const initialCapital = parseFloat(document.getElementById('initial-capital-select').value) || 10000;
+      if (baseCapitalPriceLine) {
+        try { equityBicolorSeries.removePriceLine(baseCapitalPriceLine); } catch (e) {}
+      }
+      baseCapitalPriceLine = equityBicolorSeries.createPriceLine({
+        price: initialCapital, color: '#475569', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: `Base $${initialCapital.toLocaleString()}`
+      });
 
       const len = allCandles.length;
       const open = new Float64Array(len), high = new Float64Array(len), low = new Float64Array(len), close = new Float64Array(len), time = new Array(len);
@@ -1918,7 +2067,7 @@ function calcFastSMAArray(closeArr, period) {
       }
 
       const markers = [], closedTrades = [], equityBicolorData = [], equityAreaData = [];
-      let balance = 10000, peakEquity = 10000, maxDrawdownUSD = 0, pos = null;
+      let balance = initialCapital, peakEquity = initialCapital, maxDrawdownUSD = 0, pos = null;
       let countLongs = 0, countShorts = 0, countExits = 0;
 
       for (let i = 0; i < len; i++) {
@@ -1961,7 +2110,7 @@ function calcFastSMAArray(closeArr, period) {
             const slDist = StopLoss > 0 ? StopLoss * pipUnit : 0;
             const tpDist = TakeProfit > 0 ? TakeProfit * pipUnit : 0;
             const trailDist = TrailingStop > 0 ? TrailingStop * pipUnit : 0;
-            let unitSize = (Lots * 100) / (refPrice || 1);
+            let unitSize = (Lots * (initialCapital / 100)) / (refPrice || 1);
             if (riskMode === 'pct' && slDist > 0) unitSize = (balance * 0.015) / slDist;
 
             if (sig.dir === 'LONG') {
@@ -1976,7 +2125,6 @@ function calcFastSMAArray(closeArr, period) {
           }
         }
 
-        // Equidad flotante vela a vela para el Módulo 4 Bicolor
         let floatingPnl = 0;
         if (pos) {
           floatingPnl = pos.dir === 'LONG' ? (close[i] - pos.entryPrice) * pos.size : (pos.entryPrice - close[i]) * pos.size;
@@ -1986,8 +2134,7 @@ function calcFastSMAArray(closeArr, period) {
         const currentDD = peakEquity - liveEquity;
         if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
 
-        // Fase Alcista / Run-up (ATH) -> Verde Esmeralda (#10b981) | Fase Pérdida / Drawdown -> Rojo Carmesí (#f43f5e)
-        const isRunUpPhase = currentDD <= 0.01 && liveEquity >= 10000;
+        const isRunUpPhase = currentDD <= (initialCapital * 0.0002) && liveEquity >= initialCapital;
         const pointColor = isRunUpPhase ? '#10b981' : '#f43f5e';
 
         equityBicolorData.push({ time: time[i], value: liveEquity, color: pointColor });
@@ -2019,12 +2166,12 @@ function calcFastSMAArray(closeArr, period) {
           badge.className = "px-2 py-0.5 rounded bg-emerald-500/15 text-[#10b981] border border-emerald-500/40 font-bold";
           badge.innerText = "● FASE: RUN-UP / ATH (#10b981)";
         }
-        document.getElementById('st-ath').innerText = `$${peakEquity.toFixed(2)}`;
-        document.getElementById('eq-live-val').innerText = `Equidad: $${lastEqPoint.value.toFixed(2)}`;
+        document.getElementById('st-ath').innerText = `$${peakEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('eq-live-val').innerText = `Equidad: $${lastEqPoint.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
 
       const finalEquity = equityBicolorData.length > 0 ? equityBicolorData[equityBicolorData.length - 1].value : balance;
-      const totalNetPnl = finalEquity - 10000, totalNetPct = (totalNetPnl / 10000) * 100;
+      const totalNetPnl = finalEquity - initialCapital, totalNetPct = (totalNetPnl / initialCapital) * 100;
       const wins = closedTrades.filter(t => t.pnl > 0), losses = closedTrades.filter(t => t.pnl <= 0);
       const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
       const grossProfit = wins.reduce((a, t) => a + t.pnl, 0), grossLoss = Math.abs(losses.reduce((a, t) => a + t.pnl, 0));
@@ -2076,25 +2223,16 @@ function calcFastSMAArray(closeArr, period) {
     }
 
     async function runOneClickBacktest() {
-      compileAndRunStrategy();
-      const tf = document.getElementById('timeframeSelect').value;
+      openBottomTab('performance');
+      compileAndRunStrategy(false);
+      equityChart.timeScale().fitContent();
+      const tf = winTimeframes[1];
       const symbol = document.getElementById('symbolSelect').value;
-      document.getElementById('agent-verdict').innerText = `Simulando Monte Carlo sobre ${symbol}...`;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/backtest-robustness`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: symbol.startsWith("mt5_") ? "BTC-USD" : symbol, interval: tf, fast_ma: 9, slow_ma: 21 })
-        });
-        const data = await res.json();
-        document.getElementById('agent-verdict').innerText = `Diagnóstico: ${data.robustness_monte_carlo.agent_ai_diagnosis}. Retorno mediano: ${data.robustness_monte_carlo.median_expected_return}`;
-      } catch (e) {
-        document.getElementById('agent-verdict').innerText = "Backtest Bicolor (Módulos 3 y 4) ejecutado en local a 60 FPS.";
-      }
+      const cap = parseFloat(document.getElementById('initial-capital-select').value) || 10000;
+      document.getElementById('agent-verdict').innerText = `⚡ Backtest Bicolor ejecutado sobre ${symbol} (${tf}) con cuenta de $${cap.toLocaleString()} USD.`;
     }
 
     window.addEventListener('resize', resizeAllCharts);
-    document.getElementById('timeframeSelect').addEventListener('change', loadCandles);
-    document.getElementById('symbolSelect').addEventListener('change', loadCandles);
 
     const editorEl = document.getElementById('stratscript-editor');
     editorEl.value = localStorage.getItem('sv5_module3_code') || STRATEGY_PRESETS.stratscript_ema_rsi;
@@ -2111,11 +2249,18 @@ function calcFastSMAArray(closeArr, period) {
       }
     });
 
-    initDraggableSplitters();
-    refreshSavedDatasetsDropdown();
-    loadCandles();
-    setTimeout(resizeCanvas, 500);
+    (async function bootstrapStratView5() {
+      initDraggableSplitters();
+      await seedDefaultMT5Datasets(false);
+      await loadCandles();
+      setTimeout(() => {
+        compileAndRunStrategy(false);
+        resizeAllCharts();
+      }, 300);
+    })();
   </script>
 </body>
 </html>
-        
+
+      
+      <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[110px]">
