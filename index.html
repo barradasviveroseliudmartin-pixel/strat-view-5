@@ -228,11 +228,13 @@
       <button type="button" onclick="clearAllDrawings()" title="Borrar Dibujos" class="p-2 rounded hover:bg-rose-950/60 hover:text-rose-400 transition">🗑</button>
     </aside>
 
-    <!-- Área Central (Gráficos + Subpaneles + Panel Inferior) -->
+<!-- Área Central (Gráficos + Subpaneles + Panel Inferior) -->
     <div id="center-column" class="flex-1 flex flex-col h-full overflow-hidden bg-[#090d16] relative min-w-[300px]">
       
-      <!-- MALLA DE GRÁFICOS (1, 2 o 4 PANTALLAS CON SELECTOR DE TEMPORALIDAD PROPIO) -->
-<!-- PANTALLA 1 -->
+      <!-- MALLA DE GRÁFICOS (1, 2 o 4 PANTALLAS) -->
+      <div id="chart-grid" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 w-full relative min-h-[180px] overflow-hidden">
+        
+        <!-- PANTALLA 1 -->
         <div id="chart-box-1" class="w-full h-full relative bg-[#090d16] border border-gray-800/40 rounded overflow-hidden">
           <div class="absolute top-1.5 left-2 z-20 text-[10px] font-mono text-gray-300 bg-[#131722]/95 border border-gray-700 px-2 py-0.5 rounded flex items-center gap-1.5 shadow">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
@@ -353,13 +355,14 @@
           </div>
           <div id="chart-c4" class="w-full h-full"></div>
         </div>
-      </div>
+
+      </div><!-- FIN DE #chart-grid -->
 
       <!-- Divisor arrastrable RSI -->
       <div id="resizer-rsi" class="resizer-h hidden" title="Arrastra arriba o abajo para redimensionar RSI"></div>
 
       <!-- Subpanel RSI -->
-      <div id="rsi-subpanel" class="h-28 bg-[#0c1017] hidden relative shrink-0">
+      <div id="rsi-subpanel" class="h-28 bg-[#0c1017] hidden relative shrink-0 w-full">
         <div class="absolute top-1 left-3 z-20 text-[10px] font-mono font-bold text-amber-400 bg-[#131722]/90 px-1.5 py-0.5 rounded border border-gray-700 pointer-events-none">
           RSI (14) - [Sobrecompra 70 | Sobreventa 30]
         </div>
@@ -375,7 +378,7 @@
       <div id="resizer-macd" class="resizer-h hidden" title="Arrastra arriba o abajo para redimensionar MACD"></div>
 
       <!-- Subpanel MACD -->
-      <div id="macd-subpanel" class="h-28 bg-[#0c1017] hidden relative shrink-0">
+      <div id="macd-subpanel" class="h-28 bg-[#0c1017] hidden relative shrink-0 w-full">
         <div class="absolute top-1 left-3 z-20 text-[10px] font-mono font-bold text-sky-400 bg-[#131722]/90 px-1.5 py-0.5 rounded border border-gray-700 pointer-events-none">
           MACD (12, 26, 9)
         </div>
@@ -388,10 +391,10 @@
       </div>
 
       <!-- DIVISOR HORIZONTAL ARRASTRABLE ENTRE GRÁFICO Y PROBADOR/IDE -->
-      <div id="resizer-bottom" class="resizer-h" title="Arrastra hacia arriba o hacia abajo para agrandar el Gráfico o el Probador/Editor"></div>
+      <div id="resizer-bottom" class="resizer-h w-full" title="Arrastra hacia arriba o hacia abajo para agrandar el Gráfico o el Probador/Editor"></div>
 
       <!-- PANEL INFERIOR UNIFICADO: MÓDULO 4 (CURVA BICOLOR) + MÓDULO 3 (IDE) -->
-      <div id="strategy-panel" class="h-72 bg-[#131722] flex flex-col shrink-0 relative">
+      <div id="strategy-panel" class="h-72 w-full bg-[#131722] flex flex-col shrink-0 relative">
         <div class="h-9 border-b border-gray-800 flex items-center justify-between px-3 bg-[#1e222d]/80 text-xs text-gray-300 select-none shrink-0">
           <div class="flex items-center space-x-2">
             <button type="button" onclick="switchBottomSubTab('performance')" id="subtab-btn-perf" class="px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5">
@@ -420,7 +423,7 @@
           </div>
         </div>
 
-        <!-- SUB-VISTA 1: MÓDULO 4 - RENDIMIENTO, SELECTOR DE CAPITAL Y CURVA BICOLOR EN TIEMPO REAL -->
+        <!-- SUB-VISTA 1: MÓDULO 4 - RENDIMIENTO, SELECTOR DE CAPITAL Y CURVA BICOLOR -->
         <div id="subview-performance" class="flex-1 flex flex-col overflow-hidden">
           <div class="grid grid-cols-6 gap-2 px-3 py-1.5 border-b border-gray-800/60 bg-[#131722] text-xs shrink-0 items-center">
             <div class="bg-[#090d16] px-2 py-1 rounded border border-emerald-500/40">
@@ -453,7 +456,8 @@
             <div id="equity-chart-container" class="w-full h-full"></div>
           </div>
         </div>
-<!-- SUB-VISTA 2: MÓDULO 3 - EDITOR DE CÓDIGO INTEGRADO (IDE) -->
+
+        <!-- SUB-VISTA 2: MÓDULO 3 - EDITOR DE CÓDIGO INTEGRADO (IDE) -->
         <div id="subview-ide" class="hidden flex-1 flex flex-col overflow-hidden bg-[#0b0e14]">
           <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
             <div class="flex items-center space-x-2">
@@ -466,23 +470,23 @@
             </div>
 
             <div class="flex items-center space-x-3 font-mono">
-              <label class="flex items-center gap-1 text-gray-300" title="Take Profit en puntos/pips">
+              <label class="flex items-center gap-1 text-gray-300">
                 <span class="text-emerald-400 font-bold">TP:</span>
                 <input type="number" id="inp-tp" value="150" min="0" step="10" onchange="compileAndRunStrategy()" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-emerald-300 text-right">
               </label>
-              <label class="flex items-center gap-1 text-gray-300" title="Stop Loss en puntos/pips">
+              <label class="flex items-center gap-1 text-gray-300">
                 <span class="text-rose-400 font-bold">SL:</span>
                 <input type="number" id="inp-sl" value="80" min="0" step="10" onchange="compileAndRunStrategy()" class="w-14 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-rose-300 text-right">
               </label>
-              <label class="flex items-center gap-1 text-gray-300" title="Trailing Stop dinámico en puntos/pips">
+              <label class="flex items-center gap-1 text-gray-300">
                 <span class="text-amber-400 font-bold">Trail:</span>
                 <input type="number" id="inp-ts" value="50" min="0" step="10" onchange="compileAndRunStrategy()" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-amber-300 text-right">
               </label>
-              <label class="flex items-center gap-1 text-gray-300" title="Tamaño de Lote">
+              <label class="flex items-center gap-1 text-gray-300">
                 <span class="text-sky-400 font-bold">Lotes:</span>
                 <input type="number" id="inp-lots" value="1.0" min="0.01" step="0.1" onchange="compileAndRunStrategy()" class="w-12 bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200 text-right">
               </label>
-              <label class="flex items-center gap-1 text-gray-300" title="Modo de Gestión de Riesgo">
+              <label class="flex items-center gap-1 text-gray-300">
                 <span class="text-purple-400 font-bold">Riesgo:</span>
                 <select id="inp-risk-mode" onchange="compileAndRunStrategy()" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200">
                   <option value="pct">% Cuenta (1.5%)</option>
@@ -541,8 +545,9 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div><!-- FIN DE #strategy-panel -->
+
+    </div><!-- FIN DE #center-column -->
 
     <!-- DIVISOR VERTICAL ARRASTRABLE -->
     <div id="resizer-right" class="resizer-v" title="Arrastra hacia la izquierda o derecha para redimensionar el panel lateral"></div>
@@ -598,8 +603,7 @@
         </div>
       </div>
     </aside>
-  </div>
-
+  </div><!-- FIN DE #main-workspace -->
   <!-- MODAL: RETROCEDER A FECHA -->
   <div id="jumpDateModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-[#1e222d] border border-gray-700 rounded-lg w-full max-w-md shadow-2xl p-4 text-xs space-y-3">
