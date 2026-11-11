@@ -1263,8 +1263,21 @@
     window.addEventListener('click', closeContextMenu);
     function closeContextMenu() { document.getElementById('contextMenu').classList.add('hidden'); }
 
-    function resetChart() {
-      [chart1, chart2, chart3, chart4, equityChart].forEach(ch => ch.timeScale().fitContent());
+function resetChart() {
+      [chart1, chart2, chart3, chart4, equityChart, chartRSI, chartMACD].forEach(ch => {
+        if (ch) ch.priceScale('right').applyOptions({ autoScale: true });
+      });
+      if (allCandles.length > 0) {
+        const liveRange = { from: Math.max(0, allCandles.length - 120), to: allCandles.length - 1 };
+        [chart1, chartRSI, chartMACD, equityChart].forEach(ch => ch.timeScale().setVisibleLogicalRange(liveRange));
+      }
+      [2, 3, 4].forEach(w => {
+        const arr = winCandles[w];
+        const ch = { 2: chart2, 3: chart3, 4: chart4 }[w];
+        if (arr && arr.length > 0 && ch) {
+          ch.timeScale().setVisibleLogicalRange({ from: Math.max(0, arr.length - 100), to: arr.length - 1 });
+        }
+      });
       closeContextMenu();
     }
 
@@ -1540,7 +1553,10 @@ function displayCandlesOnChart(data) {
       candleSeries1.setData(data);
       updateAllTechnicalIndicators();
       if (isBotActiveOnChart) compileAndRunStrategy(true);
-      const logicalRange = { from: Math.max(0, data.length - 140), to: Math.max(0, data.length - 1) };
+      [chart1, chart2, chart3, chart4, equityChart, chartRSI, chartMACD].forEach(ch => {
+        if (ch) ch.priceScale('right').applyOptions({ autoScale: true });
+      });
+      const logicalRange = { from: Math.max(0, data.length - 120), to: Math.max(0, data.length - 1) };
       [chart1, chartRSI, chartMACD, equityChart].forEach(ch => ch.timeScale().setVisibleLogicalRange(logicalRange));
       if (data.length > 0) document.getElementById('price-display').innerText = formatPrice(data[data.length - 1].close);
       redrawAllCanvasShapes();
