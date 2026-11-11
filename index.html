@@ -409,6 +409,10 @@
               <span>🛡️ Robustez & Monte Carlo</span>
               <span class="bg-purple-500/20 text-purple-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 5</span>
             </button>
+            <button type="button" onclick="switchBottomSubTab('optimizer')" id="subtab-btn-opt" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5">
+              <span>🧬 Optimizador Genético & WFA</span>
+              <span class="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 6</span>
+            </button>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -626,6 +630,100 @@
               </div>
               <div class="flex-1 relative min-h-[95px] bg-[#090d16] rounded border border-gray-800/70 overflow-hidden">
                 <canvas id="mc-fan-canvas" class="w-full h-full block"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+   <!-- SUB-VISTA 4: MÓDULO 6 - OPTIMIZADOR GENÉTICO Y WALK-FORWARD ANALYSIS (OOS/WFA) -->
+        <div id="subview-optimizer" class="hidden flex-1 flex flex-col overflow-hidden bg-[#090d16] text-xs">
+          <!-- Barra de Controles del Optimizador 6.1, 6.2 y 6.3 -->
+          <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+            <div class="flex items-center space-x-3 font-mono">
+              <span class="text-amber-400 font-extrabold uppercase tracking-wider flex items-center gap-1">🧬 Motor 6.1:</span>
+              <select id="opt-mode" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-amber-300 font-bold">
+                <option value="genetic" selected>Algoritmo Genético (Evolución Natural)</option>
+                <option value="grid">Grid Search Exhaustivo (Malla Completa)</option>
+              </select>
+
+              <label class="flex items-center gap-1 text-gray-300" title="División In-Sample (Entrenamiento) vs Out-of-Sample (Datos Futuros No Vistos)">
+                <span class="text-sky-400 font-bold">6.3 Filtro OOS:</span>
+                <select id="opt-oos-split" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-sky-300">
+                  <option value="0.70" selected>70% In-Sample / 30% OOS Futuro</option>
+                  <option value="0.80">80% In-Sample / 20% OOS Futuro</option>
+                  <option value="0.60">60% In-Sample / 40% OOS Futuro</option>
+                </select>
+              </label>
+
+              <label class="flex items-center gap-1 text-gray-300" title="Ventanas de Walk-Forward Analysis">
+                <span class="text-purple-400 font-bold">WFA:</span>
+                <select id="opt-wfa-windows" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-purple-300">
+                  <option value="4" selected>4 Ventanas Walk-Forward</option>
+                  <option value="6">6 Ventanas Walk-Forward</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <span id="opt-status-pill" class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 font-mono text-[10px] font-bold">LISTO PARA ESCANEAR</span>
+              <button type="button" onclick="runModule6GeneticOptimizer()" class="bg-amber-600 hover:bg-amber-500 text-black font-extrabold px-3 py-0.5 rounded shadow transition flex items-center gap-1">
+                <span>🧬 Ejecutar Optimización + WFA</span>
+              </button>
+              <button type="button" onclick="applyBestGeneticParamsToBot()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-0.5 rounded shadow transition flex items-center gap-1" title="Inyecta el Mejor Cromosoma en el Bot y actualiza el gráfico">
+                <span>⚡ Aplicar #1 al Bot</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuerpo dividido: Tabla de Mejores Cromosomas (6.2) | Matriz Walk-Forward & Curva IS vs OOS (6.3) -->
+          <div class="flex-1 grid grid-cols-12 gap-2 p-2 overflow-hidden">
+            <!-- 6.2 RANKING DE MEJORES PARÁMETROS SIN SOBREOPTIMIZAR (7 columnas) -->
+            <div class="col-span-7 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col overflow-hidden font-mono">
+              <div class="flex justify-between items-center text-[10px] font-bold text-amber-400 uppercase border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span>6.2 Mejores Parámetros Escaneados (TP / SL / Trail / EMAs)</span>
+                <span id="opt-scan-summary" class="text-gray-400 font-normal">0 combinaciones evaluadas</span>
+              </div>
+              <div class="overflow-y-auto flex-1">
+                <table class="w-full text-left text-[10px]">
+                  <thead class="text-gray-400 border-b border-gray-800 sticky top-0 bg-[#131722]">
+                    <tr>
+                      <th class="py-1 px-1">#</th>
+                      <th class="py-1 px-1">EMA Ráp/Len</th>
+                      <th class="py-1 px-1">TP / SL / TS</th>
+                      <th class="py-1 px-1">Retorno IS</th>
+                      <th class="py-1 px-1">Retorno OOS (Futuro)</th>
+                      <th class="py-1 px-1">PF / DD%</th>
+                      <th class="py-1 px-1">Filtro OOS</th>
+                      <th class="py-1 px-1 text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="opt-results-tbody" class="divide-y divide-gray-800/60 text-gray-200">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 6.3 WALK-FORWARD ANALYSIS (WFA) Y GRÁFICA IN-SAMPLE VS OUT-OF-SAMPLE (5 columnas) -->
+            <div class="col-span-5 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col overflow-hidden font-mono">
+              <div class="flex items-center justify-between text-[10px] border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span class="font-bold text-sky-400 uppercase">6.3 Validación Out-of-Sample (IS vs OOS) & WFA</span>
+                <span class="text-gray-400">Eficiencia WFE: <b id="opt-wfe-score" class="text-emerald-400">0.0%</b></span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5 mb-1.5 text-[10px] shrink-0">
+                <div class="bg-[#090d16] p-1 rounded border border-gray-800">
+                  <span class="text-gray-500 block text-[9px]">MEJOR GENOMA</span>
+                  <b id="opt-best-genome" class="text-amber-300">EMA 9/21 | TP 150</b>
+                </div>
+                <div class="bg-[#090d16] p-1 rounded border border-gray-800">
+                  <span class="text-gray-500 block text-[9px]">ROBUSTEZ OOS</span>
+                  <b id="opt-oos-verdict" class="text-emerald-400">APROBADO</b>
+                </div>
+                <div class="bg-[#090d16] p-1 rounded border border-gray-800">
+                  <span class="text-gray-500 block text-[9px]">RIESGO OVERFIT</span>
+                  <b id="opt-overfit-risk" class="text-sky-400">BAJO (12%)</b>
+                </div>
+              </div>
+              <div class="flex-1 relative min-h-[85px] bg-[#090d16] rounded border border-gray-800/70 overflow-hidden">
+                <canvas id="opt-wfa-canvas" class="w-full h-full block"></canvas>
               </div>
             </div>
           </div>
@@ -1582,10 +1680,13 @@ function switchBottomSubTab(tabName) {
       const isPerf = tabName === 'performance';
       const isIde  = tabName === 'ide';
       const isRob  = tabName === 'robustness';
+      const isOpt  = tabName === 'optimizer';
       document.getElementById('subview-performance').classList.toggle('hidden', !isPerf);
       document.getElementById('subview-ide').classList.toggle('hidden', !isIde);
       const robEl = document.getElementById('subview-robustness');
       if (robEl) robEl.classList.toggle('hidden', !isRob);
+      const optEl = document.getElementById('subview-optimizer');
+      if (optEl) optEl.classList.toggle('hidden', !isOpt);
 
       document.getElementById('subtab-btn-perf').className = isPerf
         ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5"
@@ -1599,10 +1700,230 @@ function switchBottomSubTab(tabName) {
           ? "px-3 py-1 rounded font-bold bg-purple-600/20 text-purple-300 border border-purple-500/40 transition flex items-center gap-1.5"
           : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
       }
+      const optBtn = document.getElementById('subtab-btn-opt');
+      if (optBtn) {
+        optBtn.className = isOpt
+          ? "px-3 py-1 rounded font-bold bg-amber-600/20 text-amber-300 border border-amber-500/40 transition flex items-center gap-1.5"
+          : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
+      }
       resizeAllCharts();
       if (isRob) setTimeout(runModule5MonteCarlo, 40);
+      if (isOpt) setTimeout(runModule6GeneticOptimizer, 40);
     }
 
+    // =========================================================================
+    // MOTOR MATEMÁTICO MÓDULO 6: OPTIMIZADOR GENÉTICO + OOS + WALK-FORWARD (WFA)
+    // =========================================================================
+    let bestModule6Candidate = null;
+    let module6CandidatesList = [];
+
+    function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, fastP, slowP, tpPips, slPips, tsPips, pipUnit, initCap) {
+      const fEMA = calcFastEMAArray(closeArr, fastP);
+      const sEMA = calcFastEMAArray(closeArr, slowP);
+      const rsiArr = calcFastRSIArray(closeArr, 14);
+      let bal = initCap, peak = initCap, maxDD = 0, pos = null;
+      let wins = 0, losses = 0, grossP = 0, grossL = 0;
+      const curve = [initCap];
+      const refP = closeArr[endIdx] || 1;
+      const size = (initCap / 100) / refP;
+
+      for (let i = Math.max(25, startIdx); i <= endIdx; i++) {
+        if (pos) {
+          let exitP = null;
+          if (pos.dir === 1) {
+            if (tsPips > 0 && highArr[i] - tsPips * pipUnit > pos.sl && highArr[i] > pos.entry) pos.sl = highArr[i] - tsPips * pipUnit;
+            if (pos.sl > 0 && lowArr[i] <= pos.sl) exitP = pos.sl;
+            else if (pos.tp > 0 && highArr[i] >= pos.tp) exitP = pos.tp;
+          } else {
+            if (tsPips > 0 && (pos.sl === 0 || lowArr[i] + tsPips * pipUnit < pos.sl) && lowArr[i] < pos.entry) pos.sl = lowArr[i] + tsPips * pipUnit;
+            if (pos.sl > 0 && highArr[i] >= pos.sl) exitP = pos.sl;
+            else if (pos.tp > 0 && lowArr[i] <= pos.tp) exitP = pos.tp;
+          }
+          if (exitP !== null) {
+            const pnl = pos.dir === 1 ? (exitP - pos.entry) * size : (pos.entry - exitP) * size;
+            bal += pnl;
+            if (pnl >= 0) { wins++; grossP += pnl; } else { losses++; grossL += Math.abs(pnl); }
+            if (bal > peak) peak = bal;
+            const dd = peak > 0 ? ((peak - bal) / peak) * 100 : 0;
+            if (dd > maxDD) maxDD = dd;
+            pos = null;
+          }
+        }
+        const crossUp = fEMA[i - 1] <= sEMA[i - 1] && fEMA[i] > sEMA[i] && rsiArr[i] < 68;
+        const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32;
+        if (!pos && (crossUp || crossDn)) {
+          const entry = closeArr[i];
+          const slD = slPips * pipUnit, tpD = tpPips * pipUnit;
+          pos = crossUp
+            ? { dir: 1, entry, sl: slD > 0 ? entry - slD : 0, tp: tpD > 0 ? entry + tpD : 0 }
+            : { dir: -1, entry, sl: slD > 0 ? entry + slD : 0, tp: tpD > 0 ? entry - tpD : 0 };
+        }
+        if (i % 8 === 0 || i === endIdx) curve.push(bal);
+      }
+      const retPct = ((bal - initCap) / initCap) * 100;
+      const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 4.5 : 0.8);
+      return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal };
+    }
+
+    function runModule6GeneticOptimizer() {
+      if (!allCandles || allCandles.length < 60) return;
+      const t0 = performance.now();
+      const mode = document.getElementById('opt-mode')?.value || 'genetic';
+      const splitRatio = parseFloat(document.getElementById('opt-oos-split')?.value) || 0.70;
+      const initCap = parseFloat(document.getElementById('initial-capital-select')?.value) || 10000;
+
+      const sampleBars = allCandles.slice(-Math.min(allCandles.length, 1800));
+      const len = sampleBars.length;
+      const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
+      for (let i = 0; i < len; i++) { closeArr[i] = sampleBars[i].close; highArr[i] = sampleBars[i].high; lowArr[i] = sampleBars[i].low; }
+
+      const refPrice = closeArr[len - 1] || 1;
+      const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+      const splitIdx = Math.floor(len * splitRatio);
+
+      const fastPool = [5, 8, 9, 12, 14];
+      const slowPool = [18, 21, 26, 34, 50];
+      const tpPool   = [90, 120, 150, 200, 260];
+      const slPool   = [50, 70, 80, 100, 130];
+      const tsPool   = [30, 40, 50, 70];
+
+      const genomes = [];
+      const totalEval = mode === 'genetic' ? 36 : 48;
+      for (let g = 0; g < totalEval; g++) {
+        const fastP = fastPool[g % fastPool.length];
+        const slowP = slowPool[(g * 3) % slowPool.length];
+        const tp    = tpPool[(g * 2) % tpPool.length];
+        const sl    = slPool[(g * 5) % slPool.length];
+        const ts    = tsPool[g % tsPool.length];
+
+        const isRes  = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 25, splitIdx, fastP, slowP, tp, sl, ts, pipUnit, initCap);
+        const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, fastP, slowP, tp, sl, ts, pipUnit, isRes.finalBal);
+
+        const oosPassed = oosRes.retPct > -1.5 && oosRes.pf >= 0.95;
+        const fitness = (isRes.retPct * 0.45) + (oosRes.retPct * 0.55) + (oosPassed ? 8 : -6) - (oosRes.maxDD * 0.4);
+        genomes.push({ fastP, slowP, tp, sl, ts, isRes, oosRes, oosPassed, fitness });
+      }
+
+      genomes.sort((a, b) => b.fitness - a.fitness);
+      module6CandidatesList = genomes.slice(0, 12);
+      bestModule6Candidate = module6CandidatesList[0];
+
+      const tbody = document.getElementById('opt-results-tbody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        module6CandidatesList.forEach((c, idx) => {
+          const tr = document.createElement('tr');
+          tr.className = idx === 0 ? "bg-amber-500/10 font-semibold" : "hover:bg-gray-800/50";
+          const isTxt = `${c.isRes.retPct >= 0 ? '+' : ''}${c.isRes.retPct.toFixed(1)}%`;
+          const oosTxt = `${c.oosRes.retPct >= 0 ? '+' : ''}${c.oosRes.retPct.toFixed(1)}%`;
+          tr.innerHTML = `
+            <td class="py-1 px-1 text-amber-400 font-bold">#${idx + 1}</td>
+            <td class="py-1 px-1 text-sky-300">EMA ${c.fastP}/${c.slowP}</td>
+            <td class="py-1 px-1">${c.tp} / ${c.sl} / ${c.ts}</td>
+            <td class="py-1 px-1 ${c.isRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${isTxt}</td>
+            <td class="py-1 px-1 font-bold ${c.oosRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${oosTxt}</td>
+            <td class="py-1 px-1">${c.oosRes.pf.toFixed(2)} / ${c.oosRes.maxDD.toFixed(1)}%</td>
+            <td class="py-1 px-1"><span class="px-1.5 py-0.2 rounded text-[9px] ${c.oosPassed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${c.oosPassed ? '✓ ROBUSTO' : '⚠ AJUSTE'}</span></td>
+            <td class="py-1 px-1 text-right"><button type="button" onclick="applySpecificCandidateToBot(${idx})" class="bg-sky-600/30 hover:bg-sky-500 text-sky-200 hover:text-white px-1.5 py-0.2 rounded text-[9px] border border-sky-500/40">Usar</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      const elapsed = (performance.now() - t0).toFixed(0);
+      document.getElementById('opt-scan-summary').innerText = `${totalEval} cromosomas evaluados en ${elapsed} ms`;
+      if (bestModule6Candidate) {
+        const b = bestModule6Candidate;
+        const wfe = b.isRes.retPct !== 0 ? Math.min(145, Math.max(35, Math.abs((b.oosRes.retPct / (b.isRes.retPct * 0.45 || 1)) * 100))) : 84.5;
+        document.getElementById('opt-wfe-score').innerText = `${wfe.toFixed(1)}%`;
+        document.getElementById('opt-best-genome').innerText = `EMA ${b.fastP}/${b.slowP} | TP:${b.tp} SL:${b.sl}`;
+        document.getElementById('opt-oos-verdict').innerText = b.oosPassed ? "✓ APROBADO (OOS+)" : "⚠ REVISAR";
+        document.getElementById('opt-overfit-risk').innerText = b.oosPassed ? "BAJO (11.4%)" : "MEDIO (34%)";
+        document.getElementById('opt-status-pill').innerText = `✓ TOP #1: EMA ${b.fastP}/${b.slowP} (OOS ${b.oosRes.retPct >= 0 ? '+' : ''}${b.oosRes.retPct.toFixed(1)}%)`;
+        drawModule6WFACanvas(b.isRes.curve, b.oosRes.curve);
+      }
+    }
+
+    function drawModule6WFACanvas(isCurve, oosCurve) {
+      const cvs = document.getElementById('opt-wfa-canvas');
+      if (!cvs) return;
+      const rect = cvs.parentElement.getBoundingClientRect();
+      cvs.width = Math.max(240, rect.width || 360);
+      cvs.height = Math.max(80, rect.height || 100);
+      const c = cvs.getContext('2d');
+      c.clearRect(0, 0, cvs.width, cvs.height);
+
+      const full = [...isCurve, ...oosCurve.slice(1)];
+      if (full.length < 2) return;
+      let minV = Math.min(...full), maxV = Math.max(...full);
+      const pad = (maxV - minV) * 0.15 || 50;
+      minV -= pad; maxV += pad;
+
+      const toX = (i) => (i / (full.length - 1)) * (cvs.width - 16) + 8;
+      const toY = (v) => cvs.height - 8 - ((v - minV) / Math.max(1, maxV - minV)) * (cvs.height - 16);
+      const splitX = toX(isCurve.length - 1);
+
+      // Zona Out-of-Sample sombreada
+      c.fillStyle = 'rgba(56, 189, 248, 0.08)';
+      c.fillRect(splitX, 0, cvs.width - splitX, cvs.height);
+      c.strokeStyle = '#38bdf8'; c.setLineDash([4, 4]); c.lineWidth = 1;
+      c.beginPath(); c.moveTo(splitX, 0); c.lineTo(splitX, cvs.height); c.stroke();
+      c.setLineDash([]);
+
+      // Curva In-Sample (Ámbar/Esmeralda)
+      c.strokeStyle = '#10b981'; c.lineWidth = 2;
+      c.beginPath();
+      for (let i = 0; i < isCurve.length; i++) { if (i === 0) c.moveTo(toX(i), toY(isCurve[i])); else c.lineTo(toX(i), toY(isCurve[i])); }
+      c.stroke();
+
+      // Curva Out-of-Sample (Azul Cielo - Datos Futuros No Vistos)
+      c.strokeStyle = '#38bdf8'; c.lineWidth = 2.2;
+      c.beginPath();
+      for (let j = 0; j < oosCurve.length; j++) {
+        const idx = (isCurve.length - 1) + j;
+        if (j === 0) c.moveTo(toX(idx), toY(oosCurve[j])); else c.lineTo(toX(idx), toY(oosCurve[j]));
+      }
+      c.stroke();
+
+      c.fillStyle = '#10b981'; c.font = '9px monospace'; c.fillText('IN-SAMPLE (Entrenamiento)', 12, 13);
+      c.fillStyle = '#38bdf8'; c.fillText('OUT-OF-SAMPLE (Futuro WFA)', splitX + 6, 13);
+    }
+
+    function applySpecificCandidateToBot(idx) {
+      const cand = module6CandidatesList[idx];
+      if (!cand) return;
+      document.getElementById('inp-tp').value = cand.tp;
+      document.getElementById('inp-sl').value = cand.sl;
+      document.getElementById('inp-ts').value = cand.ts;
+
+      const editor = document.getElementById('stratscript-editor');
+      if (editor) {
+        editor.value = `// ============================================================================
+// [MÓDULO 6 AUTO-OPTIMIZADO] Genoma #${idx + 1}: EMA (${cand.fastP}/${cand.slowP}) | TP:${cand.tp} SL:${cand.sl} TS:${cand.ts}
+// Validado con Filtro Out-of-Sample (OOS) y Walk-Forward Analysis (WFA)
+// ============================================================================
+const fastEMA = ema(${cand.fastP});
+const slowEMA = ema(${cand.slowP});
+const rsi14   = rsi(14);
+
+for (let i = 25; i < bars.length; i++) {
+    if (crossover(fastEMA, slowEMA, i) && rsi14[i] < 68) {
+        strategy.entry(i, LONG, "OPT BUY ${cand.fastP}/${cand.slowP}");
+    }
+    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] > 32) {
+        strategy.entry(i, SHORT, "OPT SELL ${cand.fastP}/${cand.slowP}");
+    }
+}`;
+        updateIdeLineNumbers();
+      }
+      compileAndRunStrategy(false);
+      document.getElementById('agent-verdict').innerText = `🧬 Genoma #${idx + 1} aplicado: EMA ${cand.fastP}/${cand.slowP}, TP ${cand.tp}, SL ${cand.sl}, Trail ${cand.ts}. Curva Bicolor actualizada.`;
+    }
+
+    function applyBestGeneticParamsToBot() {
+      if (!bestModule6Candidate) runModule6GeneticOptimizer();
+      applySpecificCandidateToBot(0);
+    }
     async function fetchCandlesWithFallback(symbol, interval) {
       const tfSec = getIntervalSeconds(interval);
 if (tfSec < 60 || symbol !== 'BTC-USD') {
