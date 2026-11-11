@@ -212,6 +212,10 @@
         <span>🤖</span> <span>Quant AI Chat</span>
         <span class="bg-indigo-500/30 text-indigo-300 text-[9px] px-1 rounded font-mono">M8</span>
       </button>
+      <button type="button" onclick="toggleModule9ExportModal()" class="bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 font-semibold text-xs px-2.5 py-1.5 rounded transition flex items-center gap-1 shadow">
+        <span>📥</span> <span>Exportar</span>
+        <span class="bg-amber-500/30 text-amber-200 text-[9px] px-1 rounded font-mono">M9</span>
+      </button>
     </div>
   </header>
 
@@ -3477,9 +3481,277 @@ for (let i = 25; i < bars.length; i++) {
       `);
     }
 
+// =========================================================================
+    // MÓDULO 9: EXPORTACIÓN Y DESCARGA EXTERNA (.MQ5, .JSON, .CSV y .PDF)
+    // =========================================================================
+    function generateMQL5RobotCode() {
+      const s = getLiveStrategySnapshotForAI();
+      const fastP = bestModule6Candidate ? bestModule6Candidate.fastP : 9;
+      const slowP = bestModule6Candidate ? bestModule6Candidate.slowP : 21;
+      const lots  = document.getElementById('inp-lots')?.value || '1.0';
+      return `//+------------------------------------------------------------------+
+//|                                     StratView5_Institutional.mq5 |
+//|                        Generado por StratView-5 Engine Pro 2026  |
+//|                        Activo Base: ${s.sym} (${s.tf}) | PyG: ${s.pyg} |
+//+------------------------------------------------------------------+
+#property copyright "StratView-5 Quantitative Engine"
+#property version   "5.00"
+#property strict
+
+#include <Trade\\Trade.mqh>
+CTrade trade;
+
+//--- Inputs Optimizados por Módulos 3, 6, 7 y 8
+input double   InpLots          = ${lots};      // Tamaño de Lote
+input int      InpFastEMA       = ${fastP};     // Periodo EMA Rápida
+input int      InpSlowEMA       = ${slowP};     // Periodo EMA Lenta
+input int      InpRSIPeriod     = 14;           // Periodo RSI Institucional
+input int      InpTakeProfitPts = ${s.tp};      // Take Profit (Puntos)
+input int      InpStopLossPts   = ${s.sl};      // Stop Loss (Puntos)
+input int      InpTrailingPts   = ${s.ts};      // Trailing Stop (Puntos)
+input ulong    InpMagicNumber   = 20260509;     // Magic Number StratView-5
+
+int handleFastEMA, handleSlowEMA, handleRSI;
+datetime lastBarTime = 0;
+
+int OnInit() {
+   trade.SetExpertMagicNumber(InpMagicNumber);
+   handleFastEMA = iMA(_Symbol, PERIOD_CURRENT, InpFastEMA, 0, MODE_EMA, PRICE_CLOSE);
+   handleSlowEMA = iMA(_Symbol, PERIOD_CURRENT, InpSlowEMA, 0, MODE_EMA, PRICE_CLOSE);
+   handleRSI     = iRSI(_Symbol, PERIOD_CURRENT, InpRSIPeriod, PRICE_CLOSE);
+   if(handleFastEMA == INVALID_HANDLE || handleSlowEMA == INVALID_HANDLE || handleRSI == INVALID_HANDLE)
+      return(INIT_FAILED);
+   return(INIT_SUCCEEDED);
+}
+
+void OnDeinit(const int reason) {
+   IndicatorRelease(handleFastEMA);
+   IndicatorRelease(handleSlowEMA);
+   IndicatorRelease(handleRSI);
+}
+
+void OnTick() {
+   datetime currentBar = iTime(_Symbol, PERIOD_CURRENT, 0);
+   if(currentBar == lastBarTime) return;
+
+   double fEMA[3], sEMA[3], rsi[3];
+   if(CopyBuffer(handleFastEMA, 0, 0, 3, fEMA) < 3) return;
+   if(CopyBuffer(handleSlowEMA, 0, 0, 3, sEMA) < 3) return;
+   if(CopyBuffer(handleRSI, 0, 0, 3, rsi) < 3) return;
+
+   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double pt  = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+
+   bool crossUp = (fEMA[1] <= sEMA[1] && fEMA[2] > sEMA[2] && rsi[2] < 68.0);
+   bool crossDn = (fEMA[1] >= sEMA[1] && fEMA[2] < sEMA[2] && rsi[2] > 32.0);
+
+   if(PositionsTotal() == 0) {
+      if(crossUp) {
+         double sl = InpStopLossPts > 0 ? ask - InpStopLossPts * pt : 0;
+         double tp = InpTakeProfitPts > 0 ? ask + InpTakeProfitPts * pt : 0;
+         trade.Buy(InpLots, _Symbol, ask, sl, tp, "SV5_BUY");
+         lastBarTime = currentBar;
+      } else if(crossDn) {
+         double sl = InpStopLossPts > 0 ? bid + InpStopLossPts * pt : 0;
+         double tp = InpTakeProfitPts > 0 ? bid - InpTakeProfitPts * pt : 0;
+         trade.Sell(InpLots, _Symbol, bid, sl, tp, "SV5_SELL");
+         lastBarTime = currentBar;
+      }
+   }
+}
+//+------------------------------------------------------------------+`;
+    }
+
+    function injectModule9ExportModalUI() {
+      if (document.getElementById('m9-export-modal')) return;
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <div id="m9-export-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div class="bg-[#131722] border-2 border-amber-500/60 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col text-xs">
+            <div class="bg-[#1e222d] border-b border-gray-800 px-4 py-2.5 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-base">📥</span>
+                <span class="font-extrabold text-amber-300 text-sm">Centro de Exportación Cuantitativa Externa</span>
+                <span class="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0.2 rounded font-mono border border-amber-500/40">MÓDULO 9</span>
+              </div>
+              <button type="button" onclick="toggleModule9ExportModal()" class="text-gray-400 hover:text-white font-bold text-sm px-1.5">✕</button>
+            </div>
+
+            <div class="p-4 space-y-3 overflow-y-auto max-h-[80vh]">
+              <p class="text-gray-400 text-[11px]">Descarga tu robot, configuración estructurada o reportes completos de auditoría institucional con un clic:</p>
+
+              <!-- 4 Tarjetas de Descarga (9.1, 9.2, 9.3 CSV y 9.3 PDF) -->
+              <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" onclick="downloadModule9File('mq5')" class="bg-[#1e222d] hover:bg-emerald-950/60 border border-emerald-500/50 rounded-lg p-3 text-left transition flex items-start justify-between group">
+                  <div>
+                    <div class="font-extrabold text-emerald-400 text-xs flex items-center gap-1.5"><span>🤖 9.1 Exportar Bot MetaTrader 5 (.mq5)</span></div>
+                    <p class="text-[10px] text-gray-400 mt-1">Código Expert Advisor MQL5 nativo listo para compilar en MetaEditor 5.</p>
+                  </div>
+                  <span class="bg-emerald-600 text-white font-mono text-[10px] px-2 py-0.5 rounded font-bold group-hover:scale-105 transition">.MQ5</span>
+                </button>
+
+                <button type="button" onclick="downloadModule9File('json')" class="bg-[#1e222d] hover:bg-sky-950/60 border border-sky-500/50 rounded-lg p-3 text-left transition flex items-start justify-between group">
+                  <div>
+                    <div class="font-extrabold text-sky-400 text-xs flex items-center gap-1.5"><span>⚙️ 9.2 Exportar Configuración (.json)</span></div>
+                    <p class="text-[10px] text-gray-400 mt-1">Parámetros TP/SL, Genoma Módulo 6, métricas y script en JSON estructurado.</p>
+                  </div>
+                  <span class="bg-sky-600 text-white font-mono text-[10px] px-2 py-0.5 rounded font-bold group-hover:scale-105 transition">.JSON</span>
+                </button>
+
+                <button type="button" onclick="downloadModule9File('csv')" class="bg-[#1e222d] hover:bg-amber-950/60 border border-amber-500/50 rounded-lg p-3 text-left transition flex items-start justify-between group">
+                  <div>
+                    <div class="font-extrabold text-amber-400 text-xs flex items-center gap-1.5"><span>📊 9.3 Reporte de Operaciones (.csv)</span></div>
+                    <p class="text-[10px] text-gray-400 mt-1">Historial completo de trades, fechas, motivos de salida y métricas para Excel.</p>
+                  </div>
+                  <span class="bg-amber-600 text-black font-mono text-[10px] px-2 py-0.5 rounded font-bold group-hover:scale-105 transition">.CSV</span>
+                </button>
+
+                <button type="button" onclick="downloadModule9File('pdf')" class="bg-[#1e222d] hover:bg-purple-950/60 border border-purple-500/50 rounded-lg p-3 text-left transition flex items-start justify-between group">
+                  <div>
+                    <div class="font-extrabold text-purple-300 text-xs flex items-center gap-1.5"><span>📄 9.3 Auditoría Cuantitativa (.pdf)</span></div>
+                    <p class="text-[10px] text-gray-400 mt-1">Reporte ejecutivo imprimible/PDF con métricas 5.1, 5.2, Monte Carlo y WFA.</p>
+                  </div>
+                  <span class="bg-purple-600 text-white font-mono text-[10px] px-2 py-0.5 rounded font-bold group-hover:scale-105 transition">.PDF</span>
+                </button>
+              </div>
+
+              <!-- Vista Previa del Código MQL5 Generado -->
+              <div class="bg-[#090d16] border border-gray-800 rounded-lg p-2.5">
+                <div class="flex justify-between items-center text-[10px] font-mono text-gray-400 border-b border-gray-800 pb-1 mb-1.5">
+                  <span class="text-emerald-400 font-bold">VISTA PREVIA DEL EXPERT ADVISOR GENERADO (StratView5_Institutional.mq5)</span>
+                  <button type="button" onclick="copyMQL5PreviewToClipboard()" id="m9-copy-btn" class="text-sky-400 hover:text-white bg-[#131722] border border-gray-700 px-2 py-0.5 rounded">📋 Copiar Código .MQ5</button>
+                </div>
+                <pre id="m9-mq5-preview" class="sv5-code-font text-[10px] text-gray-300 max-h-40 overflow-y-auto whitespace-pre"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(div);
+    }
+
+    function toggleModule9ExportModal() {
+      injectModule9ExportModalUI();
+      const modal = document.getElementById('m9-export-modal');
+      modal.classList.toggle('hidden');
+      if (!modal.classList.contains('hidden')) {
+        const pre = document.getElementById('m9-mq5-preview');
+        if (pre) pre.textContent = generateMQL5RobotCode();
+      }
+    }
+
+    function copyMQL5PreviewToClipboard() {
+      navigator.clipboard.writeText(generateMQL5RobotCode());
+      const btn = document.getElementById('m9-copy-btn');
+      if (btn) { btn.innerText = "✅ ¡Copiado al portapapeles!"; setTimeout(() => { btn.innerText = "📋 Copiar Código .MQ5"; }, 2000); }
+    }
+
+    function triggerBlobDownload(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadModule9File(format) {
+      const s = getLiveStrategySnapshotForAI();
+      const cleanSym = s.sym.replace(/[^a-zA-Z0-9_-]/g, '');
+
+      if (format === 'mq5') {
+        triggerBlobDownload(`StratView5_${cleanSym}_${s.tf}.mq5`, generateMQL5RobotCode(), 'text/plain;charset=utf-8');
+        return;
+      }
+
+      if (format === 'json') {
+        const configObj = {
+          platform: "StratView-5 Institutional Engine Pro 2026",
+          exportedAt: new Date().toISOString(),
+          market: { symbol: s.sym, timeframe: s.tf, initialCapitalUSD: lastM5InitialCap },
+          parameters: {
+            takeProfitPts: Number(s.tp),
+            stopLossPts: Number(s.sl),
+            trailingStopPts: Number(s.ts),
+            lots: Number(document.getElementById('inp-lots')?.value || 1.0),
+            riskMode: document.getElementById('inp-risk-mode')?.value || 'pct'
+          },
+          metrics: {
+            netProfit: s.pyg,
+            maxDrawdown: s.dd,
+            winRate: s.wr,
+            profitFactor: s.pf,
+            sharpeRatio: s.sharpe,
+            monteCarloRuinProb: s.ruin
+          },
+          geneticBestCandidate: bestModule6Candidate || null,
+          stratScriptCode: document.getElementById('stratscript-editor')?.value || ''
+        };
+        triggerBlobDownload(`StratView5_Config_${cleanSym}.json`, JSON.stringify(configObj, null, 2), 'application/json;charset=utf-8');
+        return;
+      }
+
+      if (format === 'csv') {
+        let csv = "Trade_ID,Direccion,Fecha_Entrada_UTC,Fecha_Salida_UTC,Motivo_Salida,PnL_USD\n";
+        (lastM5Trades || []).forEach((tr, idx) => {
+          const eDate = new Date(tr.entryTime * 1000).toISOString();
+          const xDate = new Date(tr.exitTime * 1000).toISOString();
+          csv += `${idx + 1},${tr.dir},${eDate},${xDate},"${tr.reason}",${tr.pnl.toFixed(2)}\n`;
+        });
+        triggerBlobDownload(`StratView5_Audit_${cleanSym}_${s.tf}.csv`, csv, 'text/csv;charset=utf-8');
+        return;
+      }
+
+      if (format === 'pdf') {
+        const winPrint = window.open('', '_blank', 'width=900,height=700');
+        if (!winPrint) return;
+        const rowsHtml = (lastM5Trades || []).slice(-40).reverse().map((tr, i) => `
+          <tr>
+            <td>#${i + 1}</td>
+            <td><b>${tr.dir}</b></td>
+            <td>${new Date(tr.exitTime * 1000).toISOString().replace('T', ' ').substring(0, 16)}</td>
+            <td>${tr.reason}</td>
+            <td style="color:${tr.pnl >= 0 ? '#059669' : '#e11d48'};font-weight:bold;">${tr.pnl >= 0 ? '+' : ''}$${tr.pnl.toFixed(2)}</td>
+          </tr>
+        `).join('');
+        winPrint.document.write(`
+          <html><head><title>Reporte Auditoría Cuantitativa - StratView-5</title>
+          <style>
+            body { font-family: monospace, sans-serif; padding: 24px; color: #0f172a; }
+            h1 { color: #059669; margin-bottom: 4px; }
+            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+            .card { border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; background: #f8fafc; }
+            table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 11px; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px; text-align: left; }
+            th { background: #e2e8f0; }
+          </style></head><body>
+            <h1>STRATVIEW-5 | REPORTE DE AUDITORÍA CUANTITATIVA INSTITUCIONAL</h1>
+            <div>Activo: <b>${s.sym} (${s.tf})</b> | Capital Inicial: <b>$${lastM5InitialCap.toLocaleString()} USD</b> | Fecha: ${new Date().toLocaleString()}</div>
+            <div class="grid">
+              <div class="card"><b>Retorno Neto:</b><br>${s.pyg}</div>
+              <div class="card"><b>Drawdown Máx:</b><br>${s.dd}</div>
+              <div class="card"><b>Win Rate / Profit Factor:</b><br>${s.wr} | PF: ${s.pf}</div>
+              <div class="card"><b>Sharpe / Sortino Ratio:</b><br>${s.sharpe} / ${document.getElementById('m5-sortino')?.innerText || '0.00'}</div>
+              <div class="card"><b>Monte Carlo P50 / Ruina:</b><br>${document.getElementById('m5-mc-p50')?.innerText || '$10k'} | Ruina: ${s.ruin}</div>
+              <div class="card"><b>Parámetros Bot:</b><br>TP: ${s.tp} | SL: ${s.sl} | Trail: ${s.ts}</div>
+            </div>
+            <h3>Últimas Operaciones Auditadas</h3>
+            <table><thead><tr><th>#</th><th>Tipo</th><th>Fecha Cierre</th><th>Salida</th><th>PnL USD</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+            <script>setTimeout(() => { window.print(); }, 350);<\/script>
+          </body></html>
+        `);
+        winPrint.document.close();
+      }
+    }
+
     (async function bootstrapStratView5() {
       initDraggableSplitters();
       injectModule8ChatbotUI();
+      injectModule9ExportModalUI();
       await seedDefaultMT5Datasets(false);
       await loadCandles();
       setTimeout(() => {
