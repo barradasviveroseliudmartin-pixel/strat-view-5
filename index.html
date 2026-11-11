@@ -1454,8 +1454,8 @@
 
     async function fetchCandlesWithFallback(symbol, interval) {
       const tfSec = getIntervalSeconds(interval);
-      if (tfSec < 60) {
-        return generateHistoricalSeries(symbol, 600, tfSec, false);
+if (tfSec < 60 || symbol !== 'BTC-USD') {
+        return generateHistoricalSeries(symbol, 2500, tfSec, false);
       }
       try {
         const controller = new AbortController();
