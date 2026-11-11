@@ -405,6 +405,10 @@
               <span>💻 Pine / MetaEditor IDE</span>
               <span class="bg-sky-500/20 text-sky-400 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 3</span>
             </button>
+            <button type="button" onclick="switchBottomSubTab('robustness')" id="subtab-btn-rob" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5">
+              <span>🛡️ Robustez & Monte Carlo</span>
+              <span class="bg-purple-500/20 text-purple-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 5</span>
+            </button>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -541,6 +545,87 @@
 
               <div id="ide-console-logs" class="sv5-code-font flex-1 p-2 overflow-y-auto space-y-1 text-[11px]">
                 <div class="text-gray-500 italic">Motor StratScript v4.0 listo. Pulsa "▶ Compilar y Marcar Gráfico" para ejecutar el bot...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+<!-- SUB-VISTA 3: MÓDULO 5 - PANEL DESGLOSADO DE MÉTRICAS DE ROBUSTEZ CUANTITATIVA Y MONTE CARLO -->
+        <div id="subview-robustness" class="hidden flex-1 flex flex-col overflow-hidden bg-[#090d16] text-xs">
+          <!-- Barra de Controles Monte Carlo 5.3 -->
+          <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+            <div class="flex items-center space-x-3 font-mono">
+              <span class="text-purple-400 font-extrabold uppercase tracking-wider flex items-center gap-1">🎲 Monte Carlo 5.3:</span>
+              <label class="flex items-center gap-1 text-gray-300">
+                <span class="text-gray-400">Iteraciones:</span>
+                <select id="mc-iterations" onchange="runModule5MonteCarlo()" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-purple-300 font-bold">
+                  <option value="1000" selected>1,000 sims</option>
+                  <option value="2500">2,500 sims</option>
+                  <option value="5000">5,000 sims</option>
+                  <option value="10000">10,000 sims</option>
+                </select>
+              </label>
+              <label class="flex items-center gap-1 text-gray-300 cursor-pointer" title="Desordenamiento aleatorio de operaciones">
+                <input type="checkbox" id="mc-reshuffle" checked onchange="runModule5MonteCarlo()" class="accent-purple-500">
+                <span>Reshuffling</span>
+              </label>
+              <label class="flex items-center gap-1 text-gray-300 cursor-pointer" title="Omisión aleatoria del 10% de operaciones para medir fallos">
+                <input type="checkbox" id="mc-skip10" checked onchange="runModule5MonteCarlo()" class="accent-amber-500">
+                <span>Skip 10% Trades</span>
+              </label>
+              <label class="flex items-center gap-1 text-gray-300 cursor-pointer" title="Variación aleatoria de Spread y Deslizamiento (Slippage Stress Test)">
+                <input type="checkbox" id="mc-slippage" checked onchange="runModule5MonteCarlo()" class="accent-sky-500">
+                <span>Slippage Stress Test</span>
+              </label>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="m5-verdict-pill" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 font-mono text-[10px] font-bold">ROBUSTEZ: ALTA</span>
+              <button type="button" onclick="runModule5MonteCarlo()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-0.5 rounded shadow transition flex items-center gap-1">
+                <span>⚡ Ejecutar Stress Test</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuerpo dividido en: 5.1 Rendimiento | 5.2 Riesgo & Ratios | 5.3 Abanico Monte Carlo -->
+          <div class="flex-1 grid grid-cols-12 gap-2 p-2 overflow-y-auto">
+            <!-- 5.1 RENDIMIENTO Y RETORNO (3 columnas) -->
+            <div class="col-span-3 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between font-mono">
+              <div class="text-[10px] font-bold text-emerald-400 uppercase border-b border-gray-800 pb-1 mb-1">5.1 Rendimiento y Retorno</div>
+              <div class="space-y-1 text-[11px]">
+                <div class="flex justify-between"><span class="text-gray-400">Retorno Neto ($ / %):</span><span id="m5-net-ret" class="font-bold text-emerald-400">+$0.00 (0.0%)</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Tasa Acierto (Win Rate):</span><span id="m5-winrate" class="font-bold text-white">0.0%</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Ratio Ganancia/Pérdida:</span><span id="m5-wl-ratio" class="font-bold text-sky-400">0.00</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Profit Factor:</span><span id="m5-pf" class="font-bold text-emerald-300">0.00</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Recovery Factor:</span><span id="m5-rf" class="font-bold text-amber-300">0.00</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Esperanza (Payoff/Trade):</span><span id="m5-payoff" class="font-bold text-purple-300">$0.00</span></div>
+              </div>
+            </div>
+
+            <!-- 5.2 RIESGO Y VOLATILIDAD (3 columnas) -->
+            <div class="col-span-3 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between font-mono">
+              <div class="text-[10px] font-bold text-rose-400 uppercase border-b border-gray-800 pb-1 mb-1">5.2 Riesgo y Volatilidad</div>
+              <div class="space-y-1 text-[11px]">
+                <div class="flex justify-between"><span class="text-gray-400">Drawdown Máx ($ / %):</span><span id="m5-max-dd" class="font-bold text-rose-400">$0.00 (0.0%)</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Duración Máx Drawdown:</span><span id="m5-dd-dur" class="font-bold text-amber-400">0h (0.0d)</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Sharpe Ratio (Anual):</span><span id="m5-sharpe" class="font-bold text-emerald-400">0.00</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Sortino Ratio:</span><span id="m5-sortino" class="font-bold text-sky-400">0.00</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Calmar Ratio:</span><span id="m5-calmar" class="font-bold text-purple-300">0.00</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Máx Racha Perdedora:</span><span id="m5-lose-streak" class="font-bold text-rose-400">0 trades</span></div>
+              </div>
+            </div>
+
+            <!-- 5.3 ANÁLISIS MONTE CARLO AVANZADO Y ABANICO DE PROBABILIDAD (6 columnas) -->
+            <div class="col-span-6 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col relative overflow-hidden">
+              <div class="flex items-center justify-between text-[10px] font-mono border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span class="font-bold text-purple-400 uppercase">5.3 Distribución Monte Carlo (P95 / P50 / P5)</span>
+                <div class="flex items-center space-x-3">
+                  <span>Mediana P50: <b id="m5-mc-p50" class="text-emerald-400">$10,000</b></span>
+                  <span>Peor P5 (95% Conf): <b id="m5-mc-p5" class="text-amber-400">$10,000</b></span>
+                  <span>DD P95: <b id="m5-mc-dd95" class="text-rose-400">0.0%</b></span>
+                  <span>Riesgo Ruina: <b id="m5-mc-ruin" class="text-rose-500">0.0%</b></span>
+                </div>
+              </div>
+              <div class="flex-1 relative min-h-[95px] bg-[#090d16] rounded border border-gray-800/70 overflow-hidden">
+                <canvas id="mc-fan-canvas" class="w-full h-full block"></canvas>
               </div>
             </div>
           </div>
@@ -1493,17 +1578,29 @@ function resetChart() {
       resizeAllCharts();
     }
 
-    function switchBottomSubTab(tabName) {
-      const isIde = tabName === 'ide';
-      document.getElementById('subview-performance').classList.toggle('hidden', isIde);
+function switchBottomSubTab(tabName) {
+      const isPerf = tabName === 'performance';
+      const isIde  = tabName === 'ide';
+      const isRob  = tabName === 'robustness';
+      document.getElementById('subview-performance').classList.toggle('hidden', !isPerf);
       document.getElementById('subview-ide').classList.toggle('hidden', !isIde);
+      const robEl = document.getElementById('subview-robustness');
+      if (robEl) robEl.classList.toggle('hidden', !isRob);
+
+      document.getElementById('subtab-btn-perf').className = isPerf
+        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5"
+        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
       document.getElementById('subtab-btn-ide').className = isIde
         ? "px-3 py-1 rounded font-bold bg-sky-600/20 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5"
         : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      document.getElementById('subtab-btn-perf').className = !isIde
-        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5"
-        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
+      const robBtn = document.getElementById('subtab-btn-rob');
+      if (robBtn) {
+        robBtn.className = isRob
+          ? "px-3 py-1 rounded font-bold bg-purple-600/20 text-purple-300 border border-purple-500/40 transition flex items-center gap-1.5"
+          : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
+      }
       resizeAllCharts();
+      if (isRob) setTimeout(runModule5MonteCarlo, 40);
     }
 
     async function fetchCandlesWithFallback(symbol, interval) {
@@ -2248,7 +2345,217 @@ for (let i = 205; i < bars.length; i++) {
       document.getElementById('ide-stat-ls').innerText = `${countLongs} ▲ / ${countShorts} ▼`;
       document.getElementById('ide-stat-exits').innerText = countExits;
       document.getElementById('ide-stat-ms').innerText = `${elapsed} ms`;
+updateModule5Metrics(closedTrades, equityBicolorData, initialCapital, totalNetPnl, totalNetPct, maxDrawdownUSD, peakEquity, winRate, profitFactor);
       if (!silent) renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
+    }
+
+    // =========================================================================
+    // MOTOR MATEMÁTICO MÓDULO 5: MÉTRICAS INSTITUCIONALES + MONTE CARLO 5.3
+    // =========================================================================
+    let lastM5Trades = [];
+    let lastM5InitialCap = 10000;
+
+    function updateModule5Metrics(trades, eqData, initialCap, netPnl, netPct, maxDDUsd, peakEq, winRate, pf) {
+      lastM5Trades = trades || [];
+      lastM5InitialCap = initialCap || 10000;
+
+      const wins = lastM5Trades.filter(t => t.pnl > 0);
+      const losses = lastM5Trades.filter(t => t.pnl <= 0);
+      const avgWin = wins.length > 0 ? wins.reduce((a, b) => a + b.pnl, 0) / wins.length : 0;
+      const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((a, b) => a + b.pnl, 0) / losses.length) : 0;
+      const wlRatio = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : (avgWin > 0 ? "9.99" : "0.00");
+      const recoveryFactor = maxDDUsd > 0 ? (netPnl / maxDDUsd).toFixed(2) : (netPnl > 0 ? "9.99" : "0.00");
+      const expectedPayoff = lastM5Trades.length > 0 ? (netPnl / lastM5Trades.length) : 0;
+
+      // Duración máxima del Drawdown (en horas y días)
+      let maxDDDurationSec = 0, currentPeak = initialCap, peakTime = eqData.length > 0 ? eqData[0].time : 0;
+      for (let i = 0; i < eqData.length; i++) {
+        if (eqData[i].value >= currentPeak) {
+          currentPeak = eqData[i].value;
+          peakTime = eqData[i].time;
+        } else {
+          const dur = eqData[i].time - peakTime;
+          if (dur > maxDDDurationSec) maxDDDurationSec = dur;
+        }
+      }
+      const ddHours = Math.round(maxDDDurationSec / 3600);
+      const ddDays = (maxDDDurationSec / 86400).toFixed(1);
+
+      // Sharpe Ratio, Sortino Ratio, Calmar Ratio y Racha Perdedora
+      let sharpe = 0, sortino = 0, maxLoseStreak = 0, curStreak = 0;
+      if (lastM5Trades.length > 1) {
+        const rets = lastM5Trades.map(t => t.pnl / initialCap);
+        const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+        const variance = rets.reduce((a, r) => a + Math.pow(r - mean, 2), 0) / (rets.length - 1);
+        const std = Math.sqrt(Math.max(1e-10, variance));
+        const downVariance = rets.reduce((a, r) => a + (r < 0 ? Math.pow(r, 2) : 0), 0) / rets.length;
+        const downStd = Math.sqrt(Math.max(1e-10, downVariance));
+        const annFactor = Math.sqrt(Math.min(252, Math.max(12, lastM5Trades.length)));
+        sharpe = (mean / std) * annFactor;
+        sortino = (mean / downStd) * annFactor;
+      }
+      for (let i = 0; i < lastM5Trades.length; i++) {
+        if (lastM5Trades[i].pnl <= 0) { curStreak++; if (curStreak > maxLoseStreak) maxLoseStreak = curStreak; }
+        else curStreak = 0;
+      }
+      const maxDDPct = peakEq > 0 ? (maxDDUsd / peakEq) * 100 : 0;
+      const calmar = maxDDPct > 0 ? (netPct / maxDDPct) : (netPct > 0 ? 5.0 : 0);
+
+      const setTxt = (id, val, cls) => {
+        const el = document.getElementById(id);
+        if (el) { el.innerText = val; if (cls) el.className = cls; }
+      };
+      setTxt('m5-net-ret', `${netPnl >= 0 ? '+' : ''}$${netPnl.toFixed(2)} (${netPct >= 0 ? '+' : ''}${netPct.toFixed(1)}%)`, `font-bold ${netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`);
+      setTxt('m5-winrate', `${winRate.toFixed(1)}% (${wins.length}/${lastM5Trades.length})`);
+      setTxt('m5-wl-ratio', `${wlRatio}x`);
+      setTxt('m5-pf', pf);
+      setTxt('m5-rf', recoveryFactor);
+      setTxt('m5-payoff', `${expectedPayoff >= 0 ? '+' : ''}$${expectedPayoff.toFixed(2)}/trade`);
+      setTxt('m5-max-dd', `$${maxDDUsd.toFixed(2)} (${maxDDPct.toFixed(2)}%)`);
+      setTxt('m5-dd-dur', `${ddHours}h (${ddDays}d)`);
+      setTxt('m5-sharpe', sharpe.toFixed(2));
+      setTxt('m5-sortino', sortino.toFixed(2));
+      setTxt('m5-calmar', calmar.toFixed(2));
+      setTxt('m5-lose-streak', `${maxLoseStreak} trades`);
+
+      runModule5MonteCarlo();
+    }
+
+    function runModule5MonteCarlo() {
+      const canvasMC = document.getElementById('mc-fan-canvas');
+      if (!canvasMC) return;
+      const iters = parseInt(document.getElementById('mc-iterations')?.value) || 1000;
+      const doReshuffle = document.getElementById('mc-reshuffle')?.checked ?? true;
+      const doSkip10 = document.getElementById('mc-skip10')?.checked ?? true;
+      const doSlippage = document.getElementById('mc-slippage')?.checked ?? true;
+
+      const baseTrades = lastM5Trades.length > 0 ? lastM5Trades.map(t => t.pnl) : [45, -20, 60, -25, 80, 35, -30, 90, -15, 55];
+      const nTrades = baseTrades.length;
+      const initCap = lastM5InitialCap || 10000;
+      const ruinThreshold = initCap * 0.55; // 45% caída = ruina institucional
+
+      const finalEquities = new Float64Array(iters);
+      const maxDrawdowns = new Float64Array(iters);
+      let ruinCount = 0;
+
+      const samplePaths = [];
+      const steps = Math.min(40, nTrades);
+      const p95Curve = new Float64Array(steps + 1).fill(initCap);
+      const p50Curve = new Float64Array(steps + 1).fill(initCap);
+      const p05Curve = new Float64Array(steps + 1).fill(initCap);
+      const stepBuckets = Array.from({ length: steps + 1 }, () => []);
+
+      for (let sim = 0; sim < iters; sim++) {
+        let eq = initCap, peak = initCap, maxDD = 0, isRuined = false;
+        const path = sim < 35 ? [initCap] : null;
+        stepBuckets[0].push(initCap);
+
+        for (let s = 1; s <= steps; s++) {
+          const idx = doReshuffle ? Math.floor(Math.random() * nTrades) : ((s - 1) % nTrades);
+          if (doSkip10 && Math.random() < 0.10) {
+            if (path) path.push(eq);
+            if (sim < 400) stepBuckets[s].push(eq);
+            continue;
+          }
+          let pnl = baseTrades[idx] * (nTrades / steps);
+          if (doSlippage) {
+            const stressNoise = (Math.random() - 0.54) * Math.abs(pnl) * 0.22;
+            pnl += stressNoise;
+          }
+          eq += pnl;
+          if (eq > peak) peak = eq;
+          const ddPct = peak > 0 ? ((peak - eq) / peak) * 100 : 0;
+          if (ddPct > maxDD) maxDD = ddPct;
+          if (eq <= ruinThreshold) isRuined = true;
+          if (path) path.push(eq);
+          if (sim < 400) stepBuckets[s].push(eq);
+        }
+        finalEquities[sim] = eq;
+        maxDrawdowns[sim] = maxDD;
+        if (isRuined) ruinCount++;
+        if (path) samplePaths.push(path);
+      }
+
+      const sortedEq = Array.from(finalEquities).sort((a, b) => a - b);
+      const sortedDD = Array.from(maxDrawdowns).sort((a, b) => a - b);
+      const p50Eq = sortedEq[Math.floor(iters * 0.50)] || initCap;
+      const p05Eq = sortedEq[Math.floor(iters * 0.05)] || initCap;
+      const p95DD = sortedDD[Math.floor(iters * 0.95)] || 0;
+      const ruinProb = (ruinCount / iters) * 100;
+
+      for (let s = 1; s <= steps; s++) {
+        const arr = stepBuckets[s].sort((a, b) => a - b);
+        if (arr.length > 0) {
+          p95Curve[s] = arr[Math.floor(arr.length * 0.95)];
+          p50Curve[s] = arr[Math.floor(arr.length * 0.50)];
+          p05Curve[s] = arr[Math.floor(arr.length * 0.05)];
+        }
+      }
+
+      document.getElementById('m5-mc-p50').innerText = `$${Math.round(p50Eq).toLocaleString()}`;
+      document.getElementById('m5-mc-p5').innerText  = `$${Math.round(p05Eq).toLocaleString()}`;
+      document.getElementById('m5-mc-dd95').innerText = `${p95DD.toFixed(1)}%`;
+      document.getElementById('m5-mc-ruin').innerText = `${ruinProb.toFixed(1)}%`;
+
+      const pill = document.getElementById('m5-verdict-pill');
+      if (pill) {
+        if (ruinProb < 5 && p05Eq >= initCap * 0.92) {
+          pill.className = "px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 font-mono text-[10px] font-bold";
+          pill.innerText = `✓ ROBUSTEZ ÉLITE (${iters.toLocaleString()} SIMS)`;
+        } else if (ruinProb < 20) {
+          pill.className = "px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/40 font-mono text-[10px] font-bold";
+          pill.innerText = `⚠ ROBUSTEZ MEDIA (${iters.toLocaleString()} SIMS)`;
+        } else {
+          pill.className = "px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 border border-rose-500/40 font-mono text-[10px] font-bold";
+          pill.innerText = `✖ RIESGO ALTO (${iters.toLocaleString()} SIMS)`;
+        }
+      }
+
+      // Renderizar Abanico Monte Carlo en Canvas
+      const rect = canvasMC.parentElement.getBoundingClientRect();
+      canvasMC.width = Math.max(260, rect.width || 420);
+      canvasMC.height = Math.max(85, rect.height || 105);
+      const mctx = canvasMC.getContext('2d');
+      mctx.clearRect(0, 0, canvasMC.width, canvasMC.height);
+
+      let minV = p05Curve[0], maxV = p95Curve[0];
+      for (let s = 0; s <= steps; s++) {
+        if (p05Curve[s] < minV) minV = p05Curve[s];
+        if (p95Curve[s] > maxV) maxV = p95Curve[s];
+      }
+      samplePaths.forEach(p => p.forEach(v => { if (v < minV) minV = v; if (v > maxV) maxV = v; }));
+      const pad = (maxV - minV) * 0.12 || 100;
+      minV -= pad; maxV += pad;
+
+      const toX = (s) => (s / steps) * (canvasMC.width - 16) + 8;
+      const toY = (v) => canvasMC.height - 8 - ((v - minV) / Math.max(1, maxV - minV)) * (canvasMC.height - 16);
+
+      // Caminos estocásticos de fondo
+      samplePaths.forEach(p => {
+        mctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+        mctx.lineWidth = 1;
+        mctx.beginPath();
+        p.forEach((v, idx) => { if (idx === 0) mctx.moveTo(toX(idx), toY(v)); else mctx.lineTo(toX(idx), toY(v)); });
+        mctx.stroke();
+      });
+
+      // Banda sombreada entre P95 y P05
+      mctx.fillStyle = 'rgba(168, 85, 247, 0.14)';
+      mctx.beginPath();
+      for (let s = 0; s <= steps; s++) { if (s === 0) mctx.moveTo(toX(s), toY(p95Curve[s])); else mctx.lineTo(toX(s), toY(p95Curve[s])); }
+      for (let s = steps; s >= 0; s--) { mctx.lineTo(toX(s), toY(p05Curve[s])); }
+      mctx.closePath();
+      mctx.fill();
+
+      const drawPercentileLine = (arr, color, width) => {
+        mctx.strokeStyle = color; mctx.lineWidth = width;
+        mctx.beginPath();
+        for (let s = 0; s <= steps; s++) { if (s === 0) mctx.moveTo(toX(s), toY(arr[s])); else mctx.lineTo(toX(s), toY(arr[s])); }
+        mctx.stroke();
+      };
+      drawPercentileLine(p95Curve, '#38bdf8', 1.5); // P95 Optimista (Azul)
+      drawPercentileLine(p05Curve, '#f43f5e', 1.5); // P05 Stress (Rojo)
+      drawPercentileLine(p50Curve, '#10b981', 2.2); // P50 Mediana (Verde Esmeralda)
     }
 
     function renderIdeExecutionLog(trades, longs, shorts, netPnl, elapsed) {
