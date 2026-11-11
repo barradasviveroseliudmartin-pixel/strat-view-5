@@ -1086,7 +1086,47 @@
       return Math.max(0, Math.min(data.length - 1, low));
     }
 
-    function applyCutAtIndex(cutIdx) {
+function applyCutAtTimestamp(targetTimestamp) {
+      const baseSource = rawMT5Candles.length > 0 ? rawMT5Candles : originalFullCandles;
+      if (!baseSource || baseSource.length === 0) return;
+
+      const tf = winTimeframes[1] || document.getElementById('timeframeSelect').value;
+      // Si es archivo MT5 masivo (+2M velas desde 2021), agregamos desde 2021 hasta el futuro alrededor de la fecha elegida
+      if (rawMT5Candles.length > 0) {
+        const rawIdx = binarySearchCandleIndex(rawMT5Candles, targetTimestamp);
+        const tfSec = Math.max(60, getIntervalSeconds(tf));
+        const candlesBefore = 4000 * Math.max(1, Math.floor(tfSec / 60));
+        const candlesAfter  = 4000 * Math.max(1, Math.floor(tfSec / 60));
+        const sliceStart = Math.max(0, rawIdx - candlesBefore);
+        const sliceEnd   = Math.min(rawMT5Candles.length - 1, rawIdx + candlesAfter);
+        const rawWindow  = rawMT5Candles.slice(sliceStart, sliceEnd + 1);
+
+        if (tf === '1m') {
+          originalFullCandles = rawWindow;
+        } else {
+          const aggregated = [];
+          let bucket = null;
+          for (let i = 0; i < rawWindow.length; i++) {
+            const c = rawWindow[i];
+            const bTime = Math.floor(c.time / tfSec) * tfSec;
+            if (!bucket || bucket.time !== bTime) {
+              if (bucket) aggregated.push(bucket);
+              bucket = { time: bTime, open: c.open, high: c.high, low: c.low, close: c.close };
+            } else {
+              if (c.high > bucket.high) bucket.high = c.high;
+              if (c.low < bucket.low) bucket.low = c.low;
+              bucket.close = c.close;
+            }
+          }
+          if (bucket) aggregated.push(bucket);
+          originalFullCandles = aggregated;
+        }
+      }
+
+      // Garantizar al menos 120 velas visibles antes del punto de corte para que nunca salga 1 sola vela
+      let cutIdx = binarySearchCandleIndex(originalFullCandles, targetTimestamp);
+      if (cutIdx < 60 && originalFullCandles.length > 60) cutIdx = 60;
+
       replayIndex = cutIdx;
       isReplayActive = true;
       isCutModeActive = false;
@@ -1105,21 +1145,22 @@
       candleSeries1.setData(allCandles);
       updateReplayIndicators();
 
+      [chart1, chart2, chart3, chart4, equityChart, chartRSI, chartMACD].forEach(ch => {
+        if (ch) ch.priceScale('right').applyOptions({ autoScale: true });
+      });
       const logicalRange = { from: Math.max(0, allCandles.length - 120), to: allCandles.length - 1 };
       [chart1, chartRSI, chartMACD, equityChart].forEach(ch => ch.timeScale().setVisibleLogicalRange(logicalRange));
 
       refreshSecondaryWindows();
       const cutDateStr = new Date(currentReplayTimestamp * 1000).toLocaleString();
-      document.getElementById('agent-verdict').innerText = `✂ Gráfico y Curva Bicolor recortados en: ${cutDateStr}. Presiona ▶ para simular vela a vela.`;
+      document.getElementById('agent-verdict').innerText = `✂ Gráfico y Curva Bicolor recortados en: ${cutDateStr} (${allCandles.length.toLocaleString()} velas previas cargadas). Presiona ▶ para simular.`;
     }
 
     function executeJumpToDate() {
       const inputVal = document.getElementById('jumpDateTimeInput').value;
       if (!inputVal) return;
       const targetTimestamp = Math.floor(new Date(inputVal).getTime() / 1000);
-      if (originalFullCandles.length === 0 && allCandles.length > 0) originalFullCandles = [...allCandles];
-      if (originalFullCandles.length === 0) return;
-      applyCutAtIndex(binarySearchCandleIndex(originalFullCandles, targetTimestamp));
+      applyCutAtTimestamp(targetTimestamp);
     }
 
     // --- DIBUJOS DEL CANVAS ANCLADOS A TIEMPO Y PRECIO ---
@@ -1650,10 +1691,8 @@ function displayCandlesOnChart(data) {
       c1.classList.toggle('scissor-cursor', isCutModeActive);
     }
 
-    function executeCutAtTime(cutTime) {
-      if (originalFullCandles.length === 0) originalFullCandles = [...allCandles];
-      const foundIdx = binarySearchCandleIndex(originalFullCandles, cutTime);
-      if (foundIdx > 0) applyCutAtIndex(foundIdx);
+function executeCutAtTime(cutTime) {
+      applyCutAtTimestamp(cutTime);
     }
 
     function updateReplayIndicators() {
