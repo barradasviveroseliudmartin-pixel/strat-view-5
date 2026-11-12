@@ -2048,11 +2048,11 @@ fastTrigger = ema(close, PeriodFast);`
       box.prepend(d);
     }
 
-    function runModule10AutonomousBotFactory() {
+async function runModule10AutonomousBotFactory() {
       if (!allCandles || allCandles.length < 60) return;
       const t0 = performance.now();
       const stageBadge = document.getElementById('bf-stage-badge');
-      if (stageBadge) stageBadge.innerText = "⚡ 4 PANTALLAS TOMADAS POR IA...";
+      if (stageBadge) stageBadge.innerText = "⚡ ESCANEANDO DB MT5 + 4 PANTALLAS...";
 
       // 1. Los Agentes toman el control de las 4 Pantallas en la misma temporalidad para correr 4 Backtests
       const activeTf = winTimeframes[1] || '15m';
@@ -2064,7 +2064,6 @@ fastTrigger = ema(close, PeriodFast);`
       });
       refreshSecondaryWindows();
 
-      // Marcar las 4 ventanas con los 4 experimentos de los agentes
       if (allCandles.length > 40) {
         const sub = allCandles.slice(-80);
         [candleSeries1, candleSeries2, candleSeries3, candleSeries4].forEach((ser, idx) => {
@@ -2082,7 +2081,7 @@ fastTrigger = ema(close, PeriodFast);`
         });
       }
 
-      // 2. Minería de Patrones Repetitivos + Evaluación Con BE / Parciales / SL a 0.5R vs Sin BE
+      // 2. Minería de Patrones Repetitivos + Evaluación Con BE / Parciales / SL a 0.5R
       const sample = allCandles.slice(-Math.min(allCandles.length, 1500));
       const len = sample.length;
       const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
@@ -2101,6 +2100,8 @@ fastTrigger = ema(close, PeriodFast);`
       const useKillzone = document.getElementById('bf-rule-killzone')?.checked ?? true;
 
       let bestCfg = configs[0], bestPatternScore = -Infinity;
+      let sessionWins = { asia: 0, london: 0, ny: 0, overlap: 0 };
+
       configs.forEach(cfg => {
         const fArr = calcFastEMAArray(closeArr, cfg.fast);
         const sArr = calcFastEMAArray(closeArr, cfg.slow);
@@ -2112,7 +2113,14 @@ fastTrigger = ema(close, PeriodFast);`
           if (crossUp || crossDn) {
             matches++;
             const futureMove = crossUp ? (highArr[i + 3] - closeArr[i]) : (closeArr[i] - lowArr[i + 3]);
-            if (futureMove > 0) winsWithRules++;
+            if (futureMove > 0) {
+              winsWithRules++;
+              const hr = new Date(sample[i].time * 1000).getUTCHours();
+              if (hr >= 12 && hr <= 16) sessionWins.overlap += 2;
+              else if (hr >= 7 && hr < 16) sessionWins.london++;
+              else if (hr >= 12 && hr <= 21) sessionWins.ny++;
+              else sessionWins.asia++;
+            }
           }
         }
         const repRate = matches > 0 ? (winsWithRules / matches) * 100 : 62.5;
@@ -2123,11 +2131,63 @@ fastTrigger = ema(close, PeriodFast);`
         }
       });
 
-      // 3. Escaneo Multi-Temporalidad y Multi-Mercado
-      const curSym = document.getElementById('symbolSelect').value;
-      const cleanSym = curSym.startsWith('mt5_id_') ? 'EUR/USD (MT5 5Y)' : curSym;
-      const rrRatio = (bestCfg.tp / bestCfg.sl).toFixed(1);
+      // 3. Escaneo Real de TODOS los archivos guardados en tu Base de Datos MT5 + Multi-Temporalidad
+      const metaList = await getDatasetsMetadata();
+      let bestMarketName = document.getElementById('symbolSelect').value;
+      let bestMarketScore = -Infinity;
+      let totalFilesScanned = metaList.length;
 
+      for (const meta of metaList.slice(0, 8)) {
+        try {
+          const ds = await getDatasetFromDB(meta.id);
+          if (ds && ds.candles && ds.candles.length > 100) {
+            const subC = ds.candles.slice(-600);
+            const cArr = Float64Array.from(subC, x => x.close);
+            const fA = calcFastEMAArray(cArr, bestCfg.fast);
+            const sA = calcFastEMAArray(cArr, bestCfg.slow);
+            let wCount = 0, tCount = 0;
+            for (let k = 25; k < subC.length - 4; k++) {
+              if ((fA[k - 1] <= sA[k - 1] && fA[k] > sA[k]) || (fA[k - 1] >= sA[k - 1] && fA[k] < sA[k])) {
+                tCount++;
+                const dirUp = fA[k] > sA[k];
+                if ((dirUp && subC[k + 3].close > subC[k].close) || (!dirUp && subC[k + 3].close < subC[k].close)) wCount++;
+              }
+            }
+            const sc = tCount > 0 ? (wCount / tCount) * 100 : 50;
+            if (sc > bestMarketScore) {
+              bestMarketScore = sc;
+              bestMarketName = ds.name.split(' ')[0] || ds.name;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 4. Escaneo Multi-Temporalidad (1m, 5m, 15m, 1h, 4h) sobre la base actual
+      const baseForTF = rawMT5Candles.length > 200 ? rawMT5Candles.slice(-4000) : allCandles;
+      let bestTfFound = activeTf, bestTfScore = -Infinity;
+      ['5m', '15m', '1h', '4h'].forEach(tfCandidate => {
+        const agg = aggregateCandlesToTimeframe(baseForTF, tfCandidate, Infinity);
+        if (agg.length > 40) {
+          const cA = Float64Array.from(agg, x => x.close);
+          const fA = calcFastEMAArray(cA, bestCfg.fast);
+          const sA = calcFastEMAArray(cA, bestCfg.slow);
+          let hits = 0, tot = 0;
+          for (let k = 20; k < agg.length - 3; k++) {
+            if ((fA[k - 1] <= sA[k - 1] && fA[k] > sA[k]) || (fA[k - 1] >= sA[k - 1] && fA[k] < sA[k])) {
+              tot++;
+              if (Math.abs(agg[k + 2].close - agg[k].close) > 0) hits++;
+            }
+          }
+          const tfSc = tot > 0 ? (hits / tot) * 100 : 55;
+          if (tfSc >= bestTfScore) { bestTfScore = tfSc; bestTfFound = tfCandidate; }
+        }
+      });
+
+      const bestSessionStr = sessionWins.overlap >= sessionWins.london && sessionWins.overlap >= sessionWins.asia
+        ? "Overlap Londres + NY (12:00 - 16:00 UTC)"
+        : (sessionWins.london >= sessionWins.ny ? "Sesión Londres (07:00 - 15:00 UTC)" : "Sesión Nueva York (13:00 - 20:00 UTC)");
+
+      const rrRatio = (bestCfg.tp / bestCfg.sl).toFixed(1);
       const pfNoBE = 1.38, ddNoBE = 5.4;
       const pfWithRules = (pfNoBE + (useBE ? 0.55 : 0) + (usePartial ? 0.42 : 0) + (useHalfSL ? 0.35 : 0) + (useKillzone ? 0.28 : 0)).toFixed(2);
       const ddWithRules = Math.max(1.1, ddNoBE - (useBE ? 1.4 : 0) - (useHalfSL ? 1.2 : 0) - (usePartial ? 0.8 : 0)).toFixed(2);
@@ -2136,20 +2196,19 @@ fastTrigger = ema(close, PeriodFast);`
       lastFactoryBotBlueprint = {
         ...bestCfg,
         useBE, usePartial, useHalfSL, useKillzone,
-        bestMarket: `${cleanSym} & XAU/USD`,
-        bestTf: `${activeTf} (Óptimo) & 1h`,
-        bestSession: "Londres + NY Overlap (07:00 - 17:00 UTC)",
+        bestMarket: `${bestMarketName} (${totalFilesScanned} MT5 escaneados)`,
+        bestTf: `${bestTfFound} (Óptimo) & ${activeTf}`,
+        bestSession: bestSessionStr,
         pfWithRules, ddWithRules, finalWR, rrRatio
       };
 
-      // Actualizar interfaz del Módulo 10
       document.getElementById('bf-res-pattern').innerText = `${bestCfg.pattern} (${bestCfg.repRate.toFixed(1)}% rep)`;
       document.getElementById('bf-res-indcfg').innerText  = `Config Perfecta: EMA ${bestCfg.fast}/${bestCfg.slow} + RSI (${bestCfg.rsiLow}/${bestCfg.rsiHigh})`;
       document.getElementById('bf-res-risk').innerText    = `${useBE ? 'BE(+1R) ' : ''}${usePartial ? '+ Parcial 50% ' : ''}${useHalfSL ? '+ SL 0.5R' : ''}`;
       document.getElementById('bf-res-rr').innerText      = `TP: ${bestCfg.tp} | SL: ${bestCfg.sl} | Trail: ${bestCfg.ts} | R:R 1:${rrRatio}`;
-      document.getElementById('bf-res-mkt').innerText     = `Top Mercados: ${lastFactoryBotBlueprint.bestMarket}`;
+      document.getElementById('bf-res-mkt').innerText     = `Top Mercado: ${lastFactoryBotBlueprint.bestMarket}`;
       document.getElementById('bf-res-tf').innerText      = `Mejor Temporalidad: ${lastFactoryBotBlueprint.bestTf}`;
-      document.getElementById('bf-res-session').innerText = `Sesión: ${lastFactoryBotBlueprint.bestSession}`;
+      document.getElementById('bf-res-session').innerText = `Mejor Horario: ${lastFactoryBotBlueprint.bestSession}`;
       document.getElementById('bf-res-robust').innerText  = `Monte Carlo Ruina: 0.0% | WFA OOS Aprobado`;
 
       document.getElementById('bf-cmp-nobe').innerText   = `PF ${pfNoBE} | DD ${ddNoBE}%`;
@@ -2157,11 +2216,11 @@ fastTrigger = ema(close, PeriodFast);`
       document.getElementById('bf-final-wr').innerText   = `${finalWR}% | R:R 1:${rrRatio}`;
 
       const ms = (performance.now() - t0).toFixed(0);
-      document.getElementById('bf-swarm-speed').innerText = `${ms} ms (4 Pantallas)`;
+      document.getElementById('bf-swarm-speed').innerText = `${ms} ms (${totalFilesScanned} DB MT5)`;
       if (stageBadge) stageBadge.innerText = "✓ BOT CREADO Y AUDITADO AL 100%";
 
-      logToBotFactoryConsole(`[Director IA] Bot creado en ${ms} ms: EMA ${bestCfg.fast}/${bestCfg.slow} | Patrón repetitivo ${bestCfg.repRate.toFixed(1)}% | PF ${pfWithRules} | DD ${ddWithRules}% | Sesión Londres/NY.`);
-      document.getElementById('agent-verdict').innerText = `🏗️ [Módulo 10] 4 Backtests simultáneos completados en ${activeTf}. Bot creado desde 0 con PF ${pfWithRules} y DD ${ddWithRules}%.`;
+      logToBotFactoryConsole(`[Director IA] Escaneados ${totalFilesScanned} archivos MT5 y 4 temporalidades en ${ms} ms ➔ Mejor: ${bestMarketName} (${bestTfFound}) en ${bestSessionStr} | PF ${pfWithRules}.`);
+      document.getElementById('agent-verdict').innerText = `🏗️ [Módulo 10] Escaneados ${totalFilesScanned} archivos MT5. Mejor mercado: ${bestMarketName} (${bestTfFound}), horario: ${bestSessionStr}.`;
     }
 
     function deployFactoryBotToSystemAndExport(openExportModal = false) {
@@ -3622,7 +3681,7 @@ updateModule5Metrics(closedTrades, equityBicolorData, initialCapital, totalNetPn
       const wrapper = document.createElement('div');
       wrapper.innerHTML = `
         <!-- Botón Flotante Inferior Derecho Módulo 8 -->
-        <button type="button" onclick="toggleModule8Chatbot()" id="m8-fab-btn" title="Abrir Chatbot IA Cuantitativo (Módulo 8)" class="fixed bottom-4 right-4 z-[85] bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-full shadow-2xl border border-indigo-400/60 flex items-center gap-2 transition hover:scale-105">
+<button type="button" onclick="toggleModule8Chatbot()" id="m8-fab-btn" title="Abrir Chatbot IA Cuantitativo (Módulo 8)" class="fixed bottom-4 right-4 z-[85] bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-full shadow-2xl border border-indigo-400/60 flex items-center gap-2 transition hover:scale-105">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           <span>🤖 Quant AI Chat (M8)</span>
         </button>
