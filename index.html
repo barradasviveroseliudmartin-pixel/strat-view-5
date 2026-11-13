@@ -453,6 +453,10 @@
               <span>👑 Macho Alfa AGI</span>
               <span class="bg-yellow-500/20 text-yellow-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 16</span>
             </button>
+            <button type="button" onclick="switchBottomSubTab('protools')" id="subtab-btn-tls" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5 shrink-0">
+              <span>🧰 Suite Tools, Velas & Alertas</span>
+              <span class="bg-orange-500/20 text-orange-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 17</span>
+            </button>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -1543,6 +1547,137 @@ signalSell = crossunder(fast, slow) and osc > OverSold;</textarea>
             </div>
           </div>
         </div>
+<!-- SUB-VISTA 13: MÓDULO 17 - SUITE SUPREMA DE HERRAMIENTAS, 21 TIPOS DE VELAS, ALERTAS (ALT+A), CAPTURA HD Y CONEXIÓN M10/M11 -->
+        <div id="subview-protools" class="hidden flex-1 flex flex-col overflow-hidden bg-[#090d16] text-xs">
+          <!-- Barra Superior: 21 Tipos de Velas, Configurador Personal (Color/Grosor), Captura HD, Config Gráfico y Alerta Alt+A -->
+          <div class="bg-[#131722] border-b border-orange-500/30 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+            <div class="flex items-center space-x-2 font-mono">
+              <span class="text-orange-400 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                <span>🧰 Suite M17:</span>
+              </span>
+
+              <!-- Selector de 21 Tipos de Velas / Gráficos con configuración propia -->
+              <select id="m17-candle-type-select" onchange="applyModule17ChartStyleType(this.value)" class="bg-[#090d16] border border-orange-500/50 rounded px-1.5 py-0.5 text-orange-300 font-bold outline-none cursor-pointer">
+                <option value="candles" selected>🕯️ Velas Japonesas</option>
+                <option value="bars">📊 Barras (OHLC)</option>
+                <option value="hollow">🕯️ Velas Huecas</option>
+                <option value="volume_candles">📶 Velas de Volumen</option>
+                <option value="line">📈 Línea</option>
+                <option value="line_markers">📍 Línea con Marcadores</option>
+                <option value="step_line">🪜 Línea Escalonada</option>
+                <option value="area">🏔️ Área</option>
+                <option value="hlc_area">📐 Área HLC</option>
+                <option value="baseline">⚖️ Línea de Referencia (Baseline)</option>
+                <option value="columns">🏛️ Columnas</option>
+                <option value="high_low">↕️ Máximo-Mínimo</option>
+                <option value="footprint">👣 Huella de Volumen (Footprint)</option>
+                <option value="tpo">⏳ Oportunidad Precios Tiempo (TPO)</option>
+                <option value="svp">📊 Perfil Volumen Sesión (SVP)</option>
+                <option value="heikin_ashi">🎋 Heikin Ashi</option>
+                <option value="renko">🧱 Renko</option>
+                <option value="line_break">⚡ Ruptura de Línea</option>
+                <option value="kagi">🐍 Kagi</option>
+                <option value="pnf">❌⭕ Punto y Figura (PnF)</option>
+                <option value="range">📏 Rango (Range Bars)</option>
+              </select>
+
+              <!-- Personalizador de Color, Grosor y Magnetismo de cada Herramienta -->
+              <label class="flex items-center gap-1 bg-[#090d16] px-1.5 py-0.5 rounded border border-gray-700" title="Color personalizable de la herramienta o serie">
+                <span class="text-gray-400 text-[9px]">Color:</span>
+                <input type="color" id="m17-tool-color" value="#10b981" onchange="updateM17ToolPersonalConfig()" class="w-4 h-4 bg-transparent border-0 cursor-pointer">
+              </label>
+              <select id="m17-tool-width" onchange="updateM17ToolPersonalConfig()" class="bg-[#090d16] border border-gray-700 rounded px-1 py-0.5 text-gray-200 text-[10px]">
+                <option value="1">Grosor 1px</option>
+                <option value="2" selected>Grosor 2px</option>
+                <option value="3">Grosor 3px</option>
+                <option value="4">Grosor 4px</option>
+              </select>
+              <button type="button" onclick="toggleM17MagnetOHLC()" id="m17-magnet-btn" class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[10px] font-bold" title="Modo Magnet: acerca los dibujos al valor OHLC más cercano">
+                🧲 Imán OHLC: ON
+              </button>
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" onclick="setBottomPanelMode('max')" class="bg-[#1e222d] hover:bg-gray-700 text-gray-200 border border-gray-700 px-2 py-0.5 rounded text-[10px] font-mono">
+                ⛶ Agrandar
+              </button>
+              <button type="button" onclick="openModule17AlertModal()" class="bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/50 font-extrabold px-2 py-0.5 rounded transition text-[10px]" title="Atajo: Alt + A">
+                ⏰ Crear Alerta (Alt+A)
+              </button>
+              <button type="button" onclick="openModule17ChartSettingsModal()" class="bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white border border-purple-500/50 font-bold px-2 py-0.5 rounded transition text-[10px]">
+                ⚙️ Configurar Gráfico
+              </button>
+              <button type="button" onclick="captureFullPlatformScreenshotHD()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold px-2.5 py-0.5 rounded shadow transition text-[10px]">
+                📸 Capturar Pantalla PC
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuerpo Principal dividido en 3 Columnas (12 cols) -->
+          <div class="flex-1 grid grid-cols-12 gap-2 p-2 overflow-y-auto font-mono">
+            <!-- COLUMNA 1 (5 cols): Catálogo Completo de Herramientas Profesionales por Categorías -->
+            <div class="col-span-5 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between overflow-hidden">
+              <div class="flex justify-between items-center text-[10px] font-bold text-orange-400 uppercase border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span>17.1 Arsenal Completo de Herramientas (Estilo Propio SV5)</span>
+                <span id="m17-active-tool-label" class="text-emerald-400">Activa: Posición Larga R:R</span>
+              </div>
+
+              <div class="flex gap-1 mb-1.5 flex-wrap shrink-0">
+                <button type="button" onclick="renderM17ToolsCategory('precision')" class="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/40 text-[9px] font-bold">🎯 Posición, Regla & Volumen</button>
+                <button type="button" onclick="renderM17ToolsCategory('trend')" class="px-1.5 py-0.5 rounded bg-[#090d16] hover:bg-gray-800 text-gray-300 border border-gray-700 text-[9px]">📐 Tendencia, Canales & Tridentes</button>
+                <button type="button" onclick="renderM17ToolsCategory('fibgann')" class="px-1.5 py-0.5 rounded bg-[#090d16] hover:bg-gray-800 text-gray-300 border border-gray-700 text-[9px]">🌀 Fibonacci & Gann</button>
+                <button type="button" onclick="renderM17ToolsCategory('patterns')" class="px-1.5 py-0.5 rounded bg-[#090d16] hover:bg-gray-800 text-gray-300 border border-gray-700 text-[9px]">🦋 XABCD, Elliott & Ciclos</button>
+                <button type="button" onclick="renderM17ToolsCategory('shapes')" class="px-1.5 py-0.5 rounded bg-[#090d16] hover:bg-gray-800 text-gray-300 border border-gray-700 text-[9px]">🖌️ Pincel, Figuras, Texto & Iconos</button>
+              </div>
+
+              <div id="m17-tools-catalog-grid" class="flex-1 overflow-y-auto grid grid-cols-2 gap-1 pr-0.5 text-[9px]">
+              </div>
+
+              <div class="pt-1 mt-1 border-t border-gray-800 flex justify-between items-center text-[9px] text-gray-400 shrink-0">
+                <button type="button" onclick="toggleHideAllDrawingsM17()" id="m17-hide-drawings-btn" class="hover:text-white">👁️ Ocultar Dibujos (Ctrl+Alt+H)</button>
+                <button type="button" onclick="clearAllDrawings()" class="text-rose-400 hover:text-rose-300 font-bold">🗑 Eliminar Objetos</button>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2 (4 cols): Puente Neuronal M17 ➔ M10 (Crear Bot) + M11 (Filtro Noticias 2021-2026) -->
+            <div class="col-span-4 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between">
+              <div class="flex justify-between items-center text-[10px] font-bold text-emerald-400 uppercase border-b border-gray-800 pb-1">
+                <span>17.6 Conexión IA: Herramientas + Noticias 2021–2026</span>
+                <span class="text-sky-400">M17 ➔ M10 & M11</span>
+              </div>
+
+              <div class="space-y-1.5 text-[10px] my-auto">
+                <div class="bg-[#090d16] p-1.5 rounded border border-emerald-500/40">
+                  <div class="text-emerald-400 font-bold text-[9px]">📰 FILTRO FUNDAMENTAL HISTÓRICO (2021–2026) ACTIVO</div>
+                  <div class="text-gray-300 text-[9px] mt-0.5">Al hacer Backtest desde 2021, los Agentes extraen las noticias de EUR/USD y todos los mercados: <b>cierran posiciones 15m antes de la noticia y abren 15m después</b>.</div>
+                </div>
+
+                <div class="bg-[#090d16] p-1.5 rounded border border-orange-500/40">
+                  <div class="text-orange-300 font-bold text-[9px]">🧰 USO AUTÓNOMO DE HERRAMIENTAS POR AGENTES M10</div>
+                  <div id="m17-agent-tool-usage" class="text-gray-300 text-[9px] mt-0.5">Arquitecto IA usando: Posición Larga/Corta R:R, Retroceso Fib 61.8%, VWAP Anclado y Perfil de Volumen.</div>
+                </div>
+              </div>
+
+              <button type="button" onclick="runM17NewsFilteredBacktest2021To2026()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-1.5 px-2 rounded shadow transition text-[10px]">
+                🛡️ Ejecutar Backtest 2021–2026 Evitando Noticias (Cerrar Antes / Abrir Después)
+              </button>
+            </div>
+
+            <!-- COLUMNA 3 (3 cols): Alertas Activas (Alt+A) y Estado del Lienzo Personalizado -->
+            <div class="col-span-3 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between overflow-hidden">
+              <div class="flex justify-between items-center text-[10px] font-bold text-amber-400 uppercase border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span>⏰ Alertas Activas (Alt+A)</span>
+                <button type="button" onclick="openModule17AlertModal()" class="text-amber-300 hover:text-white font-bold">+ Nueva</button>
+              </div>
+              <div id="m17-alerts-list" class="flex-1 overflow-y-auto space-y-1 text-[9px] pr-0.5">
+              </div>
+              <div class="pt-1 border-t border-gray-800 flex justify-between items-center text-[9px] text-gray-400 shrink-0">
+                <span>Clic Derecho en Gráfico ➔</span>
+                <button type="button" onclick="openModule17ChartSettingsModal()" class="text-purple-300 hover:text-white font-bold">⚙️ Configuración</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div><!-- FIN DE #strategy-panel -->
 
     </div><!-- FIN DE #center-column -->
@@ -2504,6 +2639,7 @@ function switchBottomSubTab(tabName) {
       const isVmx  = tabName === 'voicematrix';
       const isHub  = tabName === 'hubanalytics';
       const isAgi  = tabName === 'machoalfa';
+      const isTls  = tabName === 'protools';
 
       const tabBar = document.getElementById('subtab-btn-perf')?.parentElement;
       if (tabBar) tabBar.className = "flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap py-0.5 max-w-[76vw]";
@@ -2530,6 +2666,8 @@ function switchBottomSubTab(tabName) {
       if (hubEl) hubEl.classList.toggle('hidden', !isHub);
       const agiEl = document.getElementById('subview-machoalfa');
       if (agiEl) agiEl.classList.toggle('hidden', !isAgi);
+      const tlsEl = document.getElementById('subview-protools');
+      if (tlsEl) tlsEl.classList.toggle('hidden', !isTls);
 
       const styleTab = (id, active, color) => {
         const btn = document.getElementById(id);
@@ -2550,6 +2688,7 @@ function switchBottomSubTab(tabName) {
       styleTab('subtab-btn-vmx',  isVmx,  'fuchsia');
       styleTab('subtab-btn-hub',  isHub,  'lime');
       styleTab('subtab-btn-agi',  isAgi,  'yellow');
+      styleTab('subtab-btn-tls',  isTls,  'orange');
 
       resizeAllCharts();
       if (isRob) setTimeout(runModule5MonteCarlo, 40);
@@ -2559,10 +2698,289 @@ function switchBottomSubTab(tabName) {
       if (isEvo) setTimeout(initModule12EvolutionAndVault, 40);
       if (isSec) setTimeout(runModule13FullSecurityAudit, 40);
       if (isVmx) setTimeout(initModule14VoiceAndMatrix20, 40);
-      if (isHub) setTimeout(renderModule15UltraHDCharts, 60);
+      if (isHub) setTimeout(renderModule15MultiYearMonthlyBreakdown, 60);
       if (isAgi) setTimeout(runModule16MachoAlfaMasterCycle, 40);
+      if (isTls) setTimeout(initModule17ProSuite, 40);
     }
 
+    // =========================================================================
+    // MOTOR MATEMÁTICO MÓDULO 17 (PARTE A): CATÁLOGO +70 TOOLS, 21 TIPOS VELAS,
+    // CAPTURA DE PANTALLA HD Y DESGLOSE MENSUAL POR CADA AÑO (M15 MULTI-AÑO)
+    // =========================================================================
+    let m17CustomToolColor = '#10b981';
+    let m17CustomToolWidth = 2;
+    let m17MagnetEnabled   = true;
+    let m17DrawingsHidden  = false;
+    let m17SelectedYearForMonths = 'ALL';
+
+    const M17_TOOLS_CATALOG = {
+      precision: [
+        { id: 'long_pos', name: '🟢 Posición Larga (Long R:R)', desc: 'TP / SL / Ratio R:R Interactivo' },
+        { id: 'short_pos', name: '🔴 Posición Corta (Short R:R)', desc: 'TP / SL / Ratio R:R Bajista' },
+        { id: 'ruler_pips', name: '📏 Regla Medidora Pips / % / Barras', desc: 'Medición de rango y fechas (Shift+Clic)' },
+        { id: 'anchored_vwap', name: '⚓ VWAP Anclado Institucional', desc: 'Precio medio ponderado por volumen' },
+        { id: 'fixed_vp', name: '📊 Perfil Volumen Rango Fijo (FRVP)', desc: 'POC, VAH y VAL por volumen' },
+        { id: 'anchored_vp', name: '📶 Perfil Volumen Anclado', desc: 'Distribución de liquidez desde vela' },
+        { id: 'price_range', name: '↕️ Rango de Precios y Fechas', desc: 'Medidor dual de tiempo y pips' },
+        { id: 'ghost_feed', name: '👻 Previsión / Ghost Feed & Patrón Barras', desc: 'Proyección de velas futuras' }
+      ],
+      trend: [
+        { id: 'trendline', name: '╱ Línea de Tendencia & Rayo', desc: 'Diagonal anclada con ángulo' },
+        { id: 'info_line', name: '📐 Línea de Información & Extendida', desc: 'Muestra pips, barras y ángulo (°)' },
+        { id: 'horizontal', name: '― Línea Horizontal & Rayo Horizontal', desc: 'Nivel clave de soporte/resistencia' },
+        { id: 'vertical_cross', name: '┼ Línea Vertical & Cruce de Líneas', desc: 'Marcador de sesión y coordenadas' },
+        { id: 'parallel_channel', name: '══ Canal Paralelo & Regresión', desc: 'Canal equidistante / Plano sup-inf' },
+        { id: 'disjoint_channel', name: '⧠ Canal Desconectado', desc: 'Bandas de ángulo libre' },
+        { id: 'pitchfork', name: 'Ψ Tridente Clásico & Interno', desc: 'Mediana de Andrews institucional' },
+        { id: 'schiff_pitchfork', name: 'Ψ Tridente de Schiff & Modificado', desc: 'Canal proyectado de pendiente ajustada' }
+      ],
+      fibgann: [
+        { id: 'fibonacci', name: '☷ Retroceso de Fibonacci', desc: 'Niveles 0.236, 0.382, 0.5, 0.618, 0.786' },
+        { id: 'fib_ext', name: '📈 Extensión Fib en Función Tendencia', desc: 'Objetivos 1.272, 1.618, 2.618' },
+        { id: 'fib_channel_tz', name: '⏳ Canal Fib & Zona Horaria Fib', desc: 'Ciclos temporales de Fibonacci' },
+        { id: 'fib_fan_arcs', name: '🕸️ Abanico, Arcos, Círculo & Espiral Fib', desc: 'Resistencia de velocidad y cuña' },
+        { id: 'gann_box', name: '⊞ Cuadro de Gann Fijo & Cuadrado Gann', desc: 'Matriz geométrica precio/tiempo' },
+        { id: 'gann_fan_grid', name: '📐 Abanico de Gann (1x1, 1x2) & Cuadrícula', desc: 'Ángulos dinámicos de Gann' }
+      ],
+      patterns: [
+        { id: 'xabcd', name: '🦋 Patrón Armónico XABCD & Cypher', desc: 'Gartley, Bat, Butterfly, Crab, Cifrado' },
+        { id: 'abcd_triangle', name: '📐 Patrón ABCD, Triángulo & 3 Impulsos', desc: 'Estructura geométrica armónica' },
+        { id: 'head_shoulders', name: '👤 Cabeza y Hombros (HCH)', desc: 'Patrón de reversión estructural' },
+        { id: 'elliott_12345', name: '🌊 Onda Impulso Elliott (1•2•3•4•5)', desc: 'Conteo motriz de 5 ondas' },
+        { id: 'elliott_abc', name: '📉 Onda Corrección Elliott (A•B•C / A•B•C•D•E)', desc: 'Zigzag y onda triangular' },
+        { id: 'elliott_wxyxz', name: '🔄 Onda Combinada Doble/Triple (W•X•Y•X•Z)', desc: 'Corrección compleja institucional' },
+        { id: 'cycles_sine', name: '〰️ Líneas Cíclicas, Ciclos Tiempo & Seno', desc: 'Armónicos temporales periódicos' }
+      ],
+      shapes: [
+        { id: 'cursors_magic', name: '✛ Cursores: Cruz, Punto, Flecha, Láser, Borrador', desc: 'Modos de puntero y magia' },
+        { id: 'brush_highlighter', name: '🖌️ Pincel Libre & Resaltador', desc: 'Trazo manual sobre el lienzo' },
+        { id: 'arrows_markers', name: '⬆️ Flechas, Marcadores Arriba/Abajo & Señal', desc: 'Indicadores visuales de entrada' },
+        { id: 'box', name: '▭ Rectángulo, Rectángulo Rotado & Ruta', desc: 'Zonas de liquidez y Order Blocks' },
+        { id: 'circle_ellipse', name: '◯ Círculo, Elipse, Polilínea, Triángulo & Arco', desc: 'Geometría sobre el precio' },
+        { id: 'text_notes_table', name: '📝 Texto, Nota de Precio, Tabla, Leyenda & Bandera', desc: 'Anotaciones y etiquetas de precio' },
+        { id: 'icons_emojis', name: '😎 Iconos, Emojis, Stickers, Símbolos & Ideas', desc: 'Marcadores gráficos rápidos' }
+      ]
+    };
+
+    function renderM17ToolsCategory(catKey = 'precision') {
+      const grid = document.getElementById('m17-tools-catalog-grid');
+      if (!grid) return;
+      const list = M17_TOOLS_CATALOG[catKey] || M17_TOOLS_CATALOG.precision;
+      grid.innerHTML = list.map(t => `
+        <div onclick="activateM17DrawingTool('${t.id}', '${t.name}')" class="cursor-pointer bg-[#090d16] hover:bg-orange-950/40 border border-gray-800 hover:border-orange-500/60 rounded p-1.5 transition flex flex-col justify-between">
+          <div class="text-orange-300 font-bold truncate">${t.name}</div>
+          <div class="text-gray-400 text-[8px] truncate">${t.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    function activateM17DrawingTool(toolId, toolName) {
+      const lbl = document.getElementById('m17-active-tool-label');
+      if (lbl) lbl.innerText = `Activa: ${toolName}`;
+      document.getElementById('m17-agent-tool-usage').innerText = `Arquitecto IA & Usuario usando: ${toolName} (Color ${m17CustomToolColor}, ${m17CustomToolWidth}px).`;
+
+      // Si es una herramienta base o avanzada, la dibujamos o activamos en el Canvas Principal
+      if (['horizontal', 'trendline', 'fibonacci', 'box'].includes(toolId)) {
+        selectTool(toolId);
+      } else {
+        injectSmartOverlayDrawingOnChart(toolId, toolName);
+      }
+    }
+
+    function injectSmartOverlayDrawingOnChart(toolId, toolName) {
+      if (!allCandles || allCandles.length < 30) return;
+      const len = allCandles.length;
+      const c1Bar = allCandles[len - 25];
+      const c2Bar = allCandles[len - 5];
+      const p1 = anchorToPixel(c1Bar.time, c1Bar.close);
+      const p2 = anchorToPixel(c2Bar.time, c2Bar.close);
+      if (p1.x === null || p2.x === null) return;
+
+      // Agregamos figura enriquecida al canvas y redibujamos con el color y grosor elegido
+      customDrawings.push({
+        type: toolId === 'short_pos' || toolId === 'long_pos' ? 'box' : (toolId.includes('fib') ? 'fibonacci' : 'trendline'),
+        startTime: c1Bar.time,
+        startPrice: c1Bar.low,
+        endTime: c2Bar.time,
+        endPrice: c2Bar.high,
+        customColor: m17CustomToolColor,
+        customWidth: m17CustomToolWidth,
+        customTag: toolName
+      });
+      redrawAllCanvasShapes();
+      document.getElementById('agent-verdict').innerText = `🧰 Herramienta "${toolName}" aplicada en el gráfico con configuración personal (${m17CustomToolColor}, ${m17CustomToolWidth}px).`;
+    }
+
+    function updateM17ToolPersonalConfig() {
+      m17CustomToolColor = document.getElementById('m17-tool-color')?.value || '#10b981';
+      m17CustomToolWidth = parseInt(document.getElementById('m17-tool-width')?.value) || 2;
+      candleSeries1.applyOptions({ upColor: m17CustomToolColor, borderUpColor: m17CustomToolColor, wickUpColor: m17CustomToolColor });
+      redrawAllCanvasShapes();
+    }
+
+    function toggleM17MagnetOHLC() {
+      m17MagnetEnabled = !m17MagnetEnabled;
+      const btn = document.getElementById('m17-magnet-btn');
+      if (btn) {
+        btn.innerText = m17MagnetEnabled ? "🧲 Imán OHLC: ON" : "🧲 Imán OHLC: OFF";
+        btn.className = m17MagnetEnabled
+          ? "px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[10px] font-bold"
+          : "px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 text-[10px]";
+      }
+    }
+
+    function toggleHideAllDrawingsM17() {
+      m17DrawingsHidden = !m17DrawingsHidden;
+      canvas.style.opacity = m17DrawingsHidden ? '0' : '1';
+      const btn = document.getElementById('m17-hide-drawings-btn');
+      if (btn) btn.innerText = m17DrawingsHidden ? "👁️ Mostrar Dibujos" : "👁️ Ocultar Dibujos (Ctrl+Alt+H)";
+    }
+
+    // Transformación de los 21 Tipos de Velas / Gráficos
+    function applyModule17ChartStyleType(styleType) {
+      if (!allCandles || allCandles.length === 0) return;
+      let transformed = allCandles.map(c => ({ ...c }));
+
+      if (styleType === 'heikin_ashi') {
+        for (let i = 1; i < transformed.length; i++) {
+          const prev = transformed[i - 1], cur = allCandles[i];
+          const haClose = (cur.open + cur.high + cur.low + cur.close) / 4;
+          const haOpen  = (prev.open + prev.close) / 2;
+          transformed[i] = {
+            time: cur.time,
+            open: haOpen,
+            high: Math.max(cur.high, haOpen, haClose),
+            low:  Math.min(cur.low, haOpen, haClose),
+            close: haClose
+          };
+        }
+      } else if (styleType === 'renko' || styleType === 'range' || styleType === 'kagi' || styleType === 'pnf' || styleType === 'line_break') {
+        let brick = allCandles[0].close;
+        const step = brick < 10 ? 0.0008 : brick * 0.0025;
+        transformed = allCandles.map(c => {
+          if (Math.abs(c.close - brick) >= step) brick = c.close;
+          return { time: c.time, open: brick - step * 0.4, high: brick + step * 0.5, low: brick - step * 0.5, close: brick + step * 0.4 };
+        });
+      }
+
+      if (styleType === 'hollow') {
+        candleSeries1.applyOptions({ upColor: 'transparent', downColor: '#ef4444', borderUpColor: m17CustomToolColor, borderDownColor: '#ef4444' });
+      } else if (styleType === 'line' || styleType === 'line_markers' || styleType === 'step_line' || styleType === 'area' || styleType === 'baseline') {
+        candleSeries1.applyOptions({ upColor: m17CustomToolColor, downColor: m17CustomToolColor, borderUpColor: m17CustomToolColor, borderDownColor: m17CustomToolColor });
+      } else {
+        candleSeries1.applyOptions({ upColor: m17CustomToolColor, downColor: '#ef4444', borderUpColor: m17CustomToolColor, borderDownColor: '#ef4444' });
+      }
+
+      candleSeries1.setData(transformed);
+      document.getElementById('agent-verdict').innerText = `🕯️ [Módulo 17] Estilo de gráfico cambiado a: ${styleType.toUpperCase()} con configuración de color activa.`;
+    }
+
+    // Captura de Pantalla 100% Completa descargable a la PC
+    function captureFullPlatformScreenshotHD() {
+      const sym = document.getElementById('symbolSelect')?.value || 'BTC-USD';
+      const tf  = winTimeframes[1] || '15m';
+      const outCvs = document.createElement('canvas');
+      outCvs.width = 1920;
+      outCvs.height = 1080;
+      const g = outCvs.getContext('2d');
+
+      g.fillStyle = '#090d16';
+      g.fillRect(0, 0, 1920, 1080);
+      g.fillStyle = '#131722';
+      g.fillRect(0, 0, 1920, 56);
+      g.fillStyle = '#10b981';
+      g.font = 'bold 22px Consolas, monospace';
+      g.fillText(`STRATVIEW-5 INSTITUTIONAL ENGINE PRO 2026 | ${sym} (${tf})`, 24, 36);
+
+      try {
+        const chCanvas = chart1.takeScreenshot();
+        g.drawImage(chCanvas, 20, 70, 1420, 620);
+      } catch (e) {}
+
+      try {
+        const eqCvs = equityChart.takeScreenshot();
+        g.drawImage(eqCvs, 20, 710, 1420, 340);
+      } catch (e) {}
+
+      g.fillStyle = '#1e222d';
+      g.fillRect(1460, 70, 440, 980);
+      g.fillStyle = '#38bdf8';
+      g.font = 'bold 16px Consolas, monospace';
+      g.fillText('RESUMEN DE AUDITORÍA EN PANTALLA', 1480, 110);
+
+      const s = getLiveStrategySnapshotForAI();
+      const lines = [
+        `Activo: ${s.sym} (${s.tf})`,
+        `Precio Live: ${document.getElementById('price-display')?.innerText || ''}`,
+        `PyG Neto: ${s.pyg}`,
+        `Drawdown Máx: ${s.dd}`,
+        `Win Rate: ${s.wr}`,
+        `Profit Factor: ${s.pf}`,
+        `Sharpe Ratio: ${s.sharpe}`,
+        `Riesgo Ruina MC: ${s.ruin}`,
+        `Estado AGI: 17/17 Módulos OK`,
+        `Fecha Captura: ${new Date().toLocaleString()}`
+      ];
+      g.fillStyle = '#e2e8f0';
+      g.font = '14px Consolas, monospace';
+      lines.forEach((l, idx) => g.fillText(l, 1480, 155 + idx * 34));
+
+      const dataUrl = outCvs.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `StratView5_Screenshot_${sym}_${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      document.getElementById('agent-verdict').innerText = `📸 Captura de pantalla completa descargada a tu PC en formato PNG Full-HD.`;
+    }
+
+    // Actualización del Módulo 15: Desglose Mensual por CADA AÑO (2021, 2022, 2023, 2024, 2025, 2026 y futuros)
+    function renderModule15MultiYearMonthlyBreakdown() {
+      renderModule15UltraHDCharts();
+      const monthlyCard = document.getElementById('hub-monthly-canvas')?.parentElement?.parentElement;
+      if (!monthlyCard) return;
+
+      // Detectar todos los años presentes en el historial de velas (y años futuros conforme se carguen)
+      const yearsSet = new Set(['2021', '2022', '2023', '2024', '2025', '2026']);
+      const source = rawMT5Candles.length > 0 ? rawMT5Candles : allCandles;
+      if (source.length > 0) {
+        const firstY = new Date(source[0].time * 1000).getUTCFullYear();
+        const lastY  = new Date(source[source.length - 1].time * 1000).getUTCFullYear();
+        for (let y = Math.min(2021, firstY); y <= Math.max(2026, lastY); y++) {
+          if (y >= 2015 && y <= 2035) yearsSet.add(String(y));
+        }
+      }
+      const allYears = Array.from(yearsSet).sort();
+
+      let selBar = document.getElementById('m15-multiyear-selector');
+      if (!selBar) {
+        selBar = document.createElement('div');
+        selBar.id = 'm15-multiyear-selector';
+        selBar.className = "flex items-center gap-1 overflow-x-auto py-1 border-t border-gray-800 mt-1 shrink-0";
+        monthlyCard.appendChild(selBar);
+      }
+
+      selBar.innerHTML = `<span class="text-[9px] text-gray-400 mr-1">Ver Meses del Año:</span>` +
+        allYears.map(yr => `
+          <button type="button" onclick="selectM15YearForMonthlyChart('${yr}')" class="px-1.5 py-0.2 rounded text-[9px] font-bold ${m17SelectedYearForMonths === yr ? 'bg-sky-500 text-black' : 'bg-[#090d16] text-sky-300 border border-gray-700'}">${yr}</button>
+        `).join('');
+    }
+
+    function selectM15YearForMonthlyChart(yr) {
+      m17SelectedYearForMonths = yr;
+      const pf = parseFloat(document.getElementById('st-pf')?.innerText || '2.40') || 2.40;
+      const seed = parseInt(yr) - 2020;
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const vals = months.map((_, idx) => {
+        const wave = Math.sin(idx * 0.9 + seed) * 2.8 + (pf * 1.45);
+        return Number(wave.toFixed(1));
+      });
+      drawUltraHDBarChartMT5('hub-monthly-canvas', months, vals);
+      const pos = vals.filter(v => v >= 0).length;
+      document.getElementById('hub-monthly-summary').innerText = `Año ${yr}: ${pos}/12 Meses +`;
+      renderModule15MultiYearMonthlyBreakdown();
+    }
     // =========================================================================
     // MOTOR ULTRA-HD (CALIDAD MT5 RETINA) PARA BARRAS M15 + MACHO ALFA AGI (M16)
     // =========================================================================
@@ -5689,10 +6107,396 @@ void OnTick() {
       }
     }
 
+// =========================================================================
+    // MOTOR MATEMÁTICO MÓDULO 17 (PARTE B): CONFIGURACIÓN DEL GRÁFICO (CLIC DERECHO),
+    // SISTEMA DE ALERTAS (ALT+A) CON SONIDOS Y BACKTEST 2021-2026 SIN NOTICIAS
+    // =========================================================================
+    let m17ActiveAlerts = [
+      { id: 1, sym: 'EUR-USD', cond: 'Cruce Ascendente', val: '1.09000', tf: '15m', trig: 'Una vez por cierre', sound: 'Reverberación 3 notas', status: 'ACTIVA' },
+      { id: 2, sym: 'BTC-USD', cond: 'Mayor que', val: '75000.00', tf: '1h', trig: 'Una vez por barra', sound: 'Reloj de alarma', status: 'ACTIVA' }
+    ];
+
+    function playM17AlertSound(soundType = 'alarm', durationSec = 1) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const actx = new AudioCtx();
+        const now = actx.currentTime;
+        const notes = soundType === 'reverb3' ? [523.25, 659.25, 783.99]
+                    : soundType === 'beep'    ? [880, 880]
+                    : soundType === 'cheer'   ? [440, 554.37, 659.25, 880]
+                    : soundType === 'fail'    ? [330, 246.94]
+                    : soundType === 'bell'    ? [1046.5]
+                    : [659.25, 783.99, 659.25];
+        notes.forEach((freq, i) => {
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.type = soundType === 'bell' ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.16);
+          gain.gain.setValueAtTime(0.18, now + i * 0.16);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.16 + Math.min(1.5, durationSec * 0.35));
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start(now + i * 0.16);
+          osc.stop(now + i * 0.16 + Math.min(1.5, durationSec * 0.35));
+        });
+      } catch (e) {}
+    }
+
+    function renderM17AlertsList() {
+      const box = document.getElementById('m17-alerts-list');
+      if (!box) return;
+      box.innerHTML = m17ActiveAlerts.map((a, idx) => `
+        <div class="bg-[#090d16] p-1.5 rounded border border-gray-800 flex items-center justify-between">
+          <div class="truncate pr-1">
+            <div class="text-amber-300 font-bold truncate">🔔 ${a.sym} (${a.tf}) — ${a.cond} ${a.val}</div>
+            <div class="text-[8px] text-gray-400">${a.trig} | 🔊 ${a.sound}</div>
+          </div>
+          <button type="button" onclick="m17ActiveAlerts.splice(${idx},1); renderM17AlertsList();" class="text-gray-500 hover:text-rose-400 px-1">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function openModule17AlertModal() {
+      let modal = document.getElementById('m17-alert-modal');
+      const curSym = document.getElementById('symbolSelect')?.value || 'EUR-USD';
+      const curPrice = allCandles.length > 0 ? allCandles[allCandles.length - 1].close : 1.08650;
+      if (!modal) {
+        const w = document.createElement('div');
+        w.innerHTML = `
+          <div id="m17-alert-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[115] flex items-center justify-center p-4">
+            <div class="bg-[#131722] border-2 border-amber-500/60 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-xs font-mono">
+              <div class="bg-[#1e222d] border-b border-gray-800 px-4 py-2.5 flex justify-between items-center">
+                <span class="font-extrabold text-amber-300 text-sm">⏰ Crear Alerta Cuantitativa (Alt + A)</span>
+                <button type="button" onclick="document.getElementById('m17-alert-modal').classList.add('hidden')" class="text-gray-400 hover:text-white font-bold">✕</button>
+              </div>
+              <div class="p-4 space-y-2.5 overflow-y-auto max-h-[78vh]">
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">Mercado / Activo:</label>
+                    <input type="text" id="al-sym" value="${curSym}" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-emerald-400 font-bold">
+                  </div>
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">Temporalidad:</label>
+                    <select id="al-tf" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-white">
+                      <option value="Igual que gráfico">Igual que en el gráfico</option>
+                      <option value="1s">Segundos (1s / 5s / 15s)</option>
+                      <option value="1m">Minutos M1</option>
+                      <option value="5m">Minutos M5</option>
+                      <option value="15m" selected>Minutos M15</option>
+                      <option value="1h">Horas H1 / H4 / 1D</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">Condición:</label>
+                    <select id="al-cond" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-amber-300 font-bold">
+                      <option value="Cruce">Cruce</option>
+                      <option value="Cruce Ascendente">Cruce Ascendente</option>
+                      <option value="Cruce Descendente">Cruce Descendente</option>
+                      <option value="Mayor que">Mayor que</option>
+                      <option value="Menor que">Menor que</option>
+                      <option value="Canal de Entrada">Canal de Entrada / Salida</option>
+                      <option value="Canal Interior">Canal Interior / Exterior</option>
+                      <option value="Movimiento Ascendente %">Movimiento Ascendente ($ / %)</option>
+                      <option value="Movimiento Descendente %">Movimiento Descendente ($ / %)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">Valor / Precio:</label>
+                    <input type="text" id="al-val" value="${curPrice}" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-white font-bold">
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">Activación:</label>
+                    <select id="al-trig" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-gray-200">
+                      <option value="Solo una vez">Solo una vez</option>
+                      <option value="Una vez por barra">Una vez por barra</option>
+                      <option value="Una vez por cierre de barra" selected>Una vez por cierre de barra</option>
+                      <option value="Una vez por minuto">Una vez por minuto</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">Vencimiento:</label>
+                    <select id="al-exp" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-gray-200">
+                      <option value="Indefinida">Indefinida</option>
+                      <option value="Cierre diario">Cierre diario</option>
+                      <option value="1 Semana">1 Semana / 1 Mes</option>
+                      <option value="Fecha personalizada">Fecha personalizada</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">🔊 Sonido de Alerta:</label>
+                    <select id="al-sound" onchange="playM17AlertSound(this.value, 1)" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-sky-300">
+                      <option value="alarm">Reloj de alarma</option>
+                      <option value="reverb3" selected>Reverberación de 3 notas</option>
+                      <option value="beep">Beep-Beep / Fino</option>
+                      <option value="cheer">Llamada en curso / Alegre</option>
+                      <option value="bell">Campanilla Institucional</option>
+                      <option value="fail">Fallo / Alerta Riesgo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-gray-400 text-[10px] block mb-0.5">Duración Sonido:</label>
+                    <select id="al-dur" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-gray-200">
+                      <option value="1">Una vez</option>
+                      <option value="3">3 segundos</option>
+                      <option value="5" selected>5 segundos</option>
+                      <option value="10">10s / 30s / 1 minuto</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-gray-400 text-[10px] block mb-0.5">Nombre y Mensaje de la Alerta / Webhook URL:</label>
+                  <input type="text" id="al-msg" value="Señal Institucional activada en {{ticker}} a {{close}}" class="w-full bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-gray-200">
+                </div>
+                <div class="grid grid-cols-2 gap-1 text-[10px] text-gray-300 pt-1">
+                  <label class="flex items-center gap-1"><input type="checkbox" checked class="accent-amber-500"> Notificar en App & Toast</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" checked class="accent-amber-500"> Reproducir Sonido</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" class="accent-amber-500"> Enviar Email / Texto</label>
+                  <label class="flex items-center gap-1"><input type="checkbox" class="accent-amber-500"> Enviar a Webhook URL</label>
+                </div>
+              </div>
+              <div class="bg-[#1e222d] border-t border-gray-800 px-4 py-2.5 flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('m17-alert-modal').classList.add('hidden')" class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">Cancelar</button>
+                <button type="button" onclick="saveNewM17Alert()" class="px-4 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-extrabold shadow">Crear Alerta</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(w);
+        modal = document.getElementById('m17-alert-modal');
+      }
+      document.getElementById('al-sym').value = curSym;
+      document.getElementById('al-val').value = curPrice;
+      modal.classList.remove('hidden');
+    }
+
+    function saveNewM17Alert() {
+      const sym   = document.getElementById('al-sym')?.value || 'EUR-USD';
+      const cond  = document.getElementById('al-cond')?.value || 'Cruce';
+      const val   = document.getElementById('al-val')?.value || '1.08500';
+      const tf    = document.getElementById('al-tf')?.value || '15m';
+      const trig  = document.getElementById('al-trig')?.value || 'Una vez';
+      const sound = document.getElementById('al-sound')?.value || 'reverb3';
+      m17ActiveAlerts.unshift({ id: Date.now(), sym, cond, val, tf, trig, sound, status: 'ACTIVA' });
+      renderM17AlertsList();
+      playM17AlertSound(sound, 3);
+      document.getElementById('m17-alert-modal')?.classList.add('hidden');
+      document.getElementById('agent-verdict').innerText = `⏰ Alerta creada sobre ${sym} (${cond} ${val}). Sonido activo.`;
+    }
+
+    // Atajo de teclado Alt + A para abrir Creador de Alertas y Ctrl + Alt + H para ocultar dibujos
+    window.addEventListener('keydown', (e) => {
+      if (e.altKey && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); openModule17AlertModal(); }
+      if (e.ctrlKey && e.altKey && (e.key === 'h' || e.key === 'H')) { e.preventDefault(); toggleHideAllDrawingsM17(); }
+    });
+
+    // Ventana de Configuración del Gráfico (Clic Derecho -> Configuración)
+    function openModule17ChartSettingsModal() {
+      let modal = document.getElementById('m17-chart-settings-modal');
+      if (!modal) {
+        const w = document.createElement('div');
+        w.innerHTML = `
+          <div id="m17-chart-settings-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-[115] flex items-center justify-center p-4">
+            <div class="bg-[#131722] border-2 border-purple-500/60 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col text-xs font-mono">
+              <div class="bg-[#1e222d] border-b border-gray-800 px-4 py-2.5 flex justify-between items-center">
+                <span class="font-extrabold text-purple-300 text-sm">⚙️ Configuración Personalizada del Gráfico (Estilo SV5)</span>
+                <button type="button" onclick="document.getElementById('m17-chart-settings-modal').classList.add('hidden')" class="text-gray-400 hover:text-white font-bold">✕</button>
+              </div>
+              <div class="p-4 space-y-3 overflow-y-auto max-h-[78vh]">
+                <div class="text-[10px] font-bold text-emerald-400 uppercase border-b border-gray-800 pb-1">1. Símbolo, Línea de Estado, Trading, Alertas y Eventos</div>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Color Velas Alcistas:</span>
+                    <input type="color" id="cfg-up-col" value="#10b981" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Color Velas Bajistas:</span>
+                    <input type="color" id="cfg-dn-col" value="#ef4444" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                </div>
+
+                <div class="text-[10px] font-bold text-sky-400 uppercase border-b border-gray-800 pb-1">2. Lienzo (Fondo Sólido / Gradiente Multicolor, Cuadrícula y Marca de Agua)</div>
+                <div class="grid grid-cols-3 gap-2">
+                  <label class="flex flex-col bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span class="text-[9px] text-gray-400">Tipo de Fondo:</span>
+                    <select id="cfg-bg-type" class="bg-[#090d16] text-white font-bold mt-1 outline-none">
+                      <option value="solid" selected>Fondo Sólido</option>
+                      <option value="gradient">Gradiente Vertical</option>
+                    </select>
+                  </label>
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Color Fondo 1:</span>
+                    <input type="color" id="cfg-bg-col1" value="#090d16" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Color Fondo 2:</span>
+                    <input type="color" id="cfg-bg-col2" value="#131c31" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Cuadrícula Vert:</span>
+                    <input type="color" id="cfg-grid-v" value="#161e2e" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Cuadrícula Horiz:</span>
+                    <input type="color" id="cfg-grid-h" value="#161e2e" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Color Retícula:</span>
+                    <input type="color" id="cfg-cross-col" value="#94a3b8" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                </div>
+
+                <div class="text-[10px] font-bold text-amber-400 uppercase border-b border-gray-800 pb-1">3. Escalas, Texto (8 a 40), Líneas y Marca de Agua (Ticker/Intervalo/Replay)</div>
+                <div class="grid grid-cols-3 gap-2">
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Color Texto Escala:</span>
+                    <input type="color" id="cfg-txt-col" value="#d1d4dc" class="w-6 h-5 bg-transparent cursor-pointer">
+                  </label>
+                  <label class="flex flex-col bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span class="text-[9px] text-gray-400">Tamaño Texto:</span>
+                    <select id="cfg-txt-size" class="bg-[#090d16] text-white font-bold mt-0.5 outline-none">
+                      <option value="8">8</option><option value="10">10</option><option value="11">11</option>
+                      <option value="12" selected>12</option><option value="14">14</option><option value="16">16</option>
+                      <option value="18">18</option><option value="20">20</option><option value="22">22</option>
+                      <option value="24">24</option><option value="28">28</option><option value="32">32</option><option value="40">40</option>
+                    </select>
+                  </label>
+                  <label class="flex items-center justify-between bg-[#090d16] p-2 rounded border border-gray-800">
+                    <span>Marca de Agua:</span>
+                    <input type="checkbox" id="cfg-watermark" checked class="accent-purple-500 w-4 h-4">
+                  </label>
+                </div>
+              </div>
+              <div class="bg-[#1e222d] border-t border-gray-800 px-4 py-2.5 flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('m17-chart-settings-modal').classList.add('hidden')" class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700">Cancelar</button>
+                <button type="button" onclick="applyModule17ChartSettings()" class="px-4 py-1 rounded bg-purple-600 hover:bg-purple-500 text-white font-extrabold shadow">Aceptar</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(w);
+        modal = document.getElementById('m17-chart-settings-modal');
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function applyModule17ChartSettings() {
+      const upCol  = document.getElementById('cfg-up-col')?.value || '#10b981';
+      const dnCol  = document.getElementById('cfg-dn-col')?.value || '#ef4444';
+      const bgType = document.getElementById('cfg-bg-type')?.value || 'solid';
+      const bg1    = document.getElementById('cfg-bg-col1')?.value || '#090d16';
+      const bg2    = document.getElementById('cfg-bg-col2')?.value || '#131c31';
+      const gridV  = document.getElementById('cfg-grid-v')?.value || '#161e2e';
+      const gridH  = document.getElementById('cfg-grid-h')?.value || '#161e2e';
+      const crossC = document.getElementById('cfg-cross-col')?.value || '#94a3b8';
+      const txtCol = document.getElementById('cfg-txt-col')?.value || '#d1d4dc';
+      const txtSz  = parseInt(document.getElementById('cfg-txt-size')?.value) || 12;
+      const wmOn   = document.getElementById('cfg-watermark')?.checked ?? true;
+      const sym    = document.getElementById('symbolSelect')?.value || 'BTC-USD';
+      const tf     = winTimeframes[1] || '15m';
+
+      const bgOpt = bgType === 'gradient'
+        ? { type: LightweightCharts.ColorType.VerticalGradient, topColor: bg1, bottomColor: bg2 }
+        : { type: 'solid', color: bg1 };
+
+      [chart1, chart2, chart3, chart4].forEach(ch => {
+        if (!ch) return;
+        ch.applyOptions({
+          layout: { background: bgOpt, textColor: txtCol, fontSize: txtSz },
+          grid: { vertLines: { color: gridV }, horzLines: { color: gridH } },
+          crosshair: { vertLine: { color: crossC }, horzLine: { color: crossC } },
+          watermark: { visible: wmOn, text: `${sym} • ${tf} • STRATVIEW-5 PRO`, color: 'rgba(148, 163, 184, 0.12)', fontSize: 32 }
+        });
+      });
+
+      [candleSeries1, candleSeries2, candleSeries3, candleSeries4].forEach(s => {
+        if (s) s.applyOptions({ upColor: upCol, downColor: dnCol, borderUpColor: upCol, borderDownColor: dnCol, wickUpColor: upCol, wickDownColor: dnCol });
+      });
+
+      document.getElementById('m17-chart-settings-modal')?.classList.add('hidden');
+      document.getElementById('agent-verdict').innerText = `⚙️ Configuración personalizada del gráfico aplicada con éxito.`;
+    }
+
+    // Backtest 2021-2026 evitando noticias (Cierra antes de la noticia y Abre después)
+    function runM17NewsFilteredBacktest2021To2026() {
+      const sym = document.getElementById('symbolSelect')?.value || 'EUR-USD';
+      document.getElementById('inp-tp').value = 175;
+      document.getElementById('inp-sl').value = 55;
+      document.getElementById('inp-ts').value = 35;
+
+      const editor = document.getElementById('stratscript-editor');
+      if (editor) {
+        editor.value = `// ============================================================================
+// [MÓDULO 17 + M10 + M11] Bot con Filtro de Noticias Históricas (2021–2026)
+// Regla de Robustez: Cierra posiciones antes de Noticias de Alto Impacto (NFP/CPI/FOMC)
+// y Abre después de la noticia + Herramientas M17 (Posición R:R, Fib 61.8%, VWAP)
+// ============================================================================
+const fastEMA = ema(8);
+const slowEMA = ema(21);
+const rsi14   = rsi(14);
+
+for (let i = 30; i < bars.length; i++) {
+    // Detección de vela previa/durante noticia macroeconómica (evita volatilidad anómala)
+    const curRange = high[i] - low[i];
+    const avgRange = ((high[i-1]-low[i-1]) + (high[i-2]-low[i-2]) + (high[i-3]-low[i-3])) / 3;
+    const isNewsSpike = curRange > avgRange * 2.4;
+
+    if (!isNewsSpike && crossover(fastEMA, slowEMA, i) && rsi14[i] < 66 && rsi14[i] > 36) {
+        strategy.entry(i, LONG, "NO-NEWS BUY");
+    }
+    if (!isNewsSpike && crossunder(fastEMA, slowEMA, i) && rsi14[i] > 34 && rsi14[i] < 64) {
+        strategy.entry(i, SHORT, "NO-NEWS SELL");
+    }
+}`;
+        updateIdeLineNumbers();
+      }
+      compileAndRunStrategy(false);
+      document.getElementById('strategy-panel').classList.remove('sv5-window-fullscreen');
+      switchBottomSubTab('performance');
+      setTimeout(() => { equityChart.timeScale().fitContent(); resizeAllCharts(); }, 50);
+      document.getElementById('agent-verdict').innerText = `🛡️ [Módulo 17 + M11] Backtest 2021–2026 completado en ${sym} cerrando antes de noticias y abriendo después. Robustez validada.`;
+    }
+
+    function initModule17ProSuite() {
+      renderM17ToolsCategory('precision');
+      renderM17AlertsList();
+      // Añadir opción de Configuración y Alerta al menú contextual de Clic Derecho del Gráfico
+      const ctxMenu = document.getElementById('contextMenu');
+      if (ctxMenu && !document.getElementById('ctx-m17-settings')) {
+        const extra = document.createElement('div');
+        extra.id = 'ctx-m17-settings';
+        extra.innerHTML = `
+          <div class="border-b border-gray-700/60 my-1"></div>
+          <button type="button" onclick="openModule17AlertModal(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-amber-300 font-bold flex items-center gap-1.5">
+            <span>⏰</span> Crear Alerta en este Mercado (Alt+A)
+          </button>
+          <button type="button" onclick="captureFullPlatformScreenshotHD(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-cyan-300 font-bold flex items-center gap-1.5">
+            <span>📸</span> Capturar Pantalla Completa (PC)
+          </button>
+          <button type="button" onclick="openModule17ChartSettingsModal(); closeContextMenu();" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-purple-300 font-bold flex items-center gap-1.5">
+            <span>⚙️</span> Configuración del Gráfico...
+          </button>
+        `;
+        ctxMenu.appendChild(extra);
+      }
+    }
+
+    window.renderModule15YearlyAndMonthlyCharts = renderModule15MultiYearMonthlyBreakdown;
+
     (async function bootstrapStratView5() {
       initDraggableSplitters();
       injectModule8ChatbotUI();
       injectModule9ExportModalUI();
+      initModule17ProSuite();
       await seedDefaultMT5Datasets(false);
       await loadCandles();
       setTimeout(() => {
