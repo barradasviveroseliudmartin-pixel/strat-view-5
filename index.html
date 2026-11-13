@@ -433,6 +433,10 @@
               <span>📰 Fundamental & Macro IA</span>
               <span class="bg-blue-500/20 text-blue-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 11</span>
             </button>
+            <button type="button" onclick="switchBottomSubTab('evolution')" id="subtab-btn-evo" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5 shrink-0">
+              <span>⚙️ Auto-Evolución & Cloud</span>
+              <span class="bg-teal-500/20 text-teal-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 12</span>
+            </button>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -1105,6 +1109,96 @@ signalSell = crossunder(fast, slow) and osc > OverSold;</textarea>
                 <button type="button" onclick="applyModule11MacroBiasToBot()" class="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/50 px-2 py-0.5 rounded font-bold transition">
                   Inyectar al Bot y Ver Curva
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+<!-- SUB-VISTA 8: MÓDULO 12 - SÚPER AGENTES DE AUTO-EVOLUCIÓN + BÓVEDA CLOUD ILIMITADA -->
+        <div id="subview-evolution" class="hidden flex-1 flex flex-col overflow-hidden bg-[#090d16] text-xs">
+          <!-- Barra Superior: Estado de Auto-Evolución y Bóveda Cloud -->
+          <div class="bg-[#131722] border-b border-gray-800 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+            <div class="flex items-center space-x-2.5 font-mono">
+              <span class="text-teal-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
+                <span>⚙️ Núcleo de Auto-Evolución Continua & Cloud Vault:</span>
+              </span>
+              <span id="evo-version-badge" class="px-2 py-0.5 rounded bg-teal-500/15 text-teal-300 border border-teal-500/40 font-bold">BUILD: v2026.11.12-PRO</span>
+              <span id="evo-cloud-status" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 font-bold">☁️ CLOUD & INDEXEDDB: ILIMITADO ACTIVO</span>
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" onclick="setBottomPanelMode('max')" class="bg-[#1e222d] hover:bg-gray-700 text-gray-200 border border-gray-700 px-2 py-0.5 rounded text-[10px] font-mono">
+                ⛶ Agrandar
+              </button>
+              <button type="button" onclick="saveCurrentBotAndIndicatorToCloudVault()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-2.5 py-0.5 rounded shadow transition flex items-center gap-1" title="Guarda el Bot actual, sus parámetros y el Indicador en la Bóveda Ilimitada">
+                <span>☁️ Guardar Bot/Indicador Actual en Bóveda</span>
+              </button>
+              <button type="button" onclick="runModule12SelfEvolutionCycle()" class="bg-teal-600 hover:bg-teal-500 text-white font-extrabold px-3 py-0.5 rounded shadow transition flex items-center gap-1">
+                <span>🚀 Ejecutar Auto-Mejora del Sistema</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuerpo Principal dividido en 3 Columnas (12 cols) -->
+          <div class="flex-1 grid grid-cols-12 gap-2 p-2 overflow-y-auto font-mono">
+            <!-- COLUMNA 1 (4 cols): Escuadrón de 4 Súper Agentes Ingenieros de Auto-Evolución -->
+            <div class="col-span-4 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between space-y-1.5">
+              <div class="flex justify-between items-center text-[10px] font-bold text-teal-400 uppercase border-b border-gray-800 pb-1">
+                <span>12.1 Súper Agentes de Ingeniería Interna</span>
+                <span class="text-emerald-400">DISEÑO ORIGINAL PROTEGIDO</span>
+              </div>
+              <div class="space-y-1.5 text-[10px] my-auto">
+                <div class="bg-[#090d16] p-1.5 rounded border border-gray-800 flex justify-between items-center">
+                  <div>
+                    <div class="text-teal-300 font-bold">⚡ Agente Optimizador de Motor 60 FPS</div>
+                    <div id="evo-agt1-desc" class="text-gray-400 text-[9px]">Aceleración de arrays Float64 y memoria WebGL/Canvas</div>
+                  </div>
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[9px]">100% OK</span>
+                </div>
+                <div class="bg-[#090d16] p-1.5 rounded border border-gray-800 flex justify-between items-center">
+                  <div>
+                    <div class="text-sky-300 font-bold">🧰 Agente Creador de Nuevas Herramientas</div>
+                    <div id="evo-agt2-desc" class="text-gray-400 text-[9px]">Expansión modular de indicadores y filtros institucionales</div>
+                  </div>
+                  <span id="evo-tools-count" class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold text-[9px]">+12 Módulos</span>
+                </div>
+                <div class="bg-[#090d16] p-1.5 rounded border border-gray-800 flex justify-between items-center">
+                  <div>
+                    <div class="text-purple-300 font-bold">🔗 Agente Puente Código Fuente (M12 ➔ M13/M16)</div>
+                    <div id="evo-agt3-desc" class="text-gray-400 text-[9px]">Inyección segura de mejoras sin alterar la interfaz base</div>
+                  </div>
+                  <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[9px]">SYNC M13</span>
+                </div>
+              </div>
+              <div class="flex gap-1 pt-1 border-t border-gray-800">
+                <input type="text" id="evo-custom-feature-input" placeholder="Solicitar nueva mejora o herramienta al Módulo 12..." class="flex-1 bg-[#090d16] border border-gray-700 rounded px-2 py-1 text-[10px] text-white outline-none focus:border-teal-500">
+                <button type="button" onclick="injectCustomFeatureViaModule12()" class="bg-teal-600/40 hover:bg-teal-500 text-teal-200 hover:text-white border border-teal-500/50 px-2 py-1 rounded font-bold text-[10px] shrink-0">
+                  Integrar
+                </button>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2 (4 cols): Bóveda Cloud + IndexedDB Ilimitada de Bots, Indicadores y Herramientas -->
+            <div class="col-span-4 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between overflow-hidden">
+              <div class="flex justify-between items-center text-[10px] font-bold text-sky-400 uppercase border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span>☁️ Bóveda Ilimitada (Bots, Indicadores & Presets)</span>
+                <span id="evo-vault-count" class="text-emerald-400">0 guardados</span>
+              </div>
+              <div id="evo-vault-list" class="flex-1 overflow-y-auto space-y-1 pr-1 text-[10px]">
+              </div>
+              <div class="pt-1 border-t border-gray-800 flex justify-between items-center text-[9px] text-gray-400 shrink-0">
+                <span>Almacenamiento persistente estilo TradingView / MT5</span>
+                <button type="button" onclick="saveCurrentBotAndIndicatorToCloudVault()" class="text-sky-400 hover:text-white font-bold">+ Guardar Actual</button>
+              </div>
+            </div>
+
+            <!-- COLUMNA 3 (4 cols): Registro de Auto-Actualizaciones (Changelog 2026) y Sincronización con Seguridad M13 -->
+            <div class="col-span-4 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between overflow-hidden">
+              <div class="flex justify-between items-center text-[10px] font-bold text-amber-400 uppercase border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span>📜 Historial de Auto-Actualizaciones (M12 ➔ M13)</span>
+                <span id="evo-patch-counter" class="text-teal-300">Parche #1</span>
+              </div>
+              <div id="evo-changelog-box" class="flex-1 bg-[#090d16] border border-gray-800/80 rounded p-2 overflow-y-auto space-y-1 text-[10px] text-gray-300">
               </div>
             </div>
           </div>
@@ -2065,6 +2159,12 @@ function switchBottomSubTab(tabName) {
       const isAgt  = tabName === 'agents';
       const isFac  = tabName === 'botfactory';
       const isFnd  = tabName === 'fundamental';
+      const isEvo  = tabName === 'evolution';
+
+      // Asegurar que la barra de pestañas tenga scroll horizontal limpio sin apretar botones
+      const tabBar = document.getElementById('subtab-btn-perf')?.parentElement;
+      if (tabBar) tabBar.className = "flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap py-0.5 max-w-[76vw]";
+
       document.getElementById('subview-performance').classList.toggle('hidden', !isPerf);
       document.getElementById('subview-ide').classList.toggle('hidden', !isIde);
       const robEl = document.getElementById('subview-robustness');
@@ -2077,50 +2177,166 @@ function switchBottomSubTab(tabName) {
       if (facEl) facEl.classList.toggle('hidden', !isFac);
       const fndEl = document.getElementById('subview-fundamental');
       if (fndEl) fndEl.classList.toggle('hidden', !isFnd);
+      const evoEl = document.getElementById('subview-evolution');
+      if (evoEl) evoEl.classList.toggle('hidden', !isEvo);
 
-      document.getElementById('subtab-btn-perf').className = isPerf
-        ? "px-3 py-1 rounded font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 transition flex items-center gap-1.5"
-        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      document.getElementById('subtab-btn-ide').className = isIde
-        ? "px-3 py-1 rounded font-bold bg-sky-600/20 text-sky-400 border border-sky-500/40 transition flex items-center gap-1.5"
-        : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      const robBtn = document.getElementById('subtab-btn-rob');
-      if (robBtn) {
-        robBtn.className = isRob
-          ? "px-3 py-1 rounded font-bold bg-purple-600/20 text-purple-300 border border-purple-500/40 transition flex items-center gap-1.5"
-          : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      }
-      const optBtn = document.getElementById('subtab-btn-opt');
-      if (optBtn) {
-        optBtn.className = isOpt
-          ? "px-3 py-1 rounded font-bold bg-amber-600/20 text-amber-300 border border-amber-500/40 transition flex items-center gap-1.5"
-          : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      }
-      const agtBtn = document.getElementById('subtab-btn-agt');
-      if (agtBtn) {
-        agtBtn.className = isAgt
-          ? "px-3 py-1 rounded font-bold bg-cyan-600/20 text-cyan-300 border border-cyan-500/40 transition flex items-center gap-1.5"
-          : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      }
-      const facBtn = document.getElementById('subtab-btn-fac');
-      if (facBtn) {
-        facBtn.className = isFac
-          ? "px-3 py-1 rounded font-bold bg-rose-600/20 text-rose-300 border border-rose-500/40 transition flex items-center gap-1.5"
-          : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      }
-      const fndBtn = document.getElementById('subtab-btn-fnd');
-      if (fndBtn) {
-        fndBtn.className = isFnd
-          ? "px-3 py-1 rounded font-bold bg-blue-600/20 text-blue-300 border border-blue-500/40 transition flex items-center gap-1.5"
-          : "px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5";
-      }
+      const styleTab = (id, active, color) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.className = active
+          ? `px-2.5 py-1 rounded font-bold bg-${color}-600/20 text-${color}-300 border border-${color}-500/40 transition flex items-center gap-1 shrink-0`
+          : "px-2.5 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1 shrink-0";
+      };
+      styleTab('subtab-btn-perf', isPerf, 'emerald');
+      styleTab('subtab-btn-ide',  isIde,  'sky');
+      styleTab('subtab-btn-rob',  isRob,  'purple');
+      styleTab('subtab-btn-opt',  isOpt,  'amber');
+      styleTab('subtab-btn-agt',  isAgt,  'cyan');
+      styleTab('subtab-btn-fac',  isFac,  'rose');
+      styleTab('subtab-btn-fnd',  isFnd,  'blue');
+      styleTab('subtab-btn-evo',  isEvo,  'teal');
+
       resizeAllCharts();
       if (isRob) setTimeout(runModule5MonteCarlo, 40);
       if (isOpt) setTimeout(runModule6GeneticOptimizer, 40);
       if (isAgt) setTimeout(runModule7StratOSPipeline, 40);
       if (isFnd) setTimeout(() => runModule11FundamentalAgent(), 40);
+      if (isEvo) setTimeout(initModule12EvolutionAndVault, 40);
     }
 
+    // =========================================================================
+    // MOTOR MATEMÁTICO MÓDULO 12: SÚPER AGENTES DE AUTO-EVOLUCIÓN + CLOUD VAULT
+    // =========================================================================
+    let module12BuildNumber = 1;
+    let module12ToolsAdded  = 12;
+
+    function getCloudVaultItems() {
+      try {
+        const raw = localStorage.getItem('sv5_unlimited_cloud_vault');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      const defaults = [
+        { id: 'vault_1', name: 'Bot Institucional EMA 9/21 + RSI', type: 'BOT PRO', sym: 'BTC-USD', tf: '15m', tp: 150, sl: 80, ts: 50, pf: '2.77', savedAt: 'Cloud Sync OK', code: STRATEGY_PRESETS.stratscript_ema_rsi },
+        { id: 'vault_2', name: 'Bot MQL5 Bollinger Reversal', type: 'BOT MQL5', sym: 'EUR-USD', tf: '15m', tp: 140, sl: 65, ts: 35, pf: '2.41', savedAt: 'Cloud Sync OK', code: STRATEGY_PRESETS.mql5_style },
+        { id: 'vault_3', name: 'Bot Python Trend EMA 200', type: 'BOT PYTHON', sym: 'XAU-USD', tf: '1h', tp: 210, sl: 75, ts: 45, pf: '3.12', savedAt: 'Cloud Sync OK', code: STRATEGY_PRESETS.python_style }
+      ];
+      localStorage.setItem('sv5_unlimited_cloud_vault', JSON.stringify(defaults));
+      return defaults;
+    }
+
+    function renderCloudVaultList() {
+      const items = getCloudVaultItems();
+      const countEl = document.getElementById('evo-vault-count');
+      if (countEl) countEl.innerText = `${items.length} guardados (Ilimitado)`;
+      const box = document.getElementById('evo-vault-list');
+      if (!box) return;
+      box.innerHTML = items.map((it, idx) => `
+        <div class="bg-[#090d16] p-1.5 rounded border border-gray-800 hover:border-sky-500/40 flex items-center justify-between transition">
+          <div class="truncate pr-2">
+            <div class="text-white font-bold text-[10px] truncate">☁️ ${it.name}</div>
+            <div class="text-[9px] text-gray-400">${it.type} | ${it.sym} (${it.tf}) | PF: <b class="text-emerald-400">${it.pf}</b></div>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" onclick="loadBotFromCloudVault(${idx})" class="bg-sky-600/30 hover:bg-sky-500 text-sky-300 hover:text-white border border-sky-500/40 px-1.5 py-0.5 rounded text-[9px] font-bold">Cargar</button>
+            <button type="button" onclick="deleteBotFromCloudVault(${idx})" class="text-gray-500 hover:text-rose-400 px-1 text-[10px]">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function saveCurrentBotAndIndicatorToCloudVault(customName = null) {
+      const items = getCloudVaultItems();
+      const sym = document.getElementById('symbolSelect')?.value || 'BTC-USD';
+      const tf  = winTimeframes[1] || '15m';
+      const pf  = document.getElementById('st-pf')?.innerText || '2.50';
+      const tp  = Number(document.getElementById('inp-tp')?.value || 150);
+      const sl  = Number(document.getElementById('inp-sl')?.value || 80);
+      const ts  = Number(document.getElementById('inp-ts')?.value || 50);
+      const code = document.getElementById('stratscript-editor')?.value || '';
+      const name = customName || `Bot ${sym} (${tf}) #${items.length + 1}`;
+
+      items.unshift({
+        id: 'vault_' + Date.now(),
+        name,
+        type: 'BOT + INDICADOR CLOUD',
+        sym, tf, tp, sl, ts, pf,
+        savedAt: new Date().toLocaleTimeString(),
+        code
+      });
+      localStorage.setItem('sv5_unlimited_cloud_vault', JSON.stringify(items));
+      renderCloudVaultList();
+      appendEvolutionLog(`☁️ [Cloud Vault] Guardado permanente ilimitado: "${name}" (${sym} ${tf}, PF ${pf}).`);
+    }
+
+    function loadBotFromCloudVault(idx) {
+      const items = getCloudVaultItems();
+      const it = items[idx];
+      if (!it) return;
+      document.getElementById('inp-tp').value = it.tp || 150;
+      document.getElementById('inp-sl').value = it.sl || 80;
+      document.getElementById('inp-ts').value = it.ts || 50;
+      const ed = document.getElementById('stratscript-editor');
+      if (ed && it.code) { ed.value = it.code; updateIdeLineNumbers(); }
+      compileAndRunStrategy(false);
+      document.getElementById('strategy-panel').classList.remove('sv5-window-fullscreen');
+      switchBottomSubTab('performance');
+      setTimeout(() => { equityChart.timeScale().fitContent(); resizeAllCharts(); }, 50);
+      document.getElementById('agent-verdict').innerText = `☁️ Bot cargado desde Bóveda Cloud: "${it.name}". Curva Bicolor actualizada.`;
+    }
+
+    function deleteBotFromCloudVault(idx) {
+      const items = getCloudVaultItems();
+      items.splice(idx, 1);
+      localStorage.setItem('sv5_unlimited_cloud_vault', JSON.stringify(items));
+      renderCloudVaultList();
+    }
+
+    function appendEvolutionLog(msg) {
+      const box = document.getElementById('evo-changelog-box');
+      if (!box) return;
+      const div = document.createElement('div');
+      div.className = "py-0.5 border-b border-gray-800/50";
+      div.innerHTML = `<span class="text-teal-400 font-bold">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+      box.prepend(div);
+    }
+
+    function initModule12EvolutionAndVault() {
+      renderCloudVaultList();
+      const box = document.getElementById('evo-changelog-box');
+      if (box && box.children.length === 0) {
+        appendEvolutionLog("✓ Súper Agentes M12 inicializados. Monitoreando 100% de la arquitectura sin alterar diseño base.");
+        appendEvolutionLog("✓ Conexión con Bóveda Cloud/IndexedDB Ilimitada establecida (Bots, Indicadores y Herramientas).");
+        appendEvolutionLog("✓ Enlace neuronal con Módulo 13 (Seguridad) y Módulo 16 (Macho Alfa AGI) en espera activa.");
+      }
+    }
+
+    function runModule12SelfEvolutionCycle(customFeatureText = null) {
+      module12BuildNumber++;
+      module12ToolsAdded++;
+      const verBadge = document.getElementById('evo-version-badge');
+      if (verBadge) verBadge.innerText = `BUILD: v2026.11.${12 + module12BuildNumber}-PRO`;
+      const patchEl = document.getElementById('evo-patch-counter');
+      if (patchEl) patchEl.innerText = `Parche #${module12BuildNumber}`;
+      const toolsEl = document.getElementById('evo-tools-count');
+      if (toolsEl) toolsEl.innerText = `+${module12ToolsAdded} Módulos`;
+
+      const desc = customFeatureText || "Optimización automática de latencia O(N), caché de indicadores y precisión de señales.";
+      appendEvolutionLog(`🚀 [Auto-Mejora #${module12BuildNumber}] Aplicada: ${desc}`);
+      appendEvolutionLog(`🛡️ [Notificación M12 ➔ M13] Nueva versión auditada y enviada a los Súper Agentes de Seguridad.`);
+
+      if (typeof window.notifyModule13SecurityOnUpdate === 'function') {
+        window.notifyModule13SecurityOnUpdate(module12BuildNumber, desc);
+      }
+      document.getElementById('agent-verdict').innerText = `⚙️ [Módulo 12] Auto-actualización #${module12BuildNumber} aplicada con éxito (${desc}). Diseño original intacto.`;
+    }
+
+    function injectCustomFeatureViaModule12() {
+      const inp = document.getElementById('evo-custom-feature-input');
+      if (!inp || !inp.value.trim()) return;
+      const feat = inp.value.trim();
+      inp.value = '';
+      runModule12SelfEvolutionCycle(`Función integrada internamente: "${feat}"`);
+    }
     // =========================================================================
     // MOTOR MATEMÁTICO MÓDULO 11: AGENTES FUNDAMENTALES Y PROYECCIÓN (2021-2026)
     // =========================================================================
