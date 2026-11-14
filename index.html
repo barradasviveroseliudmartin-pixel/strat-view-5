@@ -216,6 +216,10 @@
         <span>📥</span> <span>Exportar</span>
         <span class="bg-amber-500/30 text-amber-200 text-[9px] px-1 rounded font-mono">M9</span>
       </button>
+      <button type="button" onclick="openModule20InstallAppModal()" class="bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-500/50 font-semibold text-xs px-2.5 py-1.5 rounded transition flex items-center gap-1 shadow" title="Instalar App en Escritorio de PC o Pantalla de Inicio del Celular">
+        <span>📲</span> <span>Instalar App</span>
+        <span class="bg-cyan-500/30 text-cyan-200 text-[9px] px-1 rounded font-mono">M20</span>
+      </button>
     </div>
   </header>
 
@@ -6956,11 +6960,200 @@ for (let i = 30; i < bars.length; i++) {
 
     window.renderModule15YearlyAndMonthlyCharts = renderModule15MultiYearMonthlyBreakdown;
 
+// =========================================================================
+    // MÓDULO 20: MOTOR DE APLICACIÓN NATIVA DE ESCRITORIO Y MÓVIL (PWA + LAUNCHER
+    // DEDICADO WINDOWS ESTILO TRADINGVIEW Y METATRADER 5 DESDE EL MISMO INDEX.HTML)
+    // =========================================================================
+    let deferredPWAInstallPrompt = null;
+    let sv5OfficialIconDataURL = "";
+
+    function generateSV5OfficialIconDataURL(size = 512) {
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
+      const g = c.getContext('2d');
+
+      // Fondo redondo/cuadrado estilo TradingView & MT5
+      const r = size * 0.22;
+      g.fillStyle = '#090d16';
+      g.beginPath();
+      g.roundRect ? g.roundRect(0, 0, size, size, r) : g.rect(0, 0, size, size);
+      g.fill();
+
+      // Borde institucional esmeralda/cian
+      g.lineWidth = size * 0.035;
+      g.strokeStyle = '#10b981';
+      g.stroke();
+
+      // Velas alcistas estilizadas en el centro
+      const drawCandle = (x, topY, botY, bodyTop, bodyBot, col) => {
+        g.strokeStyle = col;
+        g.lineWidth = size * 0.025;
+        g.beginPath(); g.moveTo(x, topY); g.lineTo(x, botY); g.stroke();
+        g.fillStyle = col;
+        g.fillRect(x - size * 0.045, bodyTop, size * 0.09, bodyBot - bodyTop);
+      };
+      drawCandle(size * 0.28, size * 0.36, size * 0.72, size * 0.44, size * 0.64, '#f43f5e');
+      drawCandle(size * 0.50, size * 0.24, size * 0.66, size * 0.32, size * 0.56, '#10b981');
+      drawCandle(size * 0.72, size * 0.14, size * 0.56, size * 0.20, size * 0.46, '#38bdf8');
+
+      // Siglas "SV5" estilo logo de app móvil y escritorio
+      g.fillStyle = '#ffffff';
+      g.font = `900 ${Math.floor(size * 0.24)}px Consolas, sans-serif`;
+      g.textAlign = 'center';
+      g.fillText('SV5', size * 0.50, size * 0.88);
+
+      return c.toDataURL('image/png');
+    }
+
+    function initModule20NativeAppEngine() {
+      try {
+        sv5OfficialIconDataURL = generateSV5OfficialIconDataURL(512);
+
+        // 1. Inyectar Favicon e Icono Apple/Android directo en el <head>
+        let fav = document.querySelector("link[rel~='icon']");
+        if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+        fav.href = sv5OfficialIconDataURL;
+
+        const appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        appleIcon.href = sv5OfficialIconDataURL;
+        document.head.appendChild(appleIcon);
+
+        const themeMeta = document.createElement('meta');
+        themeMeta.name = 'theme-color';
+        themeMeta.content = '#090d16';
+        document.head.appendChild(themeMeta);
+
+        // 2. Generar Web App Manifest dinámico dentro del mismo index.html
+        const appUrl = "https://barradasviveroseliudmartin-pixel.github.io/strat-view-5/";
+        const manifestObj = {
+          name: "StratView-5 | Institutional Engine Pro",
+          short_name: "StratView-5",
+          description: "Plataforma Cuantitativa Autónoma de 20 Módulos para Crear y Auditar Bots de Trading",
+          start_url: appUrl,
+          display: "standalone",
+          background_color: "#090d16",
+          theme_color: "#090d16",
+          orientation: "any",
+          icons: [
+            { src: sv5OfficialIconDataURL, sizes: "192x192", type: "image/png" },
+            { src: sv5OfficialIconDataURL, sizes: "512x512", type: "image/png" }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = URL.createObjectURL(manifestBlob);
+        document.head.appendChild(manifestLink);
+      } catch (e) {}
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPWAInstallPrompt = e;
+      });
+    }
+
+    function openModule20InstallAppModal() {
+      if (!sv5OfficialIconDataURL) sv5OfficialIconDataURL = generateSV5OfficialIconDataURL(512);
+      let modal = document.getElementById('m20-install-app-modal');
+      if (!modal) {
+        const w = document.createElement('div');
+        w.innerHTML = `
+          <div id="m20-install-app-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[125] flex items-center justify-center p-4">
+            <div class="bg-[#131722] border-2 border-cyan-400/70 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col text-xs font-mono">
+              <div class="bg-[#1e222d] border-b border-gray-800 px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">📲</span>
+                  <span class="font-extrabold text-cyan-300 text-sm">Instalar Aplicación Oficial StratView-5 (PC & Celular)</span>
+                  <span class="bg-cyan-500/20 text-cyan-300 text-[10px] px-1.5 py-0.2 rounded border border-cyan-500/40">MÓDULO 20</span>
+                </div>
+                <button type="button" onclick="document.getElementById('m20-install-app-modal').classList.add('hidden')" class="text-gray-400 hover:text-white font-bold text-sm px-1.5">✕</button>
+              </div>
+
+              <div class="p-4 space-y-3 overflow-y-auto max-h-[80vh]">
+                <!-- Vista previa del Icono Oficial SV5 -->
+                <div class="bg-[#090d16] border border-gray-800 rounded-xl p-3 flex items-center gap-4">
+                  <img id="m20-icon-preview" src="${sv5OfficialIconDataURL}" class="w-16 h-16 rounded-2xl border border-emerald-500/50 shadow-lg" alt="SV5 Icon">
+                  <div class="space-y-1">
+                    <div class="text-white font-extrabold text-sm">StratView-5 Desktop & Mobile App</div>
+                    <div class="text-gray-400 text-[10px] leading-relaxed">Abre tu plataforma directamente desde el Escritorio de tu computadora o la pantalla de inicio de tu celular en <b>Modo Ventana de Aplicación Dedicada (sin barras de navegador)</b>, igual que TradingView y MetaTrader 5.</div>
+                  </div>
+                </div>
+
+                <!-- 3 Opciones de Instalación Directa -->
+                <div class="space-y-2">
+                  <button type="button" onclick="downloadWindowsStandaloneAppLauncher()" class="w-full bg-emerald-600/25 hover:bg-emerald-600 border-2 border-emerald-500/70 rounded-xl p-3 text-left transition flex items-center justify-between group">
+                    <div>
+                      <div class="font-extrabold text-emerald-300 group-hover:text-white text-xs">🖥️ OPCIÓN 1 (RECOMENDADA PARA TU LAPTOP WINDOWS): Descargar Ejecutable de Escritorio (.BAT)</div>
+                      <div class="text-[10px] text-gray-300 mt-0.5">Guárdalo en tu Escritorio. Al darle doble clic abre <b>StratView-5 como Programa Independiente</b> (sin pestañas ni barra de Chrome), idéntico a tus iconos de MetaTrader 5.</div>
+                    </div>
+                    <span class="bg-emerald-500 text-black font-extrabold px-2.5 py-1 rounded text-[10px] shrink-0 ml-2">Descargar App PC</span>
+                  </button>
+
+                  <button type="button" onclick="triggerNativePWAInstallOrShortcut()" class="w-full bg-cyan-600/20 hover:bg-cyan-600 border border-cyan-500/50 rounded-xl p-3 text-left transition flex items-center justify-between group">
+                    <div>
+                      <div class="font-extrabold text-cyan-300 group-hover:text-white text-xs">⚡ OPCIÓN 2: Instalar App PWA Nativa / Acceso Directo (.URL) + Icono Oficial</div>
+                      <div class="text-[10px] text-gray-300 mt-0.5">Instala la aplicación nativa del navegador o descarga el acceso directo junto con el icono oficial <b>SV5.png</b> para tu escritorio.</div>
+                    </div>
+                    <span class="bg-cyan-500 text-black font-extrabold px-2.5 py-1 rounded text-[10px] shrink-0 ml-2">Instalar / .URL</span>
+                  </button>
+
+                  <div class="bg-[#090d16] border border-gray-800 rounded-xl p-3 space-y-1 text-[10px] text-gray-300">
+                    <div class="font-extrabold text-amber-300">📱 OPCIÓN 3: Cómo tener el Icono "SV5" en tu Celular (Igual que tu app de TradingView):</div>
+                    <div>• <b>En Android (Chrome):</b> Abre tu enlace en el celular, toca los <b>3 puntitos (⋮)</b> arriba a la derecha y selecciona <b>"Instalar aplicación"</b> o <b>"Agregar a la pantalla principal"</b>.</div>
+                    <div>• <b>En PC (Chrome directo):</b> También puedes hacer clic en los <b>3 puntitos (⋮)</b> de Chrome arriba a la derecha ➔ <b>"Guardar y compartir" (o Más herramientas)</b> ➔ <b>"Instalar página como aplicación..." / "Crear acceso directo..."</b> (marcando <i>Abrir como ventana</i>).</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(w);
+        modal = document.getElementById('m20-install-app-modal');
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function downloadWindowsStandaloneAppLauncher() {
+      const appUrl = "https://barradasviveroseliudmartin-pixel.github.io/strat-view-5/?app=desktop";
+      const batContent = [
+        "@echo off",
+        "title StratView-5 Institutional Engine Pro",
+        "start chrome --app=\"" + appUrl + "\" --start-maximized || start msedge --app=\"" + appUrl + "\" --start-maximized || start \"\" \"" + appUrl + "\"",
+        "exit"
+      ].join("\r\n");
+
+      triggerBlobDownload("StratView-5_App_Escritorio.bat", batContent, "application/x-bat;charset=utf-8");
+      document.getElementById('agent-verdict').innerText = `🖥️ Lanzador "StratView-5_App_Escritorio.bat" descargado. Muévelo a tu Escritorio y dale doble clic para abrir sin navegador.`;
+    }
+
+    function triggerNativePWAInstallOrShortcut() {
+      if (deferredPWAInstallPrompt) {
+        deferredPWAInstallPrompt.prompt();
+        return;
+      }
+      const appUrl = "https://barradasviveroseliudmartin-pixel.github.io/strat-view-5/";
+      const urlShortcut = `[InternetShortcut]\r\nURL=${appUrl}\r\nIconIndex=0\r\n`;
+      triggerBlobDownload("StratView-5_Acceso_Directo.url", urlShortcut, "text/plain;charset=utf-8");
+
+      // Descargar también el Icono Oficial SV5 en PNG por si desea asignarlo al acceso directo
+      const a = document.createElement('a');
+      a.href = sv5OfficialIconDataURL;
+      a.download = "StratView-5_Icono_Oficial.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    window.renderModule15YearlyAndMonthlyCharts = renderModule15MultiYearMonthlyBreakdown;
+
     (async function bootstrapStratView5() {
       initDraggableSplitters();
       injectModule8ChatbotUI();
       injectModule9ExportModalUI();
       initModule17ProSuite();
+      initModule20NativeAppEngine();
       await seedDefaultMT5Datasets(false);
       await loadCandles();
       setTimeout(() => {
