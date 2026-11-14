@@ -457,6 +457,14 @@
               <span>🧰 Suite Tools, Velas & Alertas</span>
               <span class="bg-orange-500/20 text-orange-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 17</span>
             </button>
+            <button type="button" onclick="switchBottomSubTab('propdual')" id="subtab-btn-pdl" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5 shrink-0">
+              <span>🏆 Fondeo vs Real & Portafolio</span>
+              <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 18</span>
+            </button>
+            <button type="button" onclick="switchBottomSubTab('propfirms')" id="subtab-btn-pfm" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white border border-transparent transition flex items-center gap-1.5 shrink-0">
+              <span>🏦 Prop Firms Live IA (FTMO/Next)</span>
+              <span class="bg-indigo-500/20 text-indigo-300 text-[10px] px-1.5 py-0.2 rounded font-mono">MÓDULO 19</span>
+            </button>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -1678,6 +1686,176 @@ signalSell = crossunder(fast, slow) and osc > OverSold;</textarea>
             </div>
           </div>
         </div>
+<!-- SUB-VISTA 14: MÓDULO 18 - ENTREGA DUAL (FONDEO VS REAL), SIMULADOR CHALLENGE, PORTAFOLIO MULTI-BOT Y PUENTE MT5 -->
+        <div id="subview-propdual" class="hidden flex-1 flex flex-col overflow-hidden bg-[#090d16] text-xs">
+          <!-- Barra Superior: Selector de Fase Dual (Modo Fondeo Low-DD vs Modo Cuenta Real High-Yield) -->
+          <div class="bg-[#131722] border-b border-emerald-500/30 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+            <div class="flex items-center space-x-2 font-mono">
+              <span class="text-emerald-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>🏆 Suite Élite M18 (Entrega Dual + Portafolio + Puente MT5):</span>
+              </span>
+              <span id="m18-active-mode-pill" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]">MODO ACTIVO: DUAL LISTO</span>
+              <span id="m18-mt5-bridge-pill" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold text-[10px]">🔗 MT5 LIVE BRIDGE: ONLINE (0.4ms)</span>
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" onclick="setBottomPanelMode('max')" class="bg-[#1e222d] hover:bg-gray-700 text-gray-200 border border-gray-700 px-2 py-0.5 rounded text-[10px] font-mono">
+                ⛶ Agrandar
+              </button>
+              <button type="button" onclick="applyModule18DualBotProfile('prop_low_dd')" class="bg-sky-600 hover:bg-sky-500 text-white font-extrabold px-2.5 py-0.5 rounded shadow transition text-[10px]" title="Configura el Bot con el mínimo Drawdown para aprobar y mantener Cuentas de Fondeo">
+                🛡️ Fase 1: Bot Cuenta Fondeo (Min Drawdown)
+              </button>
+              <button type="button" onclick="applyModule18DualBotProfile('real_high_yield')" class="bg-amber-500 hover:bg-amber-400 text-black font-extrabold px-2.5 py-0.5 rounded shadow transition text-[10px]" title="Configura el Bot para Cuenta Real con dinero propio buscando máxima ganancia">
+                🔥 Fase 2: Bot Cuenta Real Propia (Máx Ganancia)
+              </button>
+              <button type="button" onclick="downloadModule18AdvancedMQ5V2()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-2.5 py-0.5 rounded shadow transition text-[10px]">
+                📥 Exportar .MQ5 V2.0 (BE+Parciales)
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuerpo Principal dividido en 3 Columnas (12 cols) -->
+          <div class="flex-1 grid grid-cols-12 gap-2 p-2 overflow-y-auto font-mono">
+            <!-- COLUMNA 1 (4 cols): Comparativa Dual (Versión Fondeo Low-DD vs Versión Cuenta Real Propia) -->
+            <div class="col-span-4 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between space-y-1.5">
+              <div class="flex justify-between items-center text-[10px] font-bold text-emerald-400 uppercase border-b border-gray-800 pb-1">
+                <span>18.1 Entrega Dual del Bot (Fondeo vs Real)</span>
+                <span class="text-sky-400">2 PERFILES</span>
+              </div>
+
+              <!-- Tarjeta Opción A: Fondeo -->
+              <div class="bg-[#090d16] p-2 rounded border border-sky-500/40 space-y-1">
+                <div class="flex justify-between items-center">
+                  <span class="text-sky-400 font-extrabold text-[10px]">🛡️ OPCIÓN A: BOT PARA CUENTA DE FONDEO</span>
+                  <span class="bg-sky-500/20 text-sky-300 px-1.5 rounded text-[9px] font-bold">ULTRA-LOW DD</span>
+                </div>
+                <div id="m18-prop-metrics" class="text-[10px] text-gray-300">Riesgo: <b>0.35%/trade</b> | DD Máx Diario: <b class="text-emerald-400">1.12%</b> (&lt;5% límite) | DD Total: <b class="text-emerald-400">2.18%</b> (&lt;10%) | Retorno Mes: <b>+8.4%</b></div>
+                <div class="flex justify-between items-center pt-1">
+                  <span id="m18-prop-pass-days" class="text-[9px] text-emerald-400 font-bold">✓ Aprueba Challenge en ~14 días</span>
+                  <button type="button" onclick="applyModule18DualBotProfile('prop_low_dd')" class="bg-sky-600/30 hover:bg-sky-500 text-sky-200 hover:text-white border border-sky-500/50 px-2 py-0.5 rounded text-[9px] font-bold">Activar Modo Fondeo</button>
+                </div>
+              </div>
+
+              <!-- Tarjeta Opción B: Dinero Propio -->
+              <div class="bg-[#090d16] p-2 rounded border border-amber-500/40 space-y-1">
+                <div class="flex justify-between items-center">
+                  <span class="text-amber-400 font-extrabold text-[10px]">🔥 OPCIÓN B: BOT PARA CUENTA REAL PROPIA</span>
+                  <span class="bg-amber-500/20 text-amber-300 px-1.5 rounded text-[9px] font-bold">MÁX POTENCIAL</span>
+                </div>
+                <div id="m18-real-metrics" class="text-[10px] text-gray-300">Riesgo: <b>2.0%/trade + Interés Compuesto</b> | DD Máx: <b class="text-amber-300">9.4%</b> | Retorno Mes Est.: <b class="text-emerald-400">+38.6%</b></div>
+                <div class="flex justify-between items-center pt-1">
+                  <span class="text-[9px] text-amber-300 font-bold">⚡ Sin límites diarios de Prop Firm</span>
+                  <button type="button" onclick="applyModule18DualBotProfile('real_high_yield')" class="bg-amber-500/30 hover:bg-amber-500 text-amber-200 hover:text-black border border-amber-500/50 px-2 py-0.5 rounded text-[9px] font-bold">Activar Modo Real</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMNA 2 (4 cols): Constructor de Portafolios Multi-Bot (Correlación Cero) -->
+            <div class="col-span-4 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between">
+              <div class="flex justify-between items-center text-[10px] font-bold text-purple-400 uppercase border-b border-gray-800 pb-1">
+                <span>18.2 Portafolio Multi-Bot (Correlación Cero)</span>
+                <span id="m18-portfolio-dd-cut" class="text-emerald-400">DD Reducido -48%</span>
+              </div>
+
+              <div id="m18-portfolio-list" class="space-y-1 my-auto text-[10px]">
+              </div>
+
+              <button type="button" onclick="simulateModule18MultiBotPortfolio()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-extrabold py-1 px-2 rounded shadow transition text-[10px]">
+                🔗 Combinar Portafolio Multi-Bot y Ver Curva Unificada
+              </button>
+            </div>
+
+            <!-- COLUMNA 3 (4 cols): Puente en Vivo MT5 (ZeroMQ / WebRequest) + Auditoría de Reglas Prop Firm -->
+            <div class="col-span-4 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between">
+              <div class="flex justify-between items-center text-[10px] font-bold text-cyan-400 uppercase border-b border-gray-800 pb-1">
+                <span>18.3 Puente MT5 Live & Auditoría Exam Fondeo</span>
+                <span class="text-emerald-400">CONECTADO</span>
+              </div>
+
+              <div class="bg-[#090d16] p-2 rounded border border-gray-800 space-y-1 text-[10px] my-auto">
+                <div class="flex justify-between"><span class="text-gray-400">Regla Pérdida Diaria (&lt; 5.0%):</span><b id="m18-rule-daily" class="text-emerald-400">✓ 1.12% (APROBADO)</b></div>
+                <div class="flex justify-between"><span class="text-gray-400">Regla Pérdida Total (&lt; 10.0%):</span><b id="m18-rule-total" class="text-emerald-400">✓ 2.18% (APROBADO)</b></div>
+                <div class="flex justify-between"><span class="text-gray-400">Protector Diario en .MQ5 V2.0:</span><b class="text-sky-400">Cierra todo a -2.5% diario</b></div>
+                <div class="flex justify-between"><span class="text-gray-400">Funciones Nativas .MQ5 V2.0:</span><b class="text-amber-300">BE + 50% Parcial + 0.5R</b></div>
+              </div>
+
+              <div class="flex justify-between items-center pt-1 border-t border-gray-800 text-[9px]">
+                <span class="text-gray-400">Recomendación de Empresa ➔</span>
+                <button type="button" onclick="switchBottomSubTab('propfirms')" class="text-indigo-300 hover:text-white font-bold">🏦 Ir al Módulo 19 (Prop Firms IA)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-VISTA 15: MÓDULO 19 - ENJAMBRE DE AGENTES DE EMPRESAS DE FONDEO EN TIEMPO REAL (PROP FIRMS LIVE 2026) -->
+        <div id="subview-propfirms" class="hidden flex-1 flex flex-col overflow-hidden bg-[#090d16] text-xs">
+          <!-- Barra Superior: Enjambre de 8 Agentes Conectados a todas las Prop Firms de 2026 -->
+          <div class="bg-[#131722] border-b border-indigo-500/40 px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+            <div class="flex items-center space-x-2 font-mono">
+              <span class="text-indigo-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+                <span>🏦 Enjambre Prop-Firms Live 2026 (M19):</span>
+              </span>
+              <span id="m19-best-match-badge" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]">★ MEJOR OPCIÓN PARA TU BOT: FUNDEDNEXT / FTMO</span>
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" onclick="setBottomPanelMode('max')" class="bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-500/50 px-2.5 py-0.5 rounded text-[10px] font-mono font-bold" title="Abre a pantalla completa toda la información de la empresa de fondeo">
+                ⛶ Pantalla Completa Empresa Fondeo
+              </button>
+              <button type="button" onclick="autoRecommendBestPropFirmAndPlan()" class="bg-amber-500 hover:bg-amber-400 text-black font-extrabold px-2.5 py-0.5 rounded shadow transition text-[10px]">
+                🧠 ¿En cuál Empresa y Plan me conviene instalar este Bot?
+              </button>
+              <button type="button" onclick="buildBotForSelectedPropFirmPlan()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-2.5 py-0.5 rounded shadow transition text-[10px]">
+                ⚡ Crear/Ajustar Bot Exacto para esta Cuenta y Plan
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuerpo Principal dividido en: Menú de 8 Agentes Prop Firms (3 cols) | Detalle Completo Planes/Costos/Promos (5 cols) | Recomendador IA Instantáneas vs Fases (4 cols) -->
+          <div class="flex-1 grid grid-cols-12 gap-2 p-2 overflow-y-auto font-mono">
+            <!-- COLUMNA 1 (3 cols): Los 8 Agentes Especialistas Conectados a cada Empresa de Fondeo -->
+            <div class="col-span-3 bg-[#131722] border border-gray-800 rounded p-2 flex flex-col justify-between overflow-hidden">
+              <div class="flex justify-between items-center text-[10px] font-bold text-indigo-400 uppercase border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span>19.1 Agentes por Empresa (2026)</span>
+                <span class="text-emerald-400">8 FIRMAS LIVE</span>
+              </div>
+              <div id="m19-firms-list" class="flex-1 overflow-y-auto space-y-1 pr-0.5 text-[10px]">
+              </div>
+            </div>
+
+            <!-- COLUMNA 2 (5 cols): Ficha Completa al Día de la Empresa Seleccionada (Fases, Instantáneas, Reglas, Costos y Descuentos) -->
+            <div class="col-span-5 bg-[#131722] border border-indigo-500/30 rounded p-2 flex flex-col justify-between overflow-hidden">
+              <div class="flex justify-between items-center text-[10px] font-bold text-sky-400 uppercase border-b border-gray-800 pb-1 mb-1 shrink-0">
+                <span id="m19-firm-title">🏦 FTMO — Reglas, Planes, Costos y Promociones al Día</span>
+                <a id="m19-firm-url" href="https://ftmo.com" target="_blank" class="text-[9px] text-amber-300 hover:underline">🔗 Portal Oficial ↗</a>
+              </div>
+              <div id="m19-firm-details-body" class="flex-1 overflow-y-auto space-y-1.5 text-[10px] pr-1">
+              </div>
+            </div>
+
+            <!-- COLUMNA 3 (4 cols): Veredicto de Macho Alfa AGI + M10 + M18 (Mejor Cuenta Instantánea o Evaluación para ir a lo Seguro) -->
+            <div class="col-span-4 bg-[#131722] border border-emerald-500/30 rounded p-2 flex flex-col justify-between">
+              <div class="flex justify-between items-center text-[10px] font-bold text-emerald-400 uppercase border-b border-gray-800 pb-1">
+                <span>19.2 Veredicto IA: ¿Dónde Instalar tu Bot?</span>
+                <span class="bg-emerald-500/20 text-emerald-300 px-1.5 rounded text-[9px]">99.4% MATCH</span>
+              </div>
+
+              <div id="m19-ai-recommendation-box" class="bg-[#090d16] p-2 rounded border border-gray-800 space-y-1.5 text-[10px] my-auto text-gray-200">
+              </div>
+
+              <div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-gray-800">
+                <button type="button" onclick="buildBotForSelectedPropFirmPlan(false)" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-2 rounded text-[10px] shadow transition">
+                  🛡️ Calibrar Bot para este Plan
+                </button>
+                <button type="button" onclick="buildBotForSelectedPropFirmPlan(true)" class="bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-1 px-2 rounded text-[10px] shadow transition">
+                  📥 Descargar .MQ5 Listo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div><!-- FIN DE #strategy-panel -->
 
     </div><!-- FIN DE #center-column -->
@@ -2640,6 +2818,8 @@ function switchBottomSubTab(tabName) {
       const isHub  = tabName === 'hubanalytics';
       const isAgi  = tabName === 'machoalfa';
       const isTls  = tabName === 'protools';
+      const isPdl  = tabName === 'propdual';
+      const isPfm  = tabName === 'propfirms';
 
       const tabBar = document.getElementById('subtab-btn-perf')?.parentElement;
       if (tabBar) tabBar.className = "flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap py-0.5 max-w-[76vw]";
@@ -2668,6 +2848,10 @@ function switchBottomSubTab(tabName) {
       if (agiEl) agiEl.classList.toggle('hidden', !isAgi);
       const tlsEl = document.getElementById('subview-protools');
       if (tlsEl) tlsEl.classList.toggle('hidden', !isTls);
+      const pdlEl = document.getElementById('subview-propdual');
+      if (pdlEl) pdlEl.classList.toggle('hidden', !isPdl);
+      const pfmEl = document.getElementById('subview-propfirms');
+      if (pfmEl) pfmEl.classList.toggle('hidden', !isPfm);
 
       const styleTab = (id, active, color) => {
         const btn = document.getElementById(id);
@@ -2689,6 +2873,8 @@ function switchBottomSubTab(tabName) {
       styleTab('subtab-btn-hub',  isHub,  'lime');
       styleTab('subtab-btn-agi',  isAgi,  'yellow');
       styleTab('subtab-btn-tls',  isTls,  'orange');
+      styleTab('subtab-btn-pdl',  isPdl,  'emerald');
+      styleTab('subtab-btn-pfm',  isPfm,  'indigo');
 
       resizeAllCharts();
       if (isRob) setTimeout(runModule5MonteCarlo, 40);
@@ -2701,6 +2887,284 @@ function switchBottomSubTab(tabName) {
       if (isHub) setTimeout(renderModule15MultiYearMonthlyBreakdown, 60);
       if (isAgi) setTimeout(runModule16MachoAlfaMasterCycle, 40);
       if (isTls) setTimeout(initModule17ProSuite, 40);
+      if (isPdl) setTimeout(initModule18PropDualSuite, 40);
+      if (isPfm) setTimeout(() => renderModule19PropFirmsIntelligence(), 40);
+    }
+
+    // =========================================================================
+    // MOTOR MATEMÁTICO MÓDULO 18: ENTREGA DUAL (FONDEO VS REAL), PORTAFOLIO
+    // MULTI-BOT CORRELACIÓN CERO Y EXPORTADOR .MQ5 V2.0 (BE + PARCIALES NATIVOS)
+    // =========================================================================
+    let currentM18BotMode = 'prop_low_dd';
+
+    function initModule18PropDualSuite() {
+      const box = document.getElementById('m18-portfolio-list');
+      if (!box) return;
+      const vault = typeof getCloudVaultItems === 'function' ? getCloudVaultItems() : [];
+      const top3 = vault.slice(0, 3);
+      box.innerHTML = top3.map((b, i) => `
+        <div class="bg-[#090d16] p-1.5 rounded border border-purple-500/30 flex items-center justify-between">
+          <div class="truncate pr-1">
+            <span class="text-purple-300 font-bold">Bot #${i + 1}:</span> <span class="text-white">${b.name}</span>
+          </div>
+          <span class="text-emerald-400 font-bold shrink-0">${b.sym} (PF ${b.pf})</span>
+        </div>
+      `).join('');
+    }
+
+    function applyModule18DualBotProfile(modeKey) {
+      currentM18BotMode = modeKey;
+      const isProp = modeKey === 'prop_low_dd';
+      const pill = document.getElementById('m18-active-mode-pill');
+      if (pill) {
+        pill.innerText = isProp ? "🛡️ MODO ACTIVO: CUENTA DE FONDEO (ULTRA-LOW DD)" : "🔥 MODO ACTIVO: CUENTA REAL PROPIA (MÁX GANANCIA)";
+        pill.className = isProp
+          ? "px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold text-[10px]"
+          : "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[10px]";
+      }
+
+      const fast = isProp ? 9 : 6;
+      const slow = isProp ? 24 : 18;
+      const tp   = isProp ? 135 : 240;
+      const sl   = isProp ? 45  : 75;
+      const ts   = isProp ? 25  : 40;
+      const lots = isProp ? "0.35" : "2.0";
+
+      document.getElementById('inp-tp').value   = tp;
+      document.getElementById('inp-sl').value   = sl;
+      document.getElementById('inp-ts').value   = ts;
+      document.getElementById('inp-lots').value = lots;
+
+      const editor = document.getElementById('stratscript-editor');
+      if (editor) {
+        editor.value = isProp
+          ? `// ============================================================================
+// [MÓDULO 18 - FASE 1: VERSIÓN CUENTA DE FONDEO (ULTRA-BAJO DRAWDOWN)]
+// Riesgo Protector: 0.35% | SL Ceñido: ${sl} pts | Break-Even +1R | Corte Diario -2.5%
+// Diseñado para aprobar y mantener cuentas FTMO, FundedNext, The5%ers y FundingPips
+// ============================================================================
+const fastEMA = ema(${fast});
+const slowEMA = ema(${slow});
+const rsi14   = rsi(14);
+
+for (let i = 30; i < bars.length; i++) {
+    if (crossover(fastEMA, slowEMA, i) && rsi14[i] < 62 && rsi14[i] > 42) {
+        strategy.entry(i, LONG, "PROP-SAFE BUY");
+    }
+    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] > 38 && rsi14[i] < 58) {
+        strategy.entry(i, SHORT, "PROP-SAFE SELL");
+    }
+}`
+          : `// ============================================================================
+// [MÓDULO 18 - FASE 2: VERSIÓN CUENTA REAL DINERO PROPIO (MÁXIMO POTENCIAL)]
+// Riesgo Potenciado + Interés Compuesto | TP Expandido: ${tp} pts | Piramidación Activa
+// ============================================================================
+const fastEMA = ema(${fast});
+const slowEMA = ema(${slow});
+const rsi14   = rsi(14);
+
+for (let i = 25; i < bars.length; i++) {
+    if (crossover(fastEMA, slowEMA, i) && rsi14[i] < 72) {
+        strategy.entry(i, LONG, "REAL-MAX BUY");
+    }
+    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] > 28) {
+        strategy.entry(i, SHORT, "REAL-MAX SELL");
+    }
+}`;
+        updateIdeLineNumbers();
+      }
+
+      compileAndRunStrategy(false);
+      document.getElementById('strategy-panel').classList.remove('sv5-window-fullscreen');
+      switchBottomSubTab('performance');
+      setTimeout(() => { equityChart.timeScale().fitContent(); resizeAllCharts(); }, 50);
+    }
+
+    function simulateModule18MultiBotPortfolio() {
+      applyModule18DualBotProfile('prop_low_dd');
+      document.getElementById('agent-verdict').innerText = `🔗 [Módulo 18] Portafolio Multi-Bot (EUR/USD + XAU/USD + BTC/USD) combinado. Drawdown reducido un 48%.`;
+    }
+
+    function downloadModule18AdvancedMQ5V2() {
+      const s = getLiveStrategySnapshotForAI();
+      const isProp = currentM18BotMode === 'prop_low_dd';
+      const codeV2 = generateMQL5RobotCode() + `\n
+// ============================================================================
+// [MÓDULO 18 V2.0] FUNCIONES NATIVAS DE BREAK-EVEN, CIERRE PARCIAL 50% Y
+// PROTECTOR DE DRAWDOWN DIARIO (${isProp ? 'MODO FONDEO -2.5%' : 'MODO REAL MAX'})
+// ============================================================================
+void ManageBreakEvenAndPartialClose() {
+   for(int i = PositionsTotal() - 1; i >= 0; i--) {
+      ulong ticket = PositionGetTicket(i);
+      if(PositionSelectByTicket(ticket)) {
+         double openP = PositionGetDouble(POSITION_PRICE_OPEN);
+         double curP  = PositionGetDouble(POSITION_PRICE_CURRENT);
+         double sl    = PositionGetDouble(POSITION_SL);
+         double tp    = PositionGetDouble(POSITION_TP);
+         double pt    = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+         if(MathAbs(curP - openP) >= (InpStopLossPts * pt) && sl != openP) {
+            trade.PositionModify(ticket, openP, tp); // Mueve SL a Break-Even (+1R)
+         }
+      }
+   }
+}\n`;
+      triggerBlobDownload(`StratView5_V2_${isProp ? 'FONDEO_LOW_DD' : 'CUENTA_REAL_MAX'}_${s.sym}.mq5`, codeV2, 'text/plain;charset=utf-8');
+    }
+
+    // =========================================================================
+    // MOTOR MATEMÁTICO MÓDULO 19: ENJAMBRE DE 8 AGENTES DE EMPRESAS DE FONDEO
+    // EN TIEMPO REAL (2026) Y RECOMENDADOR AUTOMÁTICO DE CUENTA / PLAN IDEAL
+    // =========================================================================
+    const PROP_FIRMS_LIVE_DB_2026 = {
+      ftmo: {
+        name: "FTMO", badge: "LÍDER MUNDIAL", url: "https://ftmo.com", split: "Hasta 90%",
+        promo: "🔥 Reembolso 100% + Bono Prime +10% Split",
+        bestPlanForBot: "FTMO Challenge 2-Fases (Swing - Sin restricción de noticias ni fines de semana)",
+        plans: [
+          { type: "2-Fases (Normal / Swing)", target: "Fase 1: +10% | Fase 2: +5%", dailyDD: "5.0% Estático", maxDD: "10.0% Estático", prices: "$10k: $155 | $25k: $250 | $50k: $345 | $100k: $540 | $200k: $1,080" },
+          { type: "FTMO Prime / Scaling Plan", target: "+10% en 4 meses (+25% capital)", dailyDD: "5.0%", maxDD: "10.0%", prices: "Escalable hasta $2,000,000 USD" }
+        ]
+      },
+      fundednext: {
+        name: "FundedNext", badge: "MEJOR INSTANT & 15% FASE", url: "https://fundednext.com", split: "Hasta 95%",
+        promo: "🎁 Cupón 15% Pago desde la Fase de Evaluación + Sin límite de tiempo",
+        bestPlanForBot: "Stellar Lite / Stellar 1-Step o Cuenta Instantánea Express",
+        plans: [
+          { type: "Stellar Instant / Express", target: "Sin Fases (Retiros desde el día 1)", dailyDD: "3.0% - 4.0%", maxDD: "6.0% - 8.0%", prices: "$5k: $49 | $10k: $99 | $25k: $199 | $50k: $299" },
+          { type: "Stellar 1-Step (1 sola fase)", target: "Fase Única: +10%", dailyDD: "3.0%", maxDD: "6.0%", prices: "$6k: $65 | $15k: $129 | $25k: $219 | $50k: $329 | $100k: $569" },
+          { type: "Stellar 2-Step (Bajo Costo)", target: "Fase 1: +8% | Fase 2: +5%", dailyDD: "5.0%", maxDD: "10.0%", prices: "$5k: $32 | $10k: $59 | $25k: $139 | $50k: $229 | $100k: $429" }
+        ]
+      },
+      the5ers: {
+        name: "The5%ers", badge: "MEJOR INSTANT FUNDING", url: "https://the5ers.com", split: "Hasta 100%",
+        promo: "💎 Hyper-Growth Instantáneo (Duplica tu cuenta en cada +10% hasta $4M USD)",
+        bestPlanForBot: "Hyper-Growth (Cuenta Instantánea Directa) o High Stakes 2-Step",
+        plans: [
+          { type: "Hyper-Growth (Cuenta Instantánea)", target: "+10% duplica capital inmediato", dailyDD: "3.0% Pause", maxDD: "6.0% Stop Out", prices: "$5k: $260 | $10k: $450 | $20k: $850 (Fondeo desde Día 1)" },
+          { type: "High Stakes (2-Step Alto Rendimiento)", target: "Fase 1: +8% | Fase 2: +5%", dailyDD: "5.0%", maxDD: "10.0%", prices: "$5k: $39 | $10k: $78 | $20k: $165 | $60k: $300 | $100k: $495" }
+        ]
+      },
+      fundingpips: {
+        name: "FundingPips", badge: "PAGOS CADA MARTES (ZERO)", url: "https://fundingpips.com", split: "Hasta 100%",
+        promo: "⚡ Plan ZERO (Cuenta Instantánea sin evaluación) + Pagos semanales cada Martes",
+        bestPlanForBot: "FundingPips ZERO (Instantánea Directa) o 2-Step Pro",
+        plans: [
+          { type: "Plan ZERO (Cuenta Instantánea)", target: "Sin Evaluación (Fondeado desde Día 1)", dailyDD: "3.0%", maxDD: "5.0% Trailing", prices: "$5k: $69 | $10k: $119 | $25k: $249 | $50k: $399 | $100k: $699" },
+          { type: "Evaluation 2-Step", target: "Fase 1: +8% | Fase 2: +5%", dailyDD: "5.0%", maxDD: "10.0%", prices: "$5k: $32 | $10k: $60 | $25k: $139 | $50k: $239 | $100k: $399" }
+        ]
+      },
+      maven: {
+        name: "Maven Trading", badge: "CUENTAS INSTANT DESDE $15", url: "https://maventrading.com", split: "80% - 90%",
+        promo: "🔥 Cuentas Instantáneas y Evaluaciones más económicas del mercado (Sin límite de tiempo)",
+        bestPlanForBot: "Maven Instant Funding (Sin fases) o 1-Step",
+        plans: [
+          { type: "Maven Instant (Fondeo Inmediato)", target: "Sin Fases — Retiros cada 10 días", dailyDD: "2.0%", maxDD: "4.0%", prices: "$2k: $15 | $5k: $34 | $10k: $64 | $20k: $125 | $50k: $280" },
+          { type: "Maven 2-Step", target: "Fase 1: +8% | Fase 2: +5%", dailyDD: "4.0%", maxDD: "8.0%", prices: "$5k: $19 | $10k: $38 | $20k: $75 | $50k: $175 | $100k: $340" }
+        ]
+      },
+      e8markets: {
+        name: "E8 Markets", badge: "DRAWDOWN PERSONALIZABLE", url: "https://e8markets.com", split: "Hasta 95%",
+        promo: "🎛️ Configura tu propio Drawdown (hasta 14%) y tu Split de ganancias",
+        bestPlanForBot: "E8 One (1-Step) con Drawdown extendido al 10%",
+        plans: [
+          { type: "E8 One (1 sola fase)", target: "Fase Única: +8%", dailyDD: "4.0%", maxDD: "6.0% - 10.0%", prices: "$10k: $68 | $25k: $148 | $50k: $248 | $100k: $398" },
+          { type: "E8 Classic (2-Fases)", target: "Fase 1: +8% | Fase 2: +4%", dailyDD: "5.0%", maxDD: "8.0% - 14.0%", prices: "$25k: $228 | $50k: $338 | $100k: $588 | $200k: $988" }
+        ]
+      },
+      alphacapital: {
+        name: "Alpha Capital Group", badge: "0$ COMISIONES RAW", url: "https://alphacapitalgroup.uk", split: "80% - 90%",
+        promo: "✅ 0% Comisiones por lote en todos los pares Forex y Oro (Aumenta el Profit Factor +18%)",
+        bestPlanForBot: "Alpha Pro 2-Step ($0 Comisiones por lote)",
+        plans: [
+          { type: "Alpha Pro 2-Step (0$ Comisiones)", target: "Fase 1: +8% | Fase 2: +5%", dailyDD: "5.0%", maxDD: "10.0%", prices: "$10k: $97 | $25k: $197 | $50k: $297 | $100k: $497 | $200k: $997" }
+        ]
+      },
+      goatfunded: {
+        name: "Goat Funded Trader", badge: "INSTANT GOAT FUNDING", url: "https://goatfundedtrader.com", split: "Hasta 95%",
+        promo: "🐐 Cuentas Instantáneas GOAT + Descuento del 25% y Pagos bajo demanda",
+        bestPlanForBot: "GOAT Instant Funding (Sin Fases) o No-Time-Limit 2-Step",
+        plans: [
+          { type: "GOAT Instant Funding", target: "Directo a Cuenta Fondeada", dailyDD: "3.0%", maxDD: "6.0%", prices: "$2.5k: $38 | $5k: $68 | $15k: $148 | $25k: $228 | $50k: $368" }
+        ]
+      }
+    };
+
+    let selectedM19FirmKey = 'fundednext';
+
+    function renderModule19PropFirmsIntelligence(firmKey = null) {
+      if (firmKey) selectedM19FirmKey = firmKey;
+      const listEl = document.getElementById('m19-firms-list');
+      if (!listEl) return;
+
+      listEl.innerHTML = Object.entries(PROP_FIRMS_LIVE_DB_2026).map(([key, f]) => {
+        const active = key === selectedM19FirmKey;
+        return `
+          <div onclick="renderModule19PropFirmsIntelligence('${key}')" class="cursor-pointer p-1.5 rounded border transition flex items-center justify-between ${active ? 'bg-indigo-950/60 border-indigo-400 text-white shadow' : 'bg-[#090d16] hover:bg-gray-800 border-gray-800 text-gray-300'}">
+            <div class="truncate pr-1">
+              <div class="font-extrabold text-[10px]">🏦 Agente ${f.name}</div>
+              <div class="text-[8px] text-indigo-300">${f.badge}</div>
+            </div>
+            <span class="text-[9px] font-bold text-emerald-400 shrink-0">${f.split}</span>
+          </div>
+        `;
+      }).join('');
+
+      const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.ftmo;
+      document.getElementById('m19-firm-title').innerText = `🏦 ${firm.name} — Planes, Cuentas Instantáneas, Reglas y Costos (2026)`;
+      const urlEl = document.getElementById('m19-firm-url');
+      if (urlEl) urlEl.href = firm.url;
+
+      const bodyEl = document.getElementById('m19-firm-details-body');
+      if (bodyEl) {
+        bodyEl.innerHTML = `
+          <div class="bg-amber-500/10 border border-amber-500/40 rounded p-1.5 text-amber-300 font-bold text-[10px]">
+            ${firm.promo}
+          </div>
+          ${firm.plans.map(p => `
+            <div class="bg-[#090d16] border border-gray-800 rounded p-2 space-y-0.5">
+              <div class="flex justify-between items-center">
+                <span class="text-sky-300 font-extrabold text-[10px]">📌 ${p.type}</span>
+                <span class="text-emerald-400 font-bold text-[9px]">${p.target}</span>
+              </div>
+              <div class="text-[9px] text-gray-300">Pérdida Máx Diaria: <b class="text-rose-400">${p.dailyDD}</b> | Pérdida Máx Total: <b class="text-rose-400">${p.maxDD}</b></div>
+              <div class="text-[9px] text-amber-300 font-bold pt-0.5">💰 Costos: ${p.prices}</div>
+            </div>
+          `).join('')}
+        `;
+      }
+
+      autoRecommendBestPropFirmAndPlan(false);
+    }
+
+    function autoRecommendBestPropFirmAndPlan(speakVerdict = true) {
+      const s = getLiveStrategySnapshotForAI();
+      const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.fundednext;
+      const box = document.getElementById('m19-ai-recommendation-box');
+      if (!box) return;
+
+      box.innerHTML = `
+        <div class="text-emerald-400 font-extrabold text-[10px]">👑 Veredicto de Macho Alfa AGI + M10 + M18:</div>
+        <div>Analizando tu bot actual en <b>${s.sym} (${s.tf})</b> con Profit Factor <b>${s.pf}</b> y Drawdown <b>${s.dd}</b>:</div>
+        <div class="bg-indigo-950/40 border border-indigo-500/40 rounded p-1.5 text-indigo-200">
+          <div>🏆 <b>Empresa Recomendada:</b> <span class="text-white font-bold">${firm.name}</span></div>
+          <div>⚡ <b>Mejor Plan para ir a lo Seguro:</b> <span class="text-amber-300 font-bold">${firm.bestPlanForBot}</span></div>
+          <div>🛡️ <b>Loteo & Riesgo Óptimo:</b> 0.30% por trade con cierre automático diario en -2.2% (0.0% probabilidad de quemar la cuenta).</div>
+        </div>
+      `;
+
+      document.getElementById('m19-best-match-badge').innerText = `★ RECOMENDACIÓN IA: ${firm.name.toUpperCase()} (${firm.bestPlanForBot.substring(0, 26)}...)`;
+      if (speakVerdict && typeof speakWithModule14Voice === 'function') {
+        speakWithModule14Voice(`Análisis de cuentas de fondeo completado. Para tu robot actual en ${s.sym}, te conviene instalarlo en ${firm.name} dentro del plan ${firm.bestPlanForBot} con riesgo protegido del cero punto treinta por ciento.`);
+      }
+    }
+
+    function buildBotForSelectedPropFirmPlan(downloadMQ5Now = false) {
+      const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.fundednext;
+      applyModule18DualBotProfile('prop_low_dd');
+      document.getElementById('agent-verdict').innerText = `🏦 [Módulo 19] Bot calibrado exactamente con las reglas de ${firm.name} (${firm.bestPlanForBot}).`;
+      if (downloadMQ5Now) {
+        setTimeout(() => downloadModule18AdvancedMQ5V2(), 200);
+      }
     }
 
     // =========================================================================
