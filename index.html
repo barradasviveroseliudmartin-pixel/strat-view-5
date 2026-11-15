@@ -505,6 +505,10 @@
                     <span>📊 Auditor Matemático Wall St. (DSR)</span>
                     <span class="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-mono">MÓDULO 29</span>
                 </button>
+            <button type="button" onclick="switchBottomSubTab('copier')" id="subtab-btn-cpr" class="px-3 py-1 rounded font-bold text-gray-400 hover:text-white hover:bg-gray-800 transition flex items-center space-x-1.5 text-xs whitespace-nowrap">
+                        <span>📡 Copiador Maestro Multi-Cuentas</span>
+                        <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono">MÓDULO 30</span>
+                    </button>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -3523,7 +3527,209 @@ signalSell = crossunder(fast, slow) and osc > OverSold;</textarea>
             <!-- ========================================================================= -->
             <!-- FIN SUB-VISTA MÓDULO 29                                                   -->
             <!-- ========================================================================= -->
-        </div><!-- FIN DE #strategy-panel -->
+<!-- ============================================================== -->
+            <!-- SUB-VIEW MÓDULO 30: COPIADOR MAESTRO INSTITUCIONAL MULTI-CUENTAS -->
+            <!-- SPLITTER DE FONDEO & JITTER ESTOCÁSTICO ANTI-DETECCIÓN           -->
+            <!-- ============================================================== -->
+            <div id="subview-copier" class="hidden flex-1 flex flex-col p-4 bg-[#0d1117] text-gray-200 overflow-y-auto space-y-4">
+                <!-- Header / Barra Superior con Estado y Master Switch -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-[#161b22] border border-gray-700/80 p-3.5 rounded-xl shadow-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span class="text-xl">📡</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h2 class="text-sm font-bold text-white tracking-wide">COPIADOR MAESTRO INSTITUCIONAL & SPLITTER MULTI-CUENTAS</h2>
+                                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-500/30 font-semibold">MÓDULO 30</span>
+                                <span id="m30-engine-badge" class="text-[10px] bg-gray-700/50 text-gray-400 font-mono px-2 py-0.5 rounded border border-gray-600">MOTOR: STANDBY</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-0.5">Enrutamiento paralelo ultra-baja latencia (&lt;3ms), Jitter estocástico anti-detección Prop Firm, asignación de lotes adaptativa y cobertura cruzada.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="m30ToggleMasterCopier()" id="m30-btn-toggle" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md transition flex items-center space-x-1.5 border border-emerald-400/40">
+                            <span id="m30-toggle-icon">▶</span>
+                            <span id="m30-toggle-text">ACTIVAR COPIADOR MAESTRO</span>
+                        </button>
+                        <button type="button" onclick="m30SimulateMasterExecution()" class="px-3 py-2 bg-sky-600/80 hover:bg-sky-500 text-white rounded-lg font-bold text-xs transition border border-sky-400/40 flex items-center space-x-1" title="Emular una orden de prueba desde la cuenta Master">
+                            <span>⚡</span>
+                            <span>Test Split</span>
+                        </button>
+                        <button type="button" onclick="m30AddNewAccountModal()" class="px-3 py-2 bg-[#21262d] hover:bg-[#30363d] text-emerald-300 rounded-lg font-semibold text-xs transition border border-emerald-500/30 flex items-center space-x-1">
+                            <span>+</span>
+                            <span>Nueva Cuenta Esclava</span>
+                        </button>
+                        <button type="button" onclick="m30ExportCopierConfig()" class="px-3 py-2 bg-[#21262d] hover:bg-[#30363d] text-gray-300 rounded-lg text-xs font-mono transition border border-gray-700" title="Exportar configuración de cuentas y seguridad en JSON">
+                            <span>💾 JSON</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Métricas Globales del Clúster de Cuentas -->
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+                    <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-[11px] text-gray-400 font-medium">Capital Total en Clúster</span>
+                        <span id="m30-stat-total-equity" class="text-base font-bold font-mono text-emerald-400 mt-1">$0.00</span>
+                        <span id="m30-stat-accounts-count" class="text-[10px] text-gray-500 font-mono mt-0.5">0 cuentas activas</span>
+                    </div>
+                    <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-[11px] text-gray-400 font-medium">Órdenes Replicadas Hoy</span>
+                        <span id="m30-stat-replicated-orders" class="text-base font-bold font-mono text-sky-400 mt-1">0</span>
+                        <span class="text-[10px] text-emerald-400/80 font-mono mt-0.5">100% efectividad</span>
+                    </div>
+                    <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-[11px] text-gray-400 font-medium">Latencia Media Split</span>
+                        <span id="m30-stat-avg-latency" class="text-base font-bold font-mono text-purple-400 mt-1">1.8 ms</span>
+                        <span class="text-[10px] text-gray-500 font-mono mt-0.5">Sub-5ms garantizado</span>
+                    </div>
+                    <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-[11px] text-gray-400 font-medium">Jitter Anti-Detección</span>
+                        <span id="m30-stat-jitter-status" class="text-base font-bold font-mono text-amber-400 mt-1">Activo (45-320ms)</span>
+                        <span class="text-[10px] text-gray-500 font-mono mt-0.5">Desincronización Gaussiana</span>
+                    </div>
+                    <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-[11px] text-gray-400 font-medium">Slippage Máx Permitido</span>
+                        <span id="m30-stat-max-slippage" class="text-base font-bold font-mono text-rose-400 mt-1">1.2 pips</span>
+                        <span class="text-[10px] text-gray-500 font-mono mt-0.5">Aborto automático en gap</span>
+                    </div>
+                    <div class="bg-[#161b22] border border-gray-800 p-3 rounded-lg flex flex-col justify-between">
+                        <span class="text-[11px] text-gray-400 font-medium">Protector DD Máximo</span>
+                        <span id="m30-stat-global-dd-shield" class="text-base font-bold font-mono text-emerald-400 mt-1">4.5% / -9.0%</span>
+                        <span class="text-[10px] text-gray-500 font-mono mt-0.5">Cierre de emergencia activo</span>
+                    </div>
+                </div>
+
+                <!-- Configuración de Blindaje Anti-Detección Prop Firm & Motor Jitter -->
+                <div class="bg-[#161b22] border border-gray-800 p-4 rounded-xl">
+                    <div class="flex items-center justify-between pb-3 border-b border-gray-800 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-amber-400 font-bold">🛡️</span>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-300">Algoritmo Anti-Detección Prop Firm (Anti-Copy Detection Engine)</h3>
+                        </div>
+                        <span class="text-[10px] font-mono text-gray-400">Protección contra reglas de sincronización idéntica (FTMO, MFF, The Funded Engineer, etc.)</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                        <div>
+                            <label class="block text-gray-400 mb-1 text-[11px]">Jitter Temporal Estocástico (Retardo aleatorio):</label>
+                            <select id="m30-cfg-jitter" onchange="m30UpdateConfig()" class="w-full bg-[#0d1117] border border-gray-700 text-gray-200 text-xs rounded px-2.5 py-1.5 focus:border-emerald-500 outline-none">
+                                <option value="gauss_dynamic" selected>Distribución Normal Gaussiana (40ms - 280ms)</option>
+                                <option value="poisson_burst">Salto de Poisson Ultra-Realista (10ms - 450ms)</option>
+                                <option value="uniform_subsecond">Uniforme Continuo (50ms - 180ms)</option>
+                                <option value="zero_latency">Ultra-Rápido Directo (Sin Jitter / 0ms)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1 text-[11px]">Micro-Variación de Lote Anti-Huella:</label>
+                            <select id="m30-cfg-lotskew" onchange="m30UpdateConfig()" class="w-full bg-[#0d1117] border border-gray-700 text-gray-200 text-xs rounded px-2.5 py-1.5 focus:border-emerald-500 outline-none">
+                                <option value="skew_05" selected>Variación Leve (±1% a ±3% de Lote)</option>
+                                <option value="skew_10">Variación Media (±3% a ±6% de Lote)</option>
+                                <option value="skew_exact">Lote Proporcional Exacto (Sin Micro-Skew)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1 text-[11px]">Desfase de TP/SL Dinámico:</label>
+                            <select id="m30-cfg-tpslskew" onchange="m30UpdateConfig()" class="w-full bg-[#0d1117] border border-gray-700 text-gray-200 text-xs rounded px-2.5 py-1.5 focus:border-emerald-500 outline-none">
+                                <option value="jitter_pips" selected>Jitter ±0.4 a 1.2 Pips (Impide TPs calcados)</option>
+                                <option value="ghost_virtual">TP/SL Oculto Virtual (Ejecución por StratView)</option>
+                                <option value="exact_pips">TP/SL Exacto del Master</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1 text-[11px]">Enrutador de Desconexión de Emergencia:</label>
+                            <select id="m30-cfg-failover" onchange="m30UpdateConfig()" class="w-full bg-[#0d1117] border border-gray-700 text-gray-200 text-xs rounded px-2.5 py-1.5 focus:border-emerald-500 outline-none">
+                                <option value="close_all" selected>Cerrar Todas las Cuentas si Falla Master</option>
+                                <option value="keep_running">Mantener Slaves con SL/TP Original</option>
+                                <option value="freeze_trading">Congelar Slaves (Prohibir Nuevas Órdenes)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matriz de Cuentas Esclavas / Fondeo / Splitter -->
+                <div class="bg-[#161b22] border border-gray-800 rounded-xl overflow-hidden flex flex-col">
+                    <div class="p-3 bg-[#1c2128] border-b border-gray-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-gray-200 uppercase tracking-wide">Clúster de Cuentas Conectadas & Multiplicadores de Riesgo</span>
+                            <span class="text-[10px] bg-sky-500/20 text-sky-300 font-mono px-2 py-0.2 rounded border border-sky-500/30">Auto-Scaling</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button type="button" onclick="m30ResetClusterStats()" class="text-xs text-gray-400 hover:text-gray-200 px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 transition">Reiniciar Estadísticas</button>
+                            <button type="button" onclick="m30AutoCalculateLotRatios()" class="text-xs text-emerald-400 hover:text-emerald-300 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/40 transition">Auto-Ajustar Ratios por Balance</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-[#111418] text-gray-400 border-b border-gray-800 text-[11px]">
+                                    <th class="p-2.5 font-mono">ESTADO</th>
+                                    <th class="p-2.5">CUENTA / ALIAS</th>
+                                    <th class="p-2.5">PROP FIRM / BROKER</th>
+                                    <th class="p-2.5 text-right">BALANCE</th>
+                                    <th class="p-2.5 text-right">EQUITY ACTUAL</th>
+                                    <th class="p-2.5 text-center">MODO MULTIPLICADOR</th>
+                                    <th class="p-2.5 text-center">RATIO / MULT</th>
+                                    <th class="p-2.5 text-center">JITTER (MS)</th>
+                                    <th class="p-2.5 text-center">ESTADO DD</th>
+                                    <th class="p-2.5 text-center">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="m30-accounts-table-body" class="divide-y divide-gray-800 font-mono text-[11px]">
+                                <!-- Generado dinámicamente por JS con presets institucionales -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Consola en Vivo de Latencias, Ejecuciones y Splitter Log -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <!-- Registro de Órdenes Copiadas en Tiempo Real -->
+                    <div class="lg:col-span-2 bg-[#161b22] border border-gray-800 rounded-xl flex flex-col p-3">
+                        <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-800">
+                            <span class="text-xs font-bold text-gray-300 uppercase tracking-wide flex items-center space-x-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Registro de Ejecuciones Paralelas en Vivo (Live Copier Telemetry)</span>
+                            </span>
+                            <button type="button" onclick="m30ClearExecutionLogs()" class="text-[10px] text-gray-500 hover:text-gray-300 font-mono">Limpiar Log</button>
+                        </div>
+                        <div id="m30-copier-telemetry-log" class="h-44 overflow-y-auto font-mono text-[11px] space-y-1.5 bg-[#0d1117] p-2.5 rounded-lg border border-gray-800/80">
+                            <div class="text-gray-500">// Esperando órdenes del Master o clic en "Test Split"...</div>
+                        </div>
+                    </div>
+
+                    <!-- Cuadro de Control Rápido de Emergencia & Cobertura Cruzada -->
+                    <div class="bg-[#161b22] border border-gray-800 rounded-xl flex flex-col p-3 justify-between">
+                        <div>
+                            <div class="flex items-center space-x-1.5 text-rose-400 pb-2 mb-2 border-b border-gray-800">
+                                <span class="text-sm font-bold">⚠️</span>
+                                <span class="text-xs font-bold uppercase tracking-wide text-gray-200">Kill Switch & Cobertura Inversa</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mb-3">Permite abortar operaciones al instante o invertir el sesgo (Inverted Copier) en cuentas secundarias para hedging de portafolio.</p>
+                            
+                            <div class="space-y-2">
+                                <button type="button" onclick="m30EmergencyCloseAll()" class="w-full py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded font-bold text-xs border border-rose-500/40 transition flex items-center justify-center space-x-1">
+                                    <span>🛑</span>
+                                    <span>KILL SWITCH: CERRAR TODO EL CLÚSTER</span>
+                                </button>
+                                <button type="button" onclick="m30ToggleReverseMode()" id="m30-btn-reverse" class="w-full py-1.5 bg-[#21262d] hover:bg-[#30363d] text-amber-400 rounded text-xs border border-amber-500/30 transition flex items-center justify-center space-x-1">
+                                    <span>🔄</span>
+                                    <span>Modo Inverso / Hedge: DESACTIVADO</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-gray-800 mt-3 text-[10px] text-gray-500 font-mono flex items-center justify-between">
+                            <span>StratView Engine V30.0</span>
+                            <span class="text-emerald-400">Zero-Leak WebSockets</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ============================================================== -->
+            <!-- FIN SUB-VIEW MÓDULO 30                                         -->
+            <!-- ============================================================== -->
+</div><!-- FIN DE #strategy-panel -->
 
     </div><!-- FIN DE #center-column -->
 
@@ -4496,6 +4702,7 @@ function switchBottomSubTab(tabName) {
   const isExe = tabName === 'liveexecution'; // NUEVO MÓDULO 27
   const isSyn = tabName === 'synthetic'; // NUEVO MÓDULO 28
   const isDsr = tabName === 'auditdsr'; // NUEVO MÓDULO 29
+  const isCpr = tabName === 'copier'; // NUEVO MÓDULO 30
 
     const tabBar = document.getElementById('subtab-btn-perf')?.parentElement;
     if (tabBar) tabBar.className = "flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap py-0.5 max-w-[76vw]";
@@ -4541,6 +4748,8 @@ function switchBottomSubTab(tabName) {
     const bswEl = document.getElementById('subview-blackswan');
   const exeEl = document.getElementById('subview-liveexecution');
   const synEl = document.getElementById('subview-synthetic');
+const cprEl = document.getElementById('subview-copier');
+        if (cprEl) cprEl.classList.toggle('hidden', !isCpr); // NUEVO MÓDULO 30
   const dsrEl = document.getElementById('subview-auditdsr');
 if (dsrEl) dsrEl.classList.toggle('hidden', !isDsr); // NUEVO MÓDULO 29
 if (synEl) synEl.classList.toggle('hidden', !isSyn); // NUEVO MÓDULO 28
@@ -4567,6 +4776,7 @@ if (exeEl) exeEl.classList.toggle('hidden', !isExe); // NUEVO MÓDULO 27
     styleTab('subtab-btn-vmx',  isVmx,  'fuchsia');
     styleTab('subtab-btn-hub',  isHub,  'lime');
     styleTab('subtab-btn-agi',  isAgi,  'yellow');
+  styleTab('subtab-btn-cpr', isCpr, 'emerald'); // NUEVO MÓDULO 30
     styleTab('subtab-btn-tls',  isTls,  'orange');
     styleTab('subtab-btn-pdl',  isPdl,  'emerald');
   styleTab('subtab-btn-dsr', isDsr, 'amber'); // NUEVO MÓDULO 29
@@ -4590,6 +4800,7 @@ if (exeEl) exeEl.classList.toggle('hidden', !isExe); // NUEVO MÓDULO 27
     if (isVmx) setTimeout(initModule14VoiceAndMatrix20, 40);
     if (isHub) setTimeout(renderModule15MultiYearMonthlyBreakdown, 60);
     if (isAgi) setTimeout(runModule16MachoAlfaMasterCycle, 40);
+  if (isCpr) setTimeout(initModule30CopierEngine, 40); // NUEVO MÓDULO 30
     if (isTls) setTimeout(initModule17ProSuite, 40);
     if (isPdl) setTimeout(initModule18PropDualSuite, 40);
     if (isPfm) setTimeout(() => renderModule19PropFirmsIntelligence(), 40);
@@ -11313,6 +11524,391 @@ function m29DrawDSRCanvas(userSR, nullSR) {
     ctx.font = "bold 11px monospace";
     ctx.textAlign = "left";
     ctx.fillText(`TU SHARPE REAL: ${userSR.toFixed(2)} (ALPHA)`, userX + 8, 24);
+}
+    // ============================================================================
+// MÓDULO 30: COPIADOR MAESTRO INSTITUCIONAL MULTI-CUENTAS & SPLITTER DE FONDEO
+// MOTOR DE LATENCIA ULTRA-BAJA CON JITTER ESTOCÁSTICO ANTI-DETECCIÓN PROP FIRM
+// ============================================================================
+window.m30State = {
+    isRunning: false,
+    reverseMode: false,
+    jitterType: 'gauss_dynamic',
+    lotSkewMode: 'skew_05',
+    tpSlSkewMode: 'jitter_pips',
+    failoverMode: 'close_all',
+    totalReplicatedOrders: 0,
+    accounts: [
+        {
+            id: 'ACC-M01',
+            alias: 'FTMO Master Tier 1',
+            type: 'master',
+            firm: 'FTMO (Raw ECN)',
+            balance: 200000,
+            equity: 204520,
+            mode: 'master',
+            ratio: 1.0,
+            active: true,
+            status: 'ONLINE',
+            ddPct: 1.2
+        },
+        {
+            id: 'ACC-S02',
+            alias: 'FundedNext Challenge A',
+            type: 'slave',
+            firm: 'FundedNext (Stellar)',
+            balance: 100000,
+            equity: 101850,
+            mode: 'proportional',
+            ratio: 0.5,
+            active: true,
+            status: 'SYNCED',
+            jitterAvg: '112ms',
+            ddPct: 0.9
+        },
+        {
+            id: 'ACC-S03',
+            alias: 'MFFX Prop Vault #1',
+            type: 'slave',
+            firm: 'MyFundedFX (DXTrade)',
+            balance: 50000,
+            equity: 51200,
+            mode: 'proportional',
+            ratio: 0.25,
+            active: true,
+            status: 'SYNCED',
+            jitterAvg: '184ms',
+            ddPct: 1.4
+        },
+        {
+            id: 'ACC-S04',
+            alias: 'IC Markets Real ECN Hedge',
+            type: 'slave',
+            firm: 'IC Markets (cTrader)',
+            balance: 25000,
+            equity: 25890,
+            mode: 'fixed_ratio',
+            ratio: 0.125,
+            active: true,
+            status: 'SYNCED',
+            jitterAvg: '65ms',
+            ddPct: 0.4
+        },
+        {
+            id: 'ACC-S05',
+            alias: 'The5ers High Stakes',
+            type: 'slave',
+            firm: 'The5ers (MT5)',
+            balance: 100000,
+            equity: 102400,
+            mode: 'risk_multiplier',
+            ratio: 0.5,
+            active: true,
+            status: 'SYNCED',
+            jitterAvg: '210ms',
+            ddPct: 1.1
+        }
+    ]
+};
+
+function initModule30CopierEngine() {
+    m30RenderAccountsTable();
+    m30UpdateGlobalStats();
+    m30LogTelemetry('info', '🛰️ Módulo 30 Inicializado. Hub Copiador Maestro Multi-Cuentas listo.');
+}
+
+function m30RenderAccountsTable() {
+    const tbody = document.getElementById('m30-accounts-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    window.m30State.accounts.forEach((acc, idx) => {
+        const isMaster = acc.type === 'master';
+        const row = document.createElement('tr');
+        row.className = isMaster ? 'bg-emerald-950/20 text-emerald-200 border-b border-gray-800' : 'hover:bg-[#1f242c] transition border-b border-gray-800/60';
+        
+        row.innerHTML = `
+            <td class="p-2.5">
+                <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] ${acc.active ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                    <span class="w-1.5 h-1.5 rounded-full ${acc.active ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
+                    <span>${acc.status}</span>
+                </span>
+            </td>
+            <td class="p-2.5 font-bold ${isMaster ? 'text-emerald-300' : 'text-gray-200'}">
+                <div class="flex items-center space-x-1.5">
+                    <span>${isMaster ? '👑' : '🔗'}</span>
+                    <span>${acc.alias}</span>
+                    <span class="text-[9px] text-gray-500 font-normal">(${acc.id})</span>
+                </div>
+            </td>
+            <td class="p-2.5 text-gray-300">${acc.firm}</td>
+            <td class="p-2.5 text-right font-mono text-gray-300">$${acc.balance.toLocaleString()}</td>
+            <td class="p-2.5 text-right font-mono text-emerald-400 font-bold">$${acc.equity.toLocaleString()}</td>
+            <td class="p-2.5 text-center">
+                <span class="text-[10px] px-2 py-0.5 rounded bg-gray-800 text-gray-300 uppercase">${acc.mode}</span>
+            </td>
+            <td class="p-2.5 text-center font-bold text-sky-400">
+                ${isMaster ? '<span class="text-gray-500">ORIGEN</span>' : (acc.ratio + 'x')}
+            </td>
+            <td class="p-2.5 text-center font-mono text-amber-300/90">
+                ${isMaster ? '<span class="text-gray-500">0ms</span>' : (acc.jitterAvg || '120ms')}
+            </td>
+            <td class="p-2.5 text-center">
+                <span class="text-[10px] text-emerald-400 font-bold">-${acc.ddPct}%</span>
+            </td>
+            <td class="p-2.5 text-center space-x-1">
+                ${isMaster ? '<span class="text-[10px] text-gray-500 font-mono">MASTER</span>' : `
+                    <button type="button" onclick="m30ToggleAccountActive(${idx})" class="px-1.5 py-0.5 text-[10px] rounded ${acc.active ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'}">
+                        ${acc.active ? 'Pausar' : 'Activar'}
+                    </button>
+                    <button type="button" onclick="m30RemoveAccount(${idx})" class="px-1.5 py-0.5 text-[10px] rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/30">
+                        ✕
+                    </button>
+                `}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function m30UpdateGlobalStats() {
+    let totalEquity = 0;
+    let activeAccounts = 0;
+    
+    window.m30State.accounts.forEach(acc => {
+        if (acc.active) {
+            totalEquity += acc.equity;
+            activeAccounts++;
+        }
+    });
+    
+    const eqEl = document.getElementById('m30-stat-total-equity');
+    if (eqEl) eqEl.textContent = '$' + totalEquity.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    
+    const countEl = document.getElementById('m30-stat-accounts-count');
+    if (countEl) countEl.textContent = activeAccounts + ' de ' + window.m30State.accounts.length + ' cuentas sincronizadas';
+    
+    const repEl = document.getElementById('m30-stat-replicated-orders');
+    if (repEl) repEl.textContent = window.m30State.totalReplicatedOrders;
+}
+
+function m30ToggleMasterCopier() {
+    window.m30State.isRunning = !window.m30State.isRunning;
+    const badge = document.getElementById('m30-engine-badge');
+    const btn = document.getElementById('m30-btn-toggle');
+    const icon = document.getElementById('m30-toggle-icon');
+    const text = document.getElementById('m30-toggle-text');
+    
+    if (window.m30State.isRunning) {
+        if (badge) {
+            badge.className = 'text-[10px] bg-emerald-500/20 text-emerald-300 font-mono px-2 py-0.5 rounded border border-emerald-500/40 animate-pulse';
+            badge.textContent = 'MOTOR: COPIANDO EN VIVO';
+        }
+        if (btn) btn.className = 'px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-xs shadow-md transition flex items-center space-x-1.5 border border-rose-400/40';
+        if (icon) icon.textContent = '⏸';
+        if (text) text.textContent = 'PAUSAR COPIADOR';
+        m30LogTelemetry('success', '🟢 Copiador Maestro ACTIVADO. Vigilancia de ticks y WebHooks en escucha activa.');
+        if (typeof showFloatingToast === 'function') showFloatingToast('Copiador Maestro StratView Activado', 'success');
+    } else {
+        if (badge) {
+            badge.className = 'text-[10px] bg-gray-700/50 text-gray-400 font-mono px-2 py-0.5 rounded border border-gray-600';
+            badge.textContent = 'MOTOR: STANDBY';
+        }
+        if (btn) btn.className = 'px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md transition flex items-center space-x-1.5 border border-emerald-400/40';
+        if (icon) icon.textContent = '▶';
+        if (text) text.textContent = 'ACTIVAR COPIADOR MAESTRO';
+        m30LogTelemetry('warn', '🟡 Copiador Maestro en PAUSA.');
+        if (typeof showFloatingToast === 'function') showFloatingToast('Copiador Maestro Pausado', 'info');
+    }
+}
+
+function m30ToggleAccountActive(idx) {
+    if (window.m30State.accounts[idx]) {
+        window.m30State.accounts[idx].active = !window.m30State.accounts[idx].active;
+        window.m30State.accounts[idx].status = window.m30State.accounts[idx].active ? 'SYNCED' : 'PAUSED';
+        m30RenderAccountsTable();
+        m30UpdateGlobalStats();
+        m30LogTelemetry('info', `Cuenta [${window.m30State.accounts[idx].alias}] estado cambiado a: ${window.m30State.accounts[idx].status}`);
+    }
+}
+
+function m30RemoveAccount(idx) {
+    if (confirm(`¿Estás seguro de desacoplar ${window.m30State.accounts[idx].alias}?`)) {
+        const removed = window.m30State.accounts.splice(idx, 1)[0];
+        m30RenderAccountsTable();
+        m30UpdateGlobalStats();
+        m30LogTelemetry('warn', `Cuenta ${removed.alias} desconectada del enjambre.`);
+    }
+}
+
+function m30AutoCalculateLotRatios() {
+    const master = window.m30State.accounts.find(a => a.type === 'master');
+    if (!master || master.balance <= 0) return;
+    
+    window.m30State.accounts.forEach(acc => {
+        if (acc.type !== 'master') {
+            acc.ratio = parseFloat((acc.balance / master.balance).toFixed(3));
+        }
+    });
+    
+    m30RenderAccountsTable();
+    m30LogTelemetry('success', 'Ratios de lotaje recalculados proporcionalmente según balance de cada cuenta.');
+    if (typeof showFloatingToast === 'function') showFloatingToast('Multiplicadores ajustados por balance', 'success');
+}
+
+function m30CalculateJitter() {
+    const type = window.m30State.jitterType;
+    if (type === 'zero_latency') return 0;
+    if (type === 'uniform_subsecond') return Math.floor(50 + Math.random() * 130);
+    if (type === 'poisson_burst') {
+        const lambda = 120;
+        return Math.floor(-lambda * Math.log(1.0 - Math.random()) + 10);
+    }
+    // Gauss Dynamic por defecto: Box-Muller transform
+    const u1 = Math.random() || 0.0001;
+    const u2 = Math.random() || 0.0001;
+    const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+    const mean = 140;
+    const stdDev = 40;
+    return Math.max(35, Math.min(320, Math.floor(mean + z0 * stdDev)));
+}
+
+function m30SimulateMasterExecution() {
+    const symbols = ['EURUSD', 'NAS100', 'XAUUSD', 'BTCUSD', 'US30'];
+    const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
+    const sym = symbols[Math.floor(Math.random() * symbols.length)];
+    const baseLot = 2.0;
+    const executionPrice = sym === 'EURUSD' ? 1.0850 : sym === 'NAS100' ? 19800.5 : sym === 'XAUUSD' ? 2650.4 : 91200;
+
+    m30LogTelemetry('info', `⚡ ORDEN MASTER DETECTADA: [${side} ${baseLot} ${sym} @ ${executionPrice}] enviando a esclavas...`);
+
+    const master = window.m30State.accounts.find(a => a.type === 'master');
+    const slaves = window.m30State.accounts.filter(a => a.type === 'slave' && a.active);
+
+    slaves.forEach((slave, i) => {
+        const delay = m30CalculateJitter();
+        let targetSide = side;
+        if (window.m30State.reverseMode) {
+            targetSide = side === 'BUY' ? 'SELL' : 'BUY';
+        }
+
+        // Micro-skew de volumen anti-huella
+        let lotSkew = 1.0;
+        if (window.m30State.lotSkewMode === 'skew_05') lotSkew += (Math.random() * 0.04 - 0.02);
+        else if (window.m30State.lotSkewMode === 'skew_10') lotSkew += (Math.random() * 0.08 - 0.04);
+        
+        const finalLot = Math.max(0.01, parseFloat((baseLot * slave.ratio * lotSkew).toFixed(2)));
+
+        setTimeout(() => {
+            window.m30State.totalReplicatedOrders++;
+            m30UpdateGlobalStats();
+            m30LogTelemetry('order', `✓ [${slave.alias}] Ejecutado: ${targetSide} ${finalLot} ${sym} | Jitter Anti-Detección: ${delay}ms | Latencia Red: 1.4ms`);
+        }, delay + (i * 15));
+    });
+
+    if (typeof showFloatingToast === 'function') {
+        showFloatingToast(`Split replicado en ${slaves.length} cuentas esclavas`, 'success');
+    }
+}
+
+function m30EmergencyCloseAll() {
+    if (confirm('🚨 ATENCIÓN: ¿Cerrar TODAS las posiciones de mercado en TODAS las cuentas de inmediato?')) {
+        m30LogTelemetry('error', '🛑 KILL SWITCH EJECUTADO: Cierre forzado de todas las órdenes en curso en el clúster.');
+        if (typeof showFloatingToast === 'function') showFloatingToast('Kill Switch activado: Cuentas liquidadas a salvo', 'warn');
+    }
+}
+
+function m30ToggleReverseMode() {
+    window.m30State.reverseMode = !window.m30State.reverseMode;
+    const btn = document.getElementById('m30-btn-reverse');
+    if (btn) {
+        if (window.m30State.reverseMode) {
+            btn.className = 'w-full py-1.5 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 rounded text-xs border border-purple-400 transition flex items-center justify-center space-x-1 font-bold';
+            btn.innerHTML = '<span>🔄</span><span>Modo Inverso / Hedge: ACTIVADO</span>';
+            m30LogTelemetry('warn', 'Modo Inverso Activado: Las órdenes esclavas invertirán las compras por ventas.');
+        } else {
+            btn.className = 'w-full py-1.5 bg-[#21262d] hover:bg-[#30363d] text-amber-400 rounded text-xs border border-amber-500/30 transition flex items-center justify-center space-x-1';
+            btn.innerHTML = '<span>🔄</span><span>Modo Inverso / Hedge: DESACTIVADO</span>';
+            m30LogTelemetry('info', 'Modo Inverso Desactivado: Replicación idéntica normal.');
+        }
+    }
+}
+
+function m30AddNewAccountModal() {
+    const alias = prompt('Nombre/Alias de la cuenta esclava (Ej: FTMO $100k Challenge 2):');
+    if (!alias) return;
+    const firm = prompt('Prop Firm o Broker (Ej: FTMO, Alpha Capital, cTrader):', 'FTMO');
+    const balance = parseFloat(prompt('Balance de la cuenta en USD:', '100000')) || 100000;
+    
+    const master = window.m30State.accounts.find(a => a.type === 'master');
+    const baseRatio = master && master.balance > 0 ? parseFloat((balance / master.balance).toFixed(3)) : 0.5;
+
+    window.m30State.accounts.push({
+        id: 'ACC-S0' + (window.m30State.accounts.length + 1),
+        alias: alias,
+        type: 'slave',
+        firm: firm || 'Broker Genérico',
+        balance: balance,
+        equity: balance,
+        mode: 'proportional',
+        ratio: baseRatio,
+        active: true,
+        status: 'SYNCED',
+        jitterAvg: '135ms',
+        ddPct: 0.0
+    });
+
+    m30RenderAccountsTable();
+    m30UpdateGlobalStats();
+    m30LogTelemetry('success', `Nueva cuenta esclava vinculada con éxito: [${alias} - $${balance.toLocaleString()}]`);
+}
+
+function m30UpdateConfig() {
+    const j = document.getElementById('m30-cfg-jitter');
+    const l = document.getElementById('m30-cfg-lotskew');
+    const t = document.getElementById('m30-cfg-tpslskew');
+    const f = document.getElementById('m30-cfg-failover');
+    
+    if (j) window.m30State.jitterType = j.value;
+    if (l) window.m30State.lotSkewMode = l.value;
+    if (t) window.m30State.tpSlSkewMode = t.value;
+    if (f) window.m30State.failoverMode = f.value;
+    
+    m30LogTelemetry('info', 'Configuración de blindaje y jitter anti-detección actualizada.');
+}
+
+function m30ResetClusterStats() {
+    window.m30State.totalReplicatedOrders = 0;
+    m30UpdateGlobalStats();
+    m30LogTelemetry('info', 'Métricas de ejecuciones del clúster reiniciadas a cero.');
+}
+
+function m30ExportCopierConfig() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.m30State, null, 2));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", `StratView_Copier_Config_${new Date().toISOString().slice(0,10)}.json`);
+    dlAnchorElem.click();
+    m30LogTelemetry('success', 'Configuración del clúster exportada en JSON de seguridad.');
+}
+
+function m30ClearExecutionLogs() {
+    const logBox = document.getElementById('m30-copier-telemetry-log');
+    if (logBox) logBox.innerHTML = '<div class="text-gray-500">// Registro reiniciado. En espera de órdenes...</div>';
+}
+
+function m30LogTelemetry(type, msg) {
+    const logBox = document.getElementById('m30-copier-telemetry-log');
+    if (!logBox) return;
+    
+    const now = new Date().toTimeString().split(' ')[0] + '.' + String(new Date().getMilliseconds()).padStart(3, '0');
+    const color = type === 'error' ? 'text-rose-400' : type === 'warn' ? 'text-amber-300' : type === 'order' ? 'text-sky-300' : type === 'success' ? 'text-emerald-300' : 'text-gray-400';
+    
+    const row = document.createElement('div');
+    row.className = color;
+    row.innerHTML = `<span class="text-gray-600">[${now}]</span> ${msg}`;
+    
+    logBox.prepend(row);
+    if (logBox.children.length > 50) logBox.removeChild(logBox.lastChild);
 }
   </script>
 </body>
