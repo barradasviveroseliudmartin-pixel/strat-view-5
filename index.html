@@ -9510,35 +9510,77 @@ async function handleMT5CSV(event) {
       loadCandles();
     }
 
-    async function refreshSavedDatasetsDropdown(selectedId = null) {
-      const optgroup = document.getElementById('optgroup-mt5-saved');
-      const quickList = document.getElementById('mt5-files-quicklist');
-      optgroup.innerHTML = "";
-      if (quickList) quickList.innerHTML = "";
-      const metaList = await getDatasetsMetadata();
-      document.getElementById('db-count').innerText = `${metaList.length} archivos`;
-      if (metaList.length === 0) {
-        optgroup.innerHTML = `<option disabled value="">(Sin archivos guardados)</option>`;
-        return;
-      }
-      metaList.forEach(ds => {
-        const opt = document.createElement('option');
-        opt.value = ds.id;
-        opt.innerText = `📂 ${ds.name} (${ds.candlesCount.toLocaleString()} v)`;
-        if (selectedId && ds.id === selectedId) opt.selected = true;
-        optgroup.appendChild(opt);
-
-        if (quickList) {
-          const item = document.createElement('button');
-          item.type = "button";
-          item.onclick = () => selectMT5DatasetFromSidebar(ds.id);
-          item.className = "w-full text-left px-2 py-1 rounded bg-[#131722] hover:bg-emerald-950/50 border border-gray-800 hover:border-emerald-500/40 text-gray-300 hover:text-emerald-300 flex justify-between items-center transition";
-          item.innerHTML = `<span class="truncate pr-1">📂 ${ds.name}</span><span class="text-emerald-400 shrink-0">${(ds.candlesCount/1000).toFixed(1)}k</span>`;
-          quickList.appendChild(item);
+async function deleteSingleMT5Dataset(id, name, event) {
+            if (event) event.stopPropagation();
+            if (!confirm(`¿Seguro que deseas eliminar únicamente el archivo "${name}"?`)) return;
+            try {
+                const db = await openMT5DB();
+                await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, "readwrite");
+                    tx.objectStore(STORE_NAME).delete(id);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = (e) => reject(e);
+                });
+                await refreshSavedDatasetsDropdown();
+            } catch (e) {
+                console.error("Error al eliminar dataset:", e);
+            }
         }
-      });
-    }
 
+        async function refreshSavedDatasetsDropdown(selectedId = null) {
+            const optgroup = document.getElementById('optgroup-mt5-saved');
+            const quickList = document.getElementById('mt5-files-quicklist');
+            optgroup.innerHTML = "";
+            if (quickList) quickList.innerHTML = "";
+            let metaList = await getDatasetsMetadata();
+
+            // Purga automática de raíz del archivo corrupto de 0.8k
+            for (const ds of metaList) {
+                if (ds.candlesCount < 2000 && /EURUSDM15/i.test(ds.name)) {
+                    try {
+                        const db = await openMT5DB();
+                        const tx = db.transaction(STORE_NAME, "readwrite");
+                        tx.objectStore(STORE_NAME).delete(ds.id);
+                    } catch (e) {}
+                }
+            }
+            metaList = metaList.filter(ds => !(ds.candlesCount < 2000 && /EURUSDM15/i.test(ds.name)));
+
+            document.getElementById('db-count').innerText = `${metaList.length} archivos`;
+            if (metaList.length === 0) {
+                optgroup.innerHTML = '<option disabled value="">(Sin archivos guardados)</option>';
+                return;
+            }
+            metaList.forEach(ds => {
+                const opt = document.createElement('option');
+                opt.value = ds.id;
+                opt.innerText = `📁 ${ds.name} (${ds.candlesCount.toLocaleString()} v)`;
+                if (selectedId && ds.id === selectedId) opt.selected = true;
+                optgroup.appendChild(opt);
+
+                if (quickList) {
+                    const rowWrap = document.createElement('div');
+                    rowWrap.className = "flex items-center gap-1 w-full";
+
+                    const item = document.createElement('button');
+                    item.type = "button";
+                    item.onclick = () => selectMT5DatasetFromSidebar(ds.id);
+                    item.className = "flex-1 flex items-center justify-between text-left px-2 py-1 rounded bg-[#131722] hover:bg-emerald-950/50 border border-gray-800 hover:border-emerald-500/40 text-gray-300 hover:text-white transition truncate";
+                    item.innerHTML = `<span class="truncate pr-1">📁 ${ds.name}</span><span class="text-emerald-400 shrink-0">${(ds.candlesCount/1000).toFixed(1)}k</span>`;
+
+                    const delBtn = document.createElement('button');
+                    delBtn.type = "button";
+                    delBtn.title = `Eliminar ${ds.name}`;
+                    delBtn.onclick = (e) => deleteSingleMT5Dataset(ds.id, ds.name, e);
+                    delBtn.className = "px-1.5 py-1 rounded bg-[#1a1f2e] hover:bg-rose-900/70 border border-gray-800 hover:border-rose-500/50 text-gray-400 hover:text-rose-300 text-[10px] shrink-0 transition";
+                    delBtn.innerText = "🗑️";
+
+                    rowWrap.appendChild(item);
+                    rowWrap.appendChild(delBtn);
+                    quickList.appendChild(rowWrap);
+                }
+            });
+        }
     function toggleCutMode() {
       if (allCandles.length === 0) return;
       isCutModeActive = !isCutModeActive;
