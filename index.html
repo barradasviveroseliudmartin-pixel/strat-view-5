@@ -9039,12 +9039,40 @@ let liveMT5SyncTimer = null;
             return { asset, baseTf, stepSec: tfSecMap[baseTf] || 900 };
         }
 
-async function fetchRealMarketCandlesAndPrice(asset, baseTf) {
-            const limit = 1500;
+async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
+            const limit = 2000;
             const liveCandles = [];
             let livePrice = null;
 
-            // 1. Fuente Primaria Directa (Sin Proxies, CORS 100% Nativo): Kraken Institutional OHLC & CCData
+            // 1. CryptoCompare / CCData Global (Soporta hasta 2000 velas hacia atrás sin huecos)
+            try {
+                const fsym = (asset === "XAUUSD") ? "PAXG" : (asset === "BTCUSD") ? "BTC" : (asset === "US30") ? "YM" : asset.slice(0, 3);
+                const tsym = (asset === "XAUUSD" || asset === "BTCUSD" || asset === "US30") ? "USD" : asset.slice(3, 6);
+                if (asset !== "US30" && asset !== "NAS100") {
+                    const isMinute = (baseTf === "1m" || baseTf === "5m" || baseTf === "15m" || baseTf === "30m");
+                    const endpoint = isMinute ? "histominute" : "histohour";
+                    const agg = (baseTf === "5m") ? 5 : (baseTf === "15m") ? 15 : (baseTf === "30m") ? 30 : (baseTf === "4h") ? 4 : 1;
+
+                    const url = `https://min-api.cryptocompare.com/data/v2/${endpoint}?fsym=${fsym}&tsym=${tsym}&limit=${limit}&aggregate=${agg}`;
+                    const res = await fetch(url, { cache: "no-store" });
+                    const json = await res.json();
+                    if (json && json.Data && Array.isArray(json.Data.Data)) {
+                        for (const b of json.Data.Data) {
+                            if (b.open > 0 && b.close > 0) {
+                                liveCandles.push({
+                                    time: b.time,
+                                    open: Number(b.open),
+                                    high: Number(b.high),
+                                    low: Number(b.low),
+                                    close: Number(b.close)
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            // 2. Kraken Institutional OHLC (con parámetro 'since' para traer desde la fecha exacta del archivo)
             try {
                 const krakenPairMap = {
                     "EURUSD": "ZEURZUSD",
@@ -9058,7 +9086,8 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf) {
                 const kInt = kIntervalMap[baseTf] || 15;
 
                 if (kPair) {
-                    const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=${kInt}`, { cache: "no-store" });
+                    const sinceParam = sinceTimeSec > 0 ? `&since=${sinceTimeSec - 3600}` : "";
+                    const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=${kInt}${sinceParam}`, { cache: "no-store" });
                     const json = await res.json();
                     if (json && json.result) {
                         const key = Object.keys(json.result).find(k => k !== "last");
@@ -9073,83 +9102,117 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf) {
                                     liveCandles.push({ time: t, open: o, high: h, low: l, close: c });
                                 }
                             }
-                            if (liveCandles.length > 0) {
-                                livePrice = liveCandles[liveCandles.length - 1].close;
-                                return { candles: liveCandles, livePrice };
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            if (liveCandles.length > 0) {
+                liveCandles.sort((a, b) => a.time - b.time);
+                livePrice = liveCandles[liveCandles.length - 1].close;
+            }
+            return { candles: liveCandles, livePrice };
+        }
+
+        async function catchUpAndPersistDataset(dataset, tf) {
+            if (!dataset || !dataset.candles || dataset.candles.length === 0) {
+                return { dataset, info: detectAssetInfoFromDatasetName(dataset ? dataset.name : "", tf), livePrice: null };
+            }
+            const info = detectAssetInfoFromDatasetName(dataset.name, tf);
+            const step = info.stepSec;
+            let candles = [...dataset.candles];
+            let modified = false;
+
+            // PASO 1: SANACIÓN QUIRÚRGICA DE VELAS CORRUPTAS O SALTOS FALSOS AL FINAL DEL ARCHIVO
+            // Detecta barras planas sintéticas o velas con cuerpo anormal (>8 veces el rango normal, como el salto del día 7)
+            if (candles.length > 50) {
+                let sumRange = 0;
+                const sampleStart = Math.max(0, candles.length - 300);
+                const sampleEnd = Math.max(20, candles.length - 20);
+                for (let s = sampleStart; s < sampleEnd; s++) {
+                    sumRange += Math.abs(candles[s].high - candles[s].low) || (candles[s].close * 0.0005);
+                }
+                const avgRange = (sumRange / Math.max(1, sampleEnd - sampleStart)) || (candles[0].close * 0.001);
+
+                const cleaned = [];
+                for (let i = 0; i < candles.length; i++) {
+                    const c = candles[i];
+                    if (i >= candles.length - 600 && i >= 3) {
+                        const prev = cleaned[cleaned.length - 1];
+                        const barRange = Math.abs(c.high - c.low);
+                        const gapJump = Math.abs(c.close - prev.close);
+                        const d1 = Math.abs(c.close - candles[i - 1].close);
+                        const d2 = Math.abs(candles[i - 1].close - candles[i - 2].close);
+                        const isFlatSynthetic = (Math.abs(d1 - d2) < 1e-7 && Math.abs((c.high - c.low) - (candles[i - 1].high - candles[i - 1].low)) < 1e-7);
+                        // Si en las últimas velas hay un salto artificial gigante (>12x rango promedio en 1 sola barra) o peine sintético, lo corta
+                        if (isFlatSynthetic || (barRange > avgRange * 12 && gapJump > avgRange * 10)) {
+                            modified = true;
+                            continue;
+                        }
+                    }
+                    cleaned.push(c);
+                }
+                if (cleaned.length !== candles.length) {
+                    candles = cleaned;
+                    modified = true;
+                }
+            }
+
+            // PASO 2: FUSIÓN CRUZADA INTELIGENTE ENTRE TUS PROPIOS ARCHIVOS DE INDEXEDDB
+            // Si tienes otro dataset del mismo activo más reciente en tu base de datos (ej. EURUSDM15 hasta el 17 Nov),
+            // inyecta y agrega automáticamente sus velas reales a tus archivos largos de 2021-2026 (en M15, H1, H4, etc.)
+            try {
+                const allMeta = await getDatasetsMetadata();
+                const lastTimeBeforeMerge = candles.length > 0 ? candles[candles.length - 1].time : 0;
+
+                for (const meta of allMeta) {
+                    if (meta.id === dataset.id) continue;
+                    const otherInfo = detectAssetInfoFromDatasetName(meta.name, tf);
+                    if (otherInfo.asset === info.asset && otherInfo.stepSec <= step) {
+                        const donor = await getDatasetFromDB(meta.id);
+                        if (donor && donor.candles && donor.candles.length > 0) {
+                            const donorLastTime = donor.candles[donor.candles.length - 1].time;
+                            if (donorLastTime > lastTimeBeforeMerge) {
+                                const recentRaw = donor.candles.filter(dc => dc.time >= lastTimeBeforeMerge - step);
+                                const aggregatedDonor = (otherInfo.stepSec === step)
+                                    ? recentRaw
+                                    : aggregateCandlesToTimeframe(recentRaw, info.baseTf, Infinity);
+                                for (const ac of aggregatedDonor) {
+                                    const slotT = Math.floor(ac.time / step) * step;
+                                    if (slotT > candles[candles.length - 1].time) {
+                                        candles.push({ time: slotT, open: ac.open, high: ac.high, low: ac.low, close: ac.close });
+                                        modified = true;
+                                    }
+                                }
                             }
                         }
                     }
                 }
             } catch (e) {}
 
-            // 2. Segunda Fuente Directa (Sin Proxies): CryptoCompare / CCData Global Forex & Indices
-            try {
-                const fsym = (asset === "XAUUSD") ? "PAXG" : (asset === "BTCUSD") ? "BTC" : asset.slice(0, 3);
-                const tsym = (asset === "XAUUSD" || asset === "BTCUSD") ? "USD" : asset.slice(3, 6);
-                const isMinute = (baseTf === "1m" || baseTf === "5m" || baseTf === "15m" || baseTf === "30m");
-                const endpoint = isMinute ? "histominute" : "histohour";
-                const agg = (baseTf === "5m") ? 5 : (baseTf === "15m") ? 15 : (baseTf === "30m") ? 30 : (baseTf === "4h") ? 4 : 1;
-
-                const url = `https://min-api.cryptocompare.com/data/v2/${endpoint}?fsym=${fsym}&tsym=${tsym}&limit=${limit}&aggregate=${agg}`;
-                const res = await fetch(url, { cache: "no-store" });
-                const json = await res.json();
-                if (json && json.Data && Array.isArray(json.Data.Data)) {
-                    for (const b of json.Data.Data) {
-                        if (b.open > 0 && b.close > 0) {
-                            liveCandles.push({
-                                time: b.time,
-                                open: Number(b.open),
-                                high: Number(b.high),
-                                low: Number(b.low),
-                                close: Number(b.close)
-                            });
-                        }
-                    }
-                    if (liveCandles.length > 0) {
-                        livePrice = liveCandles[liveCandles.length - 1].close;
-                        return { candles: liveCandles, livePrice };
-                    }
-                }
-            } catch (e) {}
-
-            return { candles: [], livePrice: null };
-        }
-
-        async function catchUpAndPersistDataset(dataset, tf) {
-            if (!dataset || !dataset.candles || dataset.candles.length === 0) return { dataset, info: detectAssetInfoFromDatasetName(dataset ? dataset.name : "", tf), livePrice: null };
-            const info = detectAssetInfoFromDatasetName(dataset.name, tf);
-            const step = info.stepSec;
-
-            // 1. Limpiar cualquier barra plana sintética previa (donde varios cierres seguidos tenían progresión lineal exacta)
-            let candles = dataset.candles.filter((c, idx, arr) => {
-                if (idx < 3) return true;
-                const d1 = Math.abs(c.close - arr[idx - 1].close);
-                const d2 = Math.abs(arr[idx - 1].close - arr[idx - 2].close);
-                const isSyntheticFlat = (Math.abs(d1 - d2) < 1e-7 && Math.abs((c.high - c.low) - (arr[idx - 1].high - arr[idx - 1].low)) < 1e-7);
-                return !isSyntheticFlat;
-            });
-
-            const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf);
-            let modified = (candles.length !== dataset.candles.length);
+            // PASO 3: CONEXIÓN CLOUD EN VIVO PARA LAS VELAS DESDE EL ÚLTIMO CIERRE HASTA EL SEGUNDO ACTUAL
+            const lastTimeNow = candles.length > 0 ? candles[candles.length - 1].time : 0;
+            const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lastTimeNow);
 
             if (feed.candles && feed.candles.length > 0) {
-                const lastTime = candles.length > 0 ? candles[candles.length - 1].time : 0;
                 for (const fc of feed.candles) {
                     const slotTime = Math.floor(fc.time / step) * step;
-                    if (slotTime > lastTime) {
-                        candles.push({ time: slotTime, open: fc.open, high: fc.high, low: fc.low, close: fc.close });
-                        modified = true;
-                    } else if (candles.length > 0 && slotTime === candles[candles.length - 1].time) {
-                        const lastC = candles[candles.length - 1];
-                        lastC.high = Math.max(lastC.high, fc.high);
-                        lastC.low = Math.min(lastC.low, fc.low);
-                        lastC.close = fc.close;
+                    const currLast = candles[candles.length - 1];
+                    if (slotTime > currLast.time) {
+                        // Evitar saltos bruscos si la primera vela de la nube abre lejos
+                        const openVal = (slotTime - currLast.time <= step * 2) ? currLast.close : fc.open;
+                        candles.push({
+                            time: slotTime,
+                            open: openVal,
+                            high: Math.max(openVal, fc.high, fc.close),
+                            low: Math.min(openVal, fc.low, fc.close),
+                            close: fc.close
+                        });
                         modified = true;
                     }
                 }
             }
 
-            // Ordenar y garantizar timestamps únicos
             if (modified && candles.length > 0) {
                 candles.sort((a, b) => a.time - b.time);
                 const unique = [];
@@ -9165,7 +9228,7 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf) {
                 await refreshSavedDatasetsDropdown(dataset.id);
             }
 
-            const finalPrice = feed.livePrice || (candles.length > 0 ? candles[candles.length - 1].close : null);
+            const finalPrice = (candles.length > 0) ? candles[candles.length - 1].close : feed.livePrice;
             return { dataset, info, livePrice: finalPrice };
         }
         function startLivePersistentEngine(dataset, info) {
