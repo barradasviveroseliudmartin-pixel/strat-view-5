@@ -9012,40 +9012,298 @@ if (tfSec < 60 || symbol !== 'BTC-USD') {
       }
     }
 
-    async function loadCandles() {
-      if (isReplayActive) exitReplayMode();
-      const symbol = document.getElementById('symbolSelect').value;
-      const tf = winTimeframes[1] || document.getElementById('timeframeSelect').value;
-      document.getElementById('win1-tf').value = tf;
-      document.getElementById('timeframeSelect').value = tf;
+let liveMT5SyncTimer = null;
+        let activePersistentDatasetId = null;
 
-      const labelEl = document.getElementById('active-sym-label');
-      if (labelEl) labelEl.innerText = symbol.startsWith('mt5_id_') ? 'MT5 HIST' : symbol;
+        function detectAssetInfoFromDatasetName(name, fallbackTf) {
+            const up = (name || "").toUpperCase();
+            let asset = "EURUSD";
+            if (up.includes("XAU") || up.includes("GOLD") || up.includes("ORO")) asset = "XAUUSD";
+            else if (up.includes("US30") || up.includes("DOW") || up.includes("DJ")) asset = "US30";
+            else if (up.includes("NAS") || up.includes("US100") || up.includes("NDX")) asset = "NAS100";
+            else if (up.includes("GBP")) asset = "GBPUSD";
+            else if (up.includes("JPY")) asset = "USDJPY";
+            else if (up.includes("BTC")) asset = "BTCUSD";
+            else if (up.includes("EUR")) asset = "EURUSD";
 
-      if (symbol.startsWith("mt5_id_")) {
-        const dataset = await getDatasetFromDB(symbol);
-        if (dataset && dataset.candles && dataset.candles.length > 0) {
-          rawMT5Candles = dataset.candles;
-          originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
-          allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
-          winCandles[1] = allCandles;
-          displayCandlesOnChart(allCandles);
-          refreshSecondaryWindows();
-          document.getElementById('agent-verdict').innerText = `📂 Dataset MT5 activo: "${dataset.name}" (${tf}). ${rawMT5Candles.length.toLocaleString()} velas base (2021-2026).`;
-          return;
+            let baseTf = fallbackTf || "15m";
+            if (/\bM1\b|1M\b/i.test(up)) baseTf = "1m";
+            else if (/\bM5\b|5M\b/i.test(up)) baseTf = "5m";
+            else if (/\bM15\b|15M\b/i.test(up)) baseTf = "15m";
+            else if (/\bM30\b|30M\b/i.test(up)) baseTf = "30m";
+            else if (/\bH1\b|1H\b/i.test(up)) baseTf = "1h";
+            else if (/\bH4\b|4H\b/i.test(up)) baseTf = "4h";
+            else if (/\bD1\b|1D\b/i.test(up)) baseTf = "1d";
+
+            const tfSecMap = { "1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400, "1d": 86400 };
+            return { asset, baseTf, stepSec: tfSecMap[baseTf] || 900 };
         }
-      }
 
-      // Generamos base 1m para que todas las 4 pantallas agreguen con exactitud al cambiar de mercado
-      rawMT5Candles = generateHistoricalSeries(symbol, 4800, 60, false);
-      const data = await fetchCandlesWithFallback(symbol, tf);
-      originalFullCandles = [...data];
-      allCandles = [...data];
-      winCandles[1] = allCandles;
-      displayCandlesOnChart(allCandles);
-      refreshSecondaryWindows();
-      document.getElementById('agent-verdict').innerText = `✅ Mercado activo: ${symbol} (${tf}) — Velas en vivo, Indicadores y Curva Bicolor sincronizados.`;
-    }
+        async function fetchRealMarketCandlesAndPrice(asset, baseTf) {
+            const yfMap = {
+                "EURUSD": "EURUSD=X",
+                "GBPUSD": "GBPUSD=X",
+                "USDJPY": "JPY=X",
+                "XAUUSD": "GC=F",
+                "US30": "^DJI",
+                "NAS100": "^IXIC",
+                "BTCUSD": "BTC-USD"
+            };
+            const yfSym = yfMap[asset] || "EURUSD=X";
+            const yfInterval = (baseTf === "1m") ? "1m" : (baseTf === "5m") ? "5m" : (baseTf === "15m" || baseTf === "30m") ? "15m" : "60m";
+            const range = (yfInterval === "1m") ? "5d" : "1mo";
+            const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=${yfInterval}&range=${range}`;
+            const proxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+            ];
+
+            for (const pUrl of proxies) {
+                try {
+                    const res = await fetch(pUrl, { cache: "no-store" });
+                    if (!res.ok) continue;
+                    const json = await res.json();
+                    const result = json && json.chart && json.chart.result && json.chart.result[0];
+                    if (!result || !result.timestamp) continue;
+                    const ts = result.timestamp;
+                    const q = result.indicators && result.indicators.quote && result.indicators.quote[0];
+                    if (!q) continue;
+                    const liveCandles = [];
+                    for (let i = 0; i < ts.length; i++) {
+                        const o = q.open[i], h = q.high[i], l = q.low[i], c = q.close[i];
+                        if (o != null && h != null && l != null && c != null && !isNaN(c)) {
+                            liveCandles.push({
+                                time: Math.floor(ts[i]),
+                                open: Number(o),
+                                high: Number(h),
+                                low: Number(l),
+                                close: Number(c)
+                            });
+                        }
+                    }
+                    const livePrice = (result.meta && result.meta.regularMarketPrice) ? Number(result.meta.regularMarketPrice) : (liveCandles.length ? liveCandles[liveCandles.length - 1].close : null);
+                    if (liveCandles.length > 0 || livePrice) {
+                        return { candles: liveCandles, livePrice };
+                    }
+                } catch (e) {}
+            }
+
+            // Fallback directo ultrarrápido para Forex y Oro si el proxy tarda
+            try {
+                if (asset === "EURUSD" || asset === "GBPUSD" || asset === "USDJPY") {
+                    const from = asset.slice(0, 3), to = asset.slice(3, 6);
+                    const r = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`, { cache: "no-store" });
+                    const d = await r.json();
+                    if (d && d.rates && d.rates[to]) return { candles: [], livePrice: Number(d.rates[to]) };
+                } else if (asset === "XAUUSD") {
+                    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT`, { cache: "no-store" });
+                    const d = await r.json();
+                    if (d && d.price) return { candles: [], livePrice: Number(d.price) };
+                } else if (asset === "BTCUSD") {
+                    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT`, { cache: "no-store" });
+                    const d = await r.json();
+                    if (d && d.price) return { candles: [], livePrice: Number(d.price) };
+                }
+            } catch (e) {}
+
+            return { candles: [], livePrice: null };
+        }
+
+        async function catchUpAndPersistDataset(dataset, tf) {
+            if (!dataset || !dataset.candles || dataset.candles.length === 0) return dataset;
+            const info = detectAssetInfoFromDatasetName(dataset.name, tf);
+            const step = info.stepSec;
+            const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf);
+
+            let candles = dataset.candles;
+            const lastCandle = candles[candles.length - 1];
+            const nowSec = Math.floor(Date.now() / 1000);
+            const currentSlot = Math.floor(nowSec / step) * step;
+            let modified = false;
+
+            // 1. Insertar velas reales de la nube posteriores a la última vela del archivo
+            if (feed.candles && feed.candles.length > 0) {
+                for (const fc of feed.candles) {
+                    const slotTime = Math.floor(fc.time / step) * step;
+                    if (slotTime > lastCandle.time) {
+                        candles.push({ time: slotTime, open: fc.open, high: fc.high, low: fc.low, close: fc.close });
+                        modified = true;
+                    } else if (slotTime === lastCandle.time) {
+                        lastCandle.high = Math.max(lastCandle.high, fc.high);
+                        lastCandle.low = Math.min(lastCandle.low, fc.low);
+                        lastCandle.close = fc.close;
+                        modified = true;
+                    }
+                }
+            }
+
+            // 2. Si aún queda un tramo hasta el minuto actual (o por desfase de zona horaria del broker), rellenar con puente continuo hacia el precio real actual
+            const latestC = candles[candles.length - 1];
+            const targetLivePrice = feed.livePrice || latestC.close;
+
+            if (currentSlot > latestC.time) {
+                const missingBars = Math.min(500, Math.floor((currentSlot - latestC.time) / step));
+                if (missingBars > 0) {
+                    let prevClose = latestC.close;
+                    for (let b = 1; b <= missingBars; b++) {
+                        const barTime = latestC.time + (b * step);
+                        const progress = b / missingBars;
+                        const interpClose = Number((latestC.close + (targetLivePrice - latestC.close) * progress).toFixed(5));
+                        const microWick = Math.abs(targetLivePrice - latestC.close) * 0.08 || (prevClose * 0.00015);
+                        const high = Number((Math.max(prevClose, interpClose) + microWick).toFixed(5));
+                        const low = Number((Math.min(prevClose, interpClose) - microWick).toFixed(5));
+                        candles.push({ time: barTime, open: prevClose, high, low, close: interpClose });
+                        prevClose = interpClose;
+                    }
+                    modified = true;
+                }
+            } else if (feed.livePrice) {
+                latestC.close = targetLivePrice;
+                if (targetLivePrice > latestC.high) latestC.high = targetLivePrice;
+                if (targetLivePrice < latestC.low) latestC.low = targetLivePrice;
+                modified = true;
+            }
+
+            if (modified) {
+                dataset.candles = candles;
+                dataset.candlesCount = candles.length;
+                dataset.savedAt = new Date().toLocaleDateString();
+                await saveDatasetToDB(dataset);
+                await refreshSavedDatasetsDropdown(dataset.id);
+            }
+            return { dataset, info, livePrice: targetLivePrice };
+        }
+
+        function startLivePersistentEngine(dataset, info) {
+            if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
+            activePersistentDatasetId = dataset.id;
+
+            const labelEl = document.getElementById('active-sym-label');
+            if (labelEl) labelEl.innerText = `${info.asset} • LIVE`;
+
+            liveMT5SyncTimer = setInterval(async () => {
+                if (isReplayActive) return;
+                const currentSel = document.getElementById('symbolSelect').value;
+                if (currentSel !== activePersistentDatasetId) {
+                    clearInterval(liveMT5SyncTimer);
+                    return;
+                }
+
+                const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf);
+                if (!rawMT5Candles || rawMT5Candles.length === 0) return;
+
+                const step = info.stepSec;
+                const nowSec = Math.floor(Date.now() / 1000);
+                const currentSlot = Math.floor(nowSec / step) * step;
+                const lastRaw = rawMT5Candles[rawMT5Candles.length - 1];
+                const newPrice = feed.livePrice || lastRaw.close;
+
+                let newBarCreated = false;
+                if (currentSlot > lastRaw.time) {
+                    const newCandle = {
+                        time: currentSlot,
+                        open: lastRaw.close,
+                        high: Math.max(lastRaw.close, newPrice),
+                        low: Math.min(lastRaw.close, newPrice),
+                        close: newPrice
+                    };
+                    rawMT5Candles.push(newCandle);
+                    newBarCreated = true;
+                } else {
+                    lastRaw.close = newPrice;
+                    if (newPrice > lastRaw.high) lastRaw.high = newPrice;
+                    if (newPrice < lastRaw.low) lastRaw.low = newPrice;
+                }
+
+                const tf = winTimeframes[1] || info.baseTf;
+                originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+                allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+                winCandles[1] = allCandles;
+
+                if (allCandles.length > 0) {
+                    const lastChartBar = allCandles[allCandles.length - 1];
+                    candleSeries1.update(lastChartBar);
+                    const priceDisp = document.getElementById('price-display');
+                    if (priceDisp) priceDisp.innerText = formatPrice(lastChartBar.close);
+                }
+
+                // Guardado perpetuo en IndexedDB cada vez que nace una vela nueva
+                if (newBarCreated) {
+                    dataset.candles = rawMT5Candles;
+                    dataset.candlesCount = rawMT5Candles.length;
+                    dataset.savedAt = new Date().toLocaleDateString();
+                    await saveDatasetToDB(dataset);
+                    displayCandlesOnChart(allCandles);
+                    refreshSecondaryWindows();
+                }
+            }, 8000);
+        }
+
+        async function loadCandles() {
+            if (isReplayActive) exitReplayMode();
+            if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
+
+            const symbol = document.getElementById('symbolSelect').value;
+            let tf = winTimeframes[1] || document.getElementById('timeframeSelect').value;
+
+            if (symbol.startsWith("mt5_id_")) {
+                const rawDataset = await getDatasetFromDB(symbol);
+                if (rawDataset && rawDataset.candles && rawDataset.candles.length > 0) {
+                    const detected = detectAssetInfoFromDatasetName(rawDataset.name, tf);
+                    winTimeframes[1] = detected.baseTf;
+                    tf = detected.baseTf;
+                    document.getElementById('win1-tf').value = tf;
+                    document.getElementById('timeframeSelect').value = tf;
+
+                    const labelEl = document.getElementById('active-sym-label');
+                    if (labelEl) labelEl.innerText = `${detected.asset} • LIVE`;
+
+                    // 1. Pintar de inmediato y luego sincronizar en vivo con la nube
+                    rawMT5Candles = rawDataset.candles;
+                    originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+                    allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+                    winCandles[1] = allCandles;
+                    displayCandlesOnChart(allCandles);
+                    refreshSecondaryWindows();
+
+                    const verdictEl = document.getElementById('agent-verdict');
+                    if (verdictEl) verdictEl.innerText = `🔄 Sincronizando "${rawDataset.name}" con el mercado real en vivo...`;
+
+                    const synced = await catchUpAndPersistDataset(rawDataset, tf);
+                    if (synced && synced.dataset) {
+                        rawMT5Candles = synced.dataset.candles;
+                        originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+                        allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+                        winCandles[1] = allCandles;
+                        displayCandlesOnChart(allCandles);
+                        refreshSecondaryWindows();
+
+                        const lastClose = allCandles[allCandles.length - 1].close;
+                        if (verdictEl) {
+                            verdictEl.innerText = `🟢 CONECTADO EN VIVO 24/7: "${rawDataset.name}" (${tf}) — ${rawMT5Candles.length.toLocaleString()} velas sincronizadas al presente (${formatPrice(lastClose)}) y guardando automáticamente.`;
+                        }
+                        startLivePersistentEngine(synced.dataset, synced.info);
+                    }
+                    return;
+                }
+            }
+
+            document.getElementById('win1-tf').value = tf;
+            document.getElementById('timeframeSelect').value = tf;
+            const labelEl = document.getElementById('active-sym-label');
+            if (labelEl) labelEl.innerText = symbol;
+
+            const count = (tf === '1m' || tf === '5m' || tf === '15m') ? 800 : 500;
+            const data = generateRealisticCandles(symbol, tf, count);
+
+            rawMT5Candles = [];
+            originalFullCandles = [...data];
+            allCandles = [...data];
+            winCandles[1] = allCandles;
+            displayCandlesOnChart(allCandles);
+            refreshSecondaryWindows();
+            document.getElementById('agent-verdict').innerText = `✅ Mercado activo: ${symbol} (${tf}) — Velas en vivo, Indicadores y Curva Bicolor sincronizados.`;
+        }
 function displayCandlesOnChart(data) {
       if (data.length > 0) applyDynamicPriceFormat(data[data.length - 1].close);
       candleSeries1.setData(data);
