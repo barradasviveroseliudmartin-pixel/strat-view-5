@@ -9039,70 +9039,76 @@ let liveMT5SyncTimer = null;
             return { asset, baseTf, stepSec: tfSecMap[baseTf] || 900 };
         }
 
-        async function fetchRealMarketCandlesAndPrice(asset, baseTf) {
-            const yfMap = {
-                "EURUSD": "EURUSD=X",
-                "GBPUSD": "GBPUSD=X",
-                "USDJPY": "JPY=X",
-                "XAUUSD": "GC=F",
-                "US30": "^DJI",
-                "NAS100": "^IXIC",
-                "BTCUSD": "BTC-USD"
-            };
-            const yfSym = yfMap[asset] || "EURUSD=X";
-            const yfInterval = (baseTf === "1m") ? "1m" : (baseTf === "5m") ? "5m" : (baseTf === "15m" || baseTf === "30m") ? "15m" : "60m";
-            const range = (yfInterval === "1m") ? "5d" : "1mo";
-            const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=${yfInterval}&range=${range}`;
-            const proxies = [
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
-            ];
+async function fetchRealMarketCandlesAndPrice(asset, baseTf) {
+            const limit = 1500;
+            const liveCandles = [];
+            let livePrice = null;
 
-            for (const pUrl of proxies) {
-                try {
-                    const res = await fetch(pUrl, { cache: "no-store" });
-                    if (!res.ok) continue;
+            // 1. Fuente Primaria Directa (Sin Proxies, CORS 100% Nativo): Kraken Institutional OHLC & CCData
+            try {
+                const krakenPairMap = {
+                    "EURUSD": "ZEURZUSD",
+                    "GBPUSD": "ZGBPZUSD",
+                    "USDJPY": "ZUSDZJPY",
+                    "XAUUSD": "PAXGUSD",
+                    "BTCUSD": "XXBTZUSD"
+                };
+                const kIntervalMap = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
+                const kPair = krakenPairMap[asset];
+                const kInt = kIntervalMap[baseTf] || 15;
+
+                if (kPair) {
+                    const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=${kInt}`, { cache: "no-store" });
                     const json = await res.json();
-                    const result = json && json.chart && json.chart.result && json.chart.result[0];
-                    if (!result || !result.timestamp) continue;
-                    const ts = result.timestamp;
-                    const q = result.indicators && result.indicators.quote && result.indicators.quote[0];
-                    if (!q) continue;
-                    const liveCandles = [];
-                    for (let i = 0; i < ts.length; i++) {
-                        const o = q.open[i], h = q.high[i], l = q.low[i], c = q.close[i];
-                        if (o != null && h != null && l != null && c != null && !isNaN(c)) {
+                    if (json && json.result) {
+                        const key = Object.keys(json.result).find(k => k !== "last");
+                        if (key && Array.isArray(json.result[key])) {
+                            for (const row of json.result[key]) {
+                                const t = parseInt(row[0], 10);
+                                const o = parseFloat(row[1]);
+                                const h = parseFloat(row[2]);
+                                const l = parseFloat(row[3]);
+                                const c = parseFloat(row[4]);
+                                if (!isNaN(t) && !isNaN(c) && o > 0) {
+                                    liveCandles.push({ time: t, open: o, high: h, low: l, close: c });
+                                }
+                            }
+                            if (liveCandles.length > 0) {
+                                livePrice = liveCandles[liveCandles.length - 1].close;
+                                return { candles: liveCandles, livePrice };
+                            }
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            // 2. Segunda Fuente Directa (Sin Proxies): CryptoCompare / CCData Global Forex & Indices
+            try {
+                const fsym = (asset === "XAUUSD") ? "PAXG" : (asset === "BTCUSD") ? "BTC" : asset.slice(0, 3);
+                const tsym = (asset === "XAUUSD" || asset === "BTCUSD") ? "USD" : asset.slice(3, 6);
+                const isMinute = (baseTf === "1m" || baseTf === "5m" || baseTf === "15m" || baseTf === "30m");
+                const endpoint = isMinute ? "histominute" : "histohour";
+                const agg = (baseTf === "5m") ? 5 : (baseTf === "15m") ? 15 : (baseTf === "30m") ? 30 : (baseTf === "4h") ? 4 : 1;
+
+                const url = `https://min-api.cryptocompare.com/data/v2/${endpoint}?fsym=${fsym}&tsym=${tsym}&limit=${limit}&aggregate=${agg}`;
+                const res = await fetch(url, { cache: "no-store" });
+                const json = await res.json();
+                if (json && json.Data && Array.isArray(json.Data.Data)) {
+                    for (const b of json.Data.Data) {
+                        if (b.open > 0 && b.close > 0) {
                             liveCandles.push({
-                                time: Math.floor(ts[i]),
-                                open: Number(o),
-                                high: Number(h),
-                                low: Number(l),
-                                close: Number(c)
+                                time: b.time,
+                                open: Number(b.open),
+                                high: Number(b.high),
+                                low: Number(b.low),
+                                close: Number(b.close)
                             });
                         }
                     }
-                    const livePrice = (result.meta && result.meta.regularMarketPrice) ? Number(result.meta.regularMarketPrice) : (liveCandles.length ? liveCandles[liveCandles.length - 1].close : null);
-                    if (liveCandles.length > 0 || livePrice) {
+                    if (liveCandles.length > 0) {
+                        livePrice = liveCandles[liveCandles.length - 1].close;
                         return { candles: liveCandles, livePrice };
                     }
-                } catch (e) {}
-            }
-
-            // Fallback directo ultrarrápido para Forex y Oro si el proxy tarda
-            try {
-                if (asset === "EURUSD" || asset === "GBPUSD" || asset === "USDJPY") {
-                    const from = asset.slice(0, 3), to = asset.slice(3, 6);
-                    const r = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`, { cache: "no-store" });
-                    const d = await r.json();
-                    if (d && d.rates && d.rates[to]) return { candles: [], livePrice: Number(d.rates[to]) };
-                } else if (asset === "XAUUSD") {
-                    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT`, { cache: "no-store" });
-                    const d = await r.json();
-                    if (d && d.price) return { candles: [], livePrice: Number(d.price) };
-                } else if (asset === "BTCUSD") {
-                    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT`, { cache: "no-store" });
-                    const d = await r.json();
-                    if (d && d.price) return { candles: [], livePrice: Number(d.price) };
                 }
             } catch (e) {}
 
@@ -9110,70 +9116,58 @@ let liveMT5SyncTimer = null;
         }
 
         async function catchUpAndPersistDataset(dataset, tf) {
-            if (!dataset || !dataset.candles || dataset.candles.length === 0) return dataset;
+            if (!dataset || !dataset.candles || dataset.candles.length === 0) return { dataset, info: detectAssetInfoFromDatasetName(dataset ? dataset.name : "", tf), livePrice: null };
             const info = detectAssetInfoFromDatasetName(dataset.name, tf);
             const step = info.stepSec;
+
+            // 1. Limpiar cualquier barra plana sintética previa (donde varios cierres seguidos tenían progresión lineal exacta)
+            let candles = dataset.candles.filter((c, idx, arr) => {
+                if (idx < 3) return true;
+                const d1 = Math.abs(c.close - arr[idx - 1].close);
+                const d2 = Math.abs(arr[idx - 1].close - arr[idx - 2].close);
+                const isSyntheticFlat = (Math.abs(d1 - d2) < 1e-7 && Math.abs((c.high - c.low) - (arr[idx - 1].high - arr[idx - 1].low)) < 1e-7);
+                return !isSyntheticFlat;
+            });
+
             const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf);
+            let modified = (candles.length !== dataset.candles.length);
 
-            let candles = dataset.candles;
-            const lastCandle = candles[candles.length - 1];
-            const nowSec = Math.floor(Date.now() / 1000);
-            const currentSlot = Math.floor(nowSec / step) * step;
-            let modified = false;
-
-            // 1. Insertar velas reales de la nube posteriores a la última vela del archivo
             if (feed.candles && feed.candles.length > 0) {
+                const lastTime = candles.length > 0 ? candles[candles.length - 1].time : 0;
                 for (const fc of feed.candles) {
                     const slotTime = Math.floor(fc.time / step) * step;
-                    if (slotTime > lastCandle.time) {
+                    if (slotTime > lastTime) {
                         candles.push({ time: slotTime, open: fc.open, high: fc.high, low: fc.low, close: fc.close });
                         modified = true;
-                    } else if (slotTime === lastCandle.time) {
-                        lastCandle.high = Math.max(lastCandle.high, fc.high);
-                        lastCandle.low = Math.min(lastCandle.low, fc.low);
-                        lastCandle.close = fc.close;
+                    } else if (candles.length > 0 && slotTime === candles[candles.length - 1].time) {
+                        const lastC = candles[candles.length - 1];
+                        lastC.high = Math.max(lastC.high, fc.high);
+                        lastC.low = Math.min(lastC.low, fc.low);
+                        lastC.close = fc.close;
                         modified = true;
                     }
                 }
             }
 
-            // 2. Si aún queda un tramo hasta el minuto actual (o por desfase de zona horaria del broker), rellenar con puente continuo hacia el precio real actual
-            const latestC = candles[candles.length - 1];
-            const targetLivePrice = feed.livePrice || latestC.close;
-
-            if (currentSlot > latestC.time) {
-                const missingBars = Math.min(500, Math.floor((currentSlot - latestC.time) / step));
-                if (missingBars > 0) {
-                    let prevClose = latestC.close;
-                    for (let b = 1; b <= missingBars; b++) {
-                        const barTime = latestC.time + (b * step);
-                        const progress = b / missingBars;
-                        const interpClose = Number((latestC.close + (targetLivePrice - latestC.close) * progress).toFixed(5));
-                        const microWick = Math.abs(targetLivePrice - latestC.close) * 0.08 || (prevClose * 0.00015);
-                        const high = Number((Math.max(prevClose, interpClose) + microWick).toFixed(5));
-                        const low = Number((Math.min(prevClose, interpClose) - microWick).toFixed(5));
-                        candles.push({ time: barTime, open: prevClose, high, low, close: interpClose });
-                        prevClose = interpClose;
-                    }
-                    modified = true;
+            // Ordenar y garantizar timestamps únicos
+            if (modified && candles.length > 0) {
+                candles.sort((a, b) => a.time - b.time);
+                const unique = [];
+                for (let i = 0; i < candles.length; i++) {
+                    if (i === 0 || candles[i].time > candles[i - 1].time) unique.push(candles[i]);
+                    else unique[unique.length - 1] = candles[i];
                 }
-            } else if (feed.livePrice) {
-                latestC.close = targetLivePrice;
-                if (targetLivePrice > latestC.high) latestC.high = targetLivePrice;
-                if (targetLivePrice < latestC.low) latestC.low = targetLivePrice;
-                modified = true;
-            }
-
-            if (modified) {
+                candles = unique;
                 dataset.candles = candles;
                 dataset.candlesCount = candles.length;
                 dataset.savedAt = new Date().toLocaleDateString();
                 await saveDatasetToDB(dataset);
                 await refreshSavedDatasetsDropdown(dataset.id);
             }
-            return { dataset, info, livePrice: targetLivePrice };
-        }
 
+            const finalPrice = feed.livePrice || (candles.length > 0 ? candles[candles.length - 1].close : null);
+            return { dataset, info, livePrice: finalPrice };
+        }
         function startLivePersistentEngine(dataset, info) {
             if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
             activePersistentDatasetId = dataset.id;
