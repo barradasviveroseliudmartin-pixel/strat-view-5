@@ -9293,8 +9293,7 @@ let liveMT5SyncTimer = null;
             const labelEl = document.getElementById('active-sym-label');
             if (labelEl) labelEl.innerText = symbol;
 
-            const count = (tf === '1m' || tf === '5m' || tf === '15m') ? 800 : 500;
-            const data = generateRealisticCandles(symbol, tf, count);
+const data = await fetchCandlesWithFallback(symbol, tf);
 
             rawMT5Candles = [];
             originalFullCandles = [...data];
