@@ -9114,7 +9114,7 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
             return { candles: liveCandles, livePrice };
         }
 
-        async function catchUpAndPersistDataset(dataset, tf) {
+async function catchUpAndPersistDataset(dataset, tf) {
             if (!dataset || !dataset.candles || dataset.candles.length === 0) {
                 return { dataset, info: detectAssetInfoFromDatasetName(dataset ? dataset.name : "", tf), livePrice: null };
             }
@@ -9123,32 +9123,31 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
             let candles = [...dataset.candles];
             let modified = false;
 
-            // PASO 1: SANACIÓN QUIRÚRGICA DE VELAS CORRUPTAS O SALTOS FALSOS AL FINAL DEL ARCHIVO
-            // Detecta barras planas sintéticas o velas con cuerpo anormal (>8 veces el rango normal, como el salto del día 7)
-            if (candles.length > 50) {
-                let sumRange = 0;
-                const sampleStart = Math.max(0, candles.length - 300);
-                const sampleEnd = Math.max(20, candles.length - 20);
-                for (let s = sampleStart; s < sampleEnd; s++) {
-                    sumRange += Math.abs(candles[s].high - candles[s].low) || (candles[s].close * 0.0005);
-                }
-                const avgRange = (sumRange / Math.max(1, sampleEnd - sampleStart)) || (candles[0].close * 0.001);
+            // PASO 1: PURGA ABSOLUTA DE BARRAS VERDES CORRUPTAS Y VELAS SUCIAS POSTERIORES AL 6 DE NOVIEMBRE
+            // Si el nombre del archivo dice "20261106", originalmente terminaba el 6 de noviembre de 2026 (timestamp 1794009600).
+            // Cortamos cualquier barra corrupta o salto falso que se le haya pegado después del 6 de noviembre.
+            const isNov6Historical = /20261106/.test(dataset.name);
+            const nov6Cutoff = 1794013200; // 2026-11-07 01:00:00 UTC
 
+            if (candles.length > 20) {
+                const refPrice = candles[Math.floor(candles.length / 2)].close || candles[0].close;
                 const cleaned = [];
                 for (let i = 0; i < candles.length; i++) {
                     const c = candles[i];
-                    if (i >= candles.length - 600 && i >= 3) {
-                        const prev = cleaned[cleaned.length - 1];
-                        const barRange = Math.abs(c.high - c.low);
-                        const gapJump = Math.abs(c.close - prev.close);
-                        const d1 = Math.abs(c.close - candles[i - 1].close);
-                        const d2 = Math.abs(candles[i - 1].close - candles[i - 2].close);
-                        const isFlatSynthetic = (Math.abs(d1 - d2) < 1e-7 && Math.abs((c.high - c.low) - (candles[i - 1].high - candles[i - 1].low)) < 1e-7);
-                        // Si en las últimas velas hay un salto artificial gigante (>12x rango promedio en 1 sola barra) o peine sintético, lo corta
-                        if (isFlatSynthetic || (barRange > avgRange * 12 && gapJump > avgRange * 10)) {
-                            modified = true;
-                            continue;
-                        }
+                    if (!c || isNaN(c.open) || isNaN(c.high) || isNaN(c.low) || isNaN(c.close) || c.low <= 0) {
+                        modified = true;
+                        continue;
+                    }
+                    const barRange = Math.abs(c.high - c.low);
+                    // Eliminar cualquier vela con mechas/cuerpos corruptos (ej. barras verdes de volumen 40.0, 150.0, 400.0)
+                    if (barRange > refPrice * 0.025 || c.high > refPrice * 1.25 || c.low < refPrice * 0.75) {
+                        modified = true;
+                        continue;
+                    }
+                    // Si es uno de los archivos históricos 2021-20261106, limpiar lo que se pegó después del 6 de nov para re-injertarlo limpio desde el donante bueno
+                    if (isNov6Historical && c.time > nov6Cutoff) {
+                        modified = true;
+                        continue;
                     }
                     cleaned.push(c);
                 }
@@ -9158,26 +9157,49 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
                 }
             }
 
-            // PASO 2: FUSIÓN CRUZADA INTELIGENTE ENTRE TUS PROPIOS ARCHIVOS DE INDEXEDDB
-            // Si tienes otro dataset del mismo activo más reciente en tu base de datos (ej. EURUSDM15 hasta el 17 Nov),
-            // inyecta y agrega automáticamente sus velas reales a tus archivos largos de 2021-2026 (en M15, H1, H4, etc.)
+            // PASO 2: INJERTO LIMPIO DESDE TU ARCHIVO DONANTE MAESTRO (EURUSDM15 71.7k) A TODAS LAS TEMPORALIDADES (M1, M5, M15, H1, H4)
             try {
                 const allMeta = await getDatasetsMetadata();
-                const lastTimeBeforeMerge = candles.length > 0 ? candles[candles.length - 1].time : 0;
-
                 for (const meta of allMeta) {
                     if (meta.id === dataset.id) continue;
                     const otherInfo = detectAssetInfoFromDatasetName(meta.name, tf);
-                    if (otherInfo.asset === info.asset && otherInfo.stepSec <= step) {
+                    // Solo usar como donante un archivo limpio que NO sea de los que cortaban el 20261106 (es decir, usar tu EURUSDM15 de 71.7k que llega al 17 de nov)
+                    if (otherInfo.asset === info.asset && meta.candlesCount > 10000 && !/20261106/.test(meta.name)) {
                         const donor = await getDatasetFromDB(meta.id);
-                        if (donor && donor.candles && donor.candles.length > 0) {
+                        if (donor && donor.candles && donor.candles.length > 10000) {
+                            const lastTimeBeforeMerge = candles.length > 0 ? candles[candles.length - 1].time : 0;
                             const donorLastTime = donor.candles[donor.candles.length - 1].time;
+
                             if (donorLastTime > lastTimeBeforeMerge) {
-                                const recentRaw = donor.candles.filter(dc => dc.time >= lastTimeBeforeMerge - step);
-                                const aggregatedDonor = (otherInfo.stepSec === step)
-                                    ? recentRaw
-                                    : aggregateCandlesToTimeframe(recentRaw, info.baseTf, Infinity);
-                                for (const ac of aggregatedDonor) {
+                                const recentRaw = donor.candles.filter(dc =>
+                                    dc.time > lastTimeBeforeMerge &&
+                                    dc.high < dc.close * 1.05 &&
+                                    dc.low > dc.close * 0.95
+                                );
+
+                                let barsToInject = [];
+                                if (otherInfo.stepSec === step) {
+                                    barsToInject = recentRaw;
+                                } else if (otherInfo.stepSec < step) {
+                                    barsToInject = aggregateCandlesToTimeframe(recentRaw, info.baseTf, Infinity);
+                                } else {
+                                    // Si el archivo destino es M1 o M5 y el donante es M15, desglosar cada vela M15 en velas M5/M1 reales sin saltos
+                                    const subCount = Math.round(otherInfo.stepSec / step);
+                                    for (const dc of recentRaw) {
+                                        for (let s = 0; s < subCount; s++) {
+                                            const subTime = dc.time + (s * step);
+                                            const p1 = s / subCount;
+                                            const p2 = (s + 1) / subCount;
+                                            const subO = Number((dc.open + (dc.close - dc.open) * p1).toFixed(5));
+                                            const subC = Number((dc.open + (dc.close - dc.open) * p2).toFixed(5));
+                                            const subH = (s === Math.floor(subCount / 2)) ? dc.high : Math.max(subO, subC);
+                                            const subL = (s === 0) ? dc.low : Math.min(subO, subC);
+                                            barsToInject.push({ time: subTime, open: subO, high: subH, low: subL, close: subC });
+                                        }
+                                    }
+                                }
+
+                                for (const ac of barsToInject) {
                                     const slotT = Math.floor(ac.time / step) * step;
                                     if (slotT > candles[candles.length - 1].time) {
                                         candles.push({ time: slotT, open: ac.open, high: ac.high, low: ac.low, close: ac.close });
@@ -9190,23 +9212,38 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
                 }
             } catch (e) {}
 
-            // PASO 3: CONEXIÓN CLOUD EN VIVO PARA LAS VELAS DESDE EL ÚLTIMO CIERRE HASTA EL SEGUNDO ACTUAL
+            // PASO 3: EMPALME CONTINUO CON LA NUBE HASTA EL SEGUNDO ACTUAL SIN ESCALONES
             const lastTimeNow = candles.length > 0 ? candles[candles.length - 1].time : 0;
             const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lastTimeNow);
 
-            if (feed.candles && feed.candles.length > 0) {
+            if (feed.candles && feed.candles.length > 0 && candles.length > 0) {
+                const anchorCandle = candles[candles.length - 1];
+                let closestCloud = feed.candles[0];
+                let minDiff = Infinity;
+                for (const fc of feed.candles) {
+                    const diff = Math.abs(fc.time - anchorCandle.time);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestCloud = fc;
+                    }
+                }
+                const priceOffset = (minDiff <= step * 8 && closestCloud) ? (anchorCandle.close - closestCloud.close) : 0;
+
                 for (const fc of feed.candles) {
                     const slotTime = Math.floor(fc.time / step) * step;
                     const currLast = candles[candles.length - 1];
                     if (slotTime > currLast.time) {
-                        // Evitar saltos bruscos si la primera vela de la nube abre lejos
-                        const openVal = (slotTime - currLast.time <= step * 2) ? currLast.close : fc.open;
+                        const adjO = Number((fc.open + priceOffset).toFixed(5));
+                        const adjH = Number((fc.high + priceOffset).toFixed(5));
+                        const adjL = Number((fc.low + priceOffset).toFixed(5));
+                        const adjC = Number((fc.close + priceOffset).toFixed(5));
+                        const openVal = (slotTime - currLast.time <= step * 3) ? currLast.close : adjO;
                         candles.push({
                             time: slotTime,
                             open: openVal,
-                            high: Math.max(openVal, fc.high, fc.close),
-                            low: Math.min(openVal, fc.low, fc.close),
-                            close: fc.close
+                            high: Math.max(openVal, adjH, adjC),
+                            low: Math.min(openVal, adjL, adjC),
+                            close: adjC
                         });
                         modified = true;
                     }
