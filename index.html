@@ -9132,17 +9132,18 @@ async function catchUpAndPersistDataset(dataset, tf) {
             if (!c || isNaN(c.open) || isNaN(c.high) || isNaN(c.low) || isNaN(c.close) || c.low <= 0) return false;
             if (c.high < c.low) return false;
             const barRange = Math.abs(c.high - c.low);
-            if (barRange > refPrice * 0.025) return false;
+            if (barRange > refPrice * 0.012) return false;
             if (c.high > refPrice * 1.20 || c.low < refPrice * 0.80) return false;
             if (c.open > refPrice * 1.20 || c.open < refPrice * 0.80) return false;
             if (c.close > refPrice * 1.20 || c.close < refPrice * 0.80) return false;
             return true;
           }
 
-          // PASO 1: PURGA Y DETECCIÓN DEL CORTE REAL DEL 6 DE NOVIEMBRE EN LOS ARCHIVOS 20261106
-          // Nota: Nov 6, 2026 23:59:59 UTC real en calendario Unix es 1794009599 (1793491200 = Nov 1, 2026)
+          // PASO 1: PURGA Y CORTE LIMPIO AL 6 DE NOVIEMBRE EN LOS ARCHIVOS HISTÓRICOS 20261106
+          // Esto borra también el velón de 1.10297 / 1.10215 que se creó hace unos minutos en M5 y M15
           const isNov6Historical = /20261106/.test(dataset.name);
           const nov6Cutoff = 1794009599;
+          const recentSpikeCutoff = 1794945600; // Cortar velones de las últimas horas en donantes si hubo salto >15 pips
 
           if (candles.length > 20) {
             const cleaned = [];
@@ -9158,7 +9159,8 @@ async function catchUpAndPersistDataset(dataset, tf) {
               }
               if (cleaned.length > 0) {
                 const prevClose = cleaned[cleaned.length - 1].close;
-                if (Math.abs(c.open - prevClose) > refPrice * 0.02 || Math.abs(c.close - prevClose) > refPrice * 0.025) {
+                const maxAllowedJump = (c.time > recentSpikeCutoff) ? (refPrice * 0.0018) : (refPrice * 0.015);
+                if (Math.abs(c.open - prevClose) > maxAllowedJump || Math.abs(c.close - prevClose) > maxAllowedJump || (c.high - c.low) > maxAllowedJump * 1.6) {
                   modified = true;
                   continue;
                 }
@@ -9171,7 +9173,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
             }
           }
 
-          // PASO 2: INJERTO DESDE EL DONANTE MAESTRO (RELLENANDO CADA MINUTO EN M1/M5 Y AGRUPANDO EN H1/H4)
+          // PASO 2: INJERTO LIMPIO DESDE EL DONANTE MAESTRO (EURUSDM15 71.7k)
           try {
             const allMeta = await getDatasetsMetadata();
             for (const meta of allMeta) {
@@ -9180,7 +9182,16 @@ async function catchUpAndPersistDataset(dataset, tf) {
               if (otherInfo.asset === info.asset && meta.candlesCount > 10000 && !/20261106/.test(meta.name)) {
                 const donor = await getDatasetFromDB(meta.id);
                 if (donor && donor.candles && donor.candles.length > 10000) {
-                  const cleanDonorCandles = donor.candles.filter(dc => isSaneCandle(dc));
+                  const cleanDonorCandles = [];
+                  for (let i = 0; i < donor.candles.length; i++) {
+                    const dc = donor.candles[i];
+                    if (!isSaneCandle(dc)) continue;
+                    if (cleanDonorCandles.length > 0 && dc.time > recentSpikeCutoff) {
+                      const pClose = cleanDonorCandles[cleanDonorCandles.length - 1].close;
+                      if (Math.abs(dc.close - pClose) > refPrice * 0.0018 || (dc.high - dc.low) > refPrice * 0.0022) continue;
+                    }
+                    cleanDonorCandles.push(dc);
+                  }
                   if (cleanDonorCandles.length !== donor.candles.length) {
                     donor.candles = cleanDonorCandles;
                     donor.candlesCount = cleanDonorCandles.length;
@@ -9201,13 +9212,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
                       for (const dc of recentRaw) {
                         const bTime = Math.floor(dc.time / step) * step;
                         if (!bucketMap.has(bTime)) {
-                          bucketMap.set(bTime, {
-                            time: bTime,
-                            open: dc.open,
-                            high: dc.high,
-                            low: dc.low,
-                            close: dc.close
-                          });
+                          bucketMap.set(bTime, { time: bTime, open: dc.open, high: dc.high, low: dc.low, close: dc.close });
                         } else {
                           const b = bucketMap.get(bTime);
                           if (dc.high > b.high) b.high = dc.high;
@@ -9223,7 +9228,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
                         const nextDc = recentRaw[idx + 1];
                         const targetEndClose = nextDc && (nextDc.time - dc.time <= otherInfo.stepSec * 2) ? nextDc.open : dc.close;
                         const body = targetEndClose - dc.open;
-                        const range = Math.max(0.00015, dc.high - dc.low);
+                        const range = Math.max(0.00010, dc.high - dc.low);
                         const isBull = dc.close >= dc.open;
                         const highSubIdx = isBull ? Math.floor(subCount * 0.72) : Math.floor(subCount * 0.28);
                         const lowSubIdx = isBull ? Math.floor(subCount * 0.28) : Math.floor(subCount * 0.72);
@@ -9233,15 +9238,15 @@ async function catchUpAndPersistDataset(dataset, tf) {
                           const subTime = dc.time + (s * step);
                           const p2 = (s + 1) / subCount;
                           let pivotPrice = dc.open + body * p2;
-                          if (s === highSubIdx) pivotPrice = dc.high - range * 0.12;
-                          else if (s === lowSubIdx) pivotPrice = dc.low + range * 0.12;
-                          else pivotPrice += Math.sin((s + idx) * 1.9) * (range * 0.16);
+                          if (s === highSubIdx) pivotPrice = dc.high - range * 0.10;
+                          else if (s === lowSubIdx) pivotPrice = dc.low + range * 0.10;
+                          else pivotPrice += Math.sin((s + idx) * 1.9) * (range * 0.14);
 
                           const subO = Number(prevSubClose.toFixed(5));
                           const subC = (s === subCount - 1)
                             ? Number(dc.close.toFixed(5))
                             : Number(Math.min(dc.high, Math.max(dc.low, pivotPrice)).toFixed(5));
-                          const microWick = range * 0.14;
+                          const microWick = range * 0.12;
                           const subH = (s === highSubIdx)
                             ? dc.high
                             : Number(Math.min(dc.high, Math.max(subO, subC) + microWick).toFixed(5));
@@ -9284,27 +9289,31 @@ async function catchUpAndPersistDataset(dataset, tf) {
             }
           } catch (e) {}
 
-          // PASO 3: SOBRESCRITURA DE ALTA RESOLUCIÓN CON LAS 2,000 VELAS REALES DE LA NUBE (EN ESPECIAL PARA M1 Y M5)
+          // PASO 3: EMPALME CON LA NUBE ANCLADO AL PRESENTE (SIN SUMAR OFFSETS VIEJOS DE +30 PIPS)
           const lastTimeNow = candles.length > 0 ? candles[candles.length - 1].time : 0;
-          const lookbackCloudStart = lastTimeNow - (step * 1800);
+          // Solo en M1 (step === 60) traemos las últimas 900 velas reales de 1m; en M5/M15/H1/H4 respetamos el donante y solo traemos lo posterior
+          const lookbackCloudStart = (step === 60) ? (lastTimeNow - step * 900) : (lastTimeNow - step * 4);
           const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lookbackCloudStart);
 
           if (feed.candles && feed.candles.length > 0 && candles.length > 0) {
-            const firstCloudTime = Math.floor(feed.candles[0].time / step) * step;
-            let anchorCandle = candles[candles.length - 1];
-            for (let i = candles.length - 1; i >= 0; i--) {
-              if (candles[i].time <= firstCloudTime) {
-                anchorCandle = candles[i];
-                break;
-              }
-            }
-            const rawOffset = anchorCandle ? (anchorCandle.close - feed.candles[0].open) : 0;
-            const priceOffset = (Math.abs(rawOffset) < refPrice * 0.015) ? rawOffset : 0;
-
-            // Si es M1 o M5, reemplazamos el tramo reciente por las velas 100% reales de M1/M5 de la nube
-            if (step < 900 && feed.candles.length > 30) {
+            if (step === 60 && feed.candles.length > 30) {
+              const firstCloudTime = Math.floor(feed.candles[0].time / step) * step;
               candles = candles.filter(c => c.time < firstCloudTime);
             }
+
+            // Anclar offset con la vela más cercana al corte actual (y solo si es menor a 8 pips para jamás desfasar el precio actual)
+            const anchorCandle = candles[candles.length - 1];
+            let closestCloud = feed.candles[0];
+            let minDiff = Infinity;
+            for (const fc of feed.candles) {
+              const diff = Math.abs(fc.time - anchorCandle.time);
+              if (diff < minDiff) {
+                minDiff = diff;
+                closestCloud = fc;
+              }
+            }
+            const rawOffset = closestCloud ? (anchorCandle.close - closestCloud.close) : 0;
+            const priceOffset = (minDiff <= step * 6 && Math.abs(rawOffset) < refPrice * 0.0008) ? rawOffset : 0;
 
             for (const fc of feed.candles) {
               const slotTime = Math.floor(fc.time / step) * step;
@@ -9315,6 +9324,8 @@ async function catchUpAndPersistDataset(dataset, tf) {
                 const adjL = Number((fc.low + priceOffset).toFixed(5));
                 const adjC = Number((fc.close + priceOffset).toFixed(5));
                 const openVal = (currLast && (slotTime - currLast.time <= step * 4)) ? currLast.close : adjO;
+                // Evitar cualquier brinco mayor a 12 pips en la transición a la nube
+                if (currLast && Math.abs(adjC - currLast.close) > refPrice * 0.0012) continue;
                 const cand = {
                   time: slotTime,
                   open: openVal,
@@ -9348,71 +9359,75 @@ async function catchUpAndPersistDataset(dataset, tf) {
           const finalPrice = (candles.length > 0) ? candles[candles.length - 1].close : feed.livePrice;
           return { dataset, info, livePrice: finalPrice };
         }
+
         function startLivePersistentEngine(dataset, info) {
-            if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
-            activePersistentDatasetId = dataset.id;
+          if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
+          activePersistentDatasetId = dataset.id;
 
-            const labelEl = document.getElementById('active-sym-label');
-            if (labelEl) labelEl.innerText = `${info.asset} • LIVE`;
+          const labelEl = document.getElementById('active-sym-label');
+          if (labelEl) labelEl.innerText = `${info.asset} • LIVE`;
 
-            liveMT5SyncTimer = setInterval(async () => {
-                if (isReplayActive) return;
-                const currentSel = document.getElementById('symbolSelect').value;
-                if (currentSel !== activePersistentDatasetId) {
-                    clearInterval(liveMT5SyncTimer);
-                    return;
-                }
+          liveMT5SyncTimer = setInterval(async () => {
+            if (isReplayActive) return;
+            const currentSel = document.getElementById('symbolSelect').value;
+            if (currentSel !== activePersistentDatasetId) {
+              clearInterval(liveMT5SyncTimer);
+              return;
+            }
 
-                const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf);
-                if (!rawMT5Candles || rawMT5Candles.length === 0) return;
+            const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf);
+            if (!rawMT5Candles || rawMT5Candles.length === 0) return;
 
-                const step = info.stepSec;
-                const nowSec = Math.floor(Date.now() / 1000);
-                const currentSlot = Math.floor(nowSec / step) * step;
-                const lastRaw = rawMT5Candles[rawMT5Candles.length - 1];
-                const newPrice = feed.livePrice || lastRaw.close;
+            const step = info.stepSec;
+            const nowSec = Math.floor(Date.now() / 1000);
+            const currentSlot = Math.floor(nowSec / step) * step;
+            const lastRaw = rawMT5Candles[rawMT5Candles.length - 1];
+            let newPrice = feed.livePrice || lastRaw.close;
 
-                let newBarCreated = false;
-                if (currentSlot > lastRaw.time) {
-                    const newCandle = {
-                        time: currentSlot,
-                        open: lastRaw.close,
-                        high: Math.max(lastRaw.close, newPrice),
-                        low: Math.min(lastRaw.close, newPrice),
-                        close: newPrice
-                    };
-                    rawMT5Candles.push(newCandle);
-                    newBarCreated = true;
-                } else {
-                    lastRaw.close = newPrice;
-                    if (newPrice > lastRaw.high) lastRaw.high = newPrice;
-                    if (newPrice < lastRaw.low) lastRaw.low = newPrice;
-                }
+            // Blindaje anti-velón en vivo: si el tick externo difiere más de 8 pips del cierre actual, suavizar
+            if (Math.abs(newPrice - lastRaw.close) > lastRaw.close * 0.0008) {
+              newPrice = lastRaw.close;
+            }
 
-                const tf = winTimeframes[1] || info.baseTf;
-                originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
-                allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
-                winCandles[1] = allCandles;
+            let newBarCreated = false;
+            if (currentSlot > lastRaw.time) {
+              const newCandle = {
+                time: currentSlot,
+                open: lastRaw.close,
+                high: Math.max(lastRaw.close, newPrice),
+                low: Math.min(lastRaw.close, newPrice),
+                close: newPrice
+              };
+              rawMT5Candles.push(newCandle);
+              newBarCreated = true;
+            } else {
+              lastRaw.close = newPrice;
+              if (newPrice > lastRaw.high) lastRaw.high = newPrice;
+              if (newPrice < lastRaw.low) lastRaw.low = newPrice;
+            }
 
-                if (allCandles.length > 0) {
-                    const lastChartBar = allCandles[allCandles.length - 1];
-                    candleSeries1.update(lastChartBar);
-                    const priceDisp = document.getElementById('price-display');
-                    if (priceDisp) priceDisp.innerText = formatPrice(lastChartBar.close);
-                }
+            const tf = winTimeframes[1] || info.baseTf;
+            originalFullCandles = aggregateCandlesToTimeframe(rawMT5Candles, tf, Infinity);
+            allCandles = originalFullCandles.slice(Math.max(0, originalFullCandles.length - MAX_CHART_BUFFER));
+            winCandles[1] = allCandles;
 
-                // Guardado perpetuo en IndexedDB cada vez que nace una vela nueva
-                if (newBarCreated) {
-                    dataset.candles = rawMT5Candles;
-                    dataset.candlesCount = rawMT5Candles.length;
-                    dataset.savedAt = new Date().toLocaleDateString();
-                    await saveDatasetToDB(dataset);
-                    displayCandlesOnChart(allCandles);
-                    refreshSecondaryWindows();
-                }
-            }, 8000);
+            if (allCandles.length > 0 && candleSeries1) {
+              const lastChartBar = allCandles[allCandles.length - 1];
+              candleSeries1.update(lastChartBar);
+              const priceDisp = document.getElementById('price-display');
+              if (priceDisp) priceDisp.innerText = formatPrice(lastChartBar.close);
+            }
+
+            if (newBarCreated) {
+              dataset.candles = rawMT5Candles;
+              dataset.candlesCount = rawMT5Candles.length;
+              dataset.savedAt = new Date().toLocaleDateString();
+              await saveDatasetToDB(dataset);
+              displayCandlesOnChart(allCandles);
+              refreshSecondaryWindows();
+            }
+          }, 8000);
         }
-
         async function loadCandles() {
             if (isReplayActive) exitReplayMode();
             if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
