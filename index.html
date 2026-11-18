@@ -9139,10 +9139,10 @@ async function catchUpAndPersistDataset(dataset, tf) {
             return true;
           }
 
-          // PASO 1: PURGA ABSOLUTA Y CORTE AL 6 DE NOVIEMBRE EN LOS 5 ARCHIVOS HISTÓRICOS
-          // Forzamos reconstrucción limpia post-6-Nov en los archivos 20261106 para eliminar cualquier hueco en H1/H4/M1
+          // PASO 1: PURGA Y DETECCIÓN DEL CORTE REAL DEL 6 DE NOVIEMBRE EN LOS ARCHIVOS 20261106
+          // Nota: Nov 6, 2026 23:59:59 UTC real en calendario Unix es 1794009599 (1793491200 = Nov 1, 2026)
           const isNov6Historical = /20261106/.test(dataset.name);
-          const nov6Cutoff = 1794009600; // Viernes 6 Nov 2026 23:59:59 UTC
+          const nov6Cutoff = 1794009599;
 
           if (candles.length > 20) {
             const cleaned = [];
@@ -9171,7 +9171,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
             }
           }
 
-          // PASO 2: INJERTO PERFECTO SIN HUECOS DESDE EL DONANTE MAESTRO (M1, M5, M15, H1, H4)
+          // PASO 2: INJERTO DESDE EL DONANTE MAESTRO (RELLENANDO CADA MINUTO EN M1/M5 Y AGRUPANDO EN H1/H4)
           try {
             const allMeta = await getDatasetsMetadata();
             for (const meta of allMeta) {
@@ -9197,7 +9197,6 @@ async function catchUpAndPersistDataset(dataset, tf) {
                     if (otherInfo.stepSec === step) {
                       barsToInject = recentRaw.map(c => ({ ...c }));
                     } else if (otherInfo.stepSec < step) {
-                      // Agregación nativa exacta a H1 / H4 fusionando todas las velas M15 de cada bloque sin huecos
                       const bucketMap = new Map();
                       for (const dc of recentRaw) {
                         const bTime = Math.floor(dc.time / step) * step;
@@ -9218,26 +9217,38 @@ async function catchUpAndPersistDataset(dataset, tf) {
                       }
                       barsToInject = Array.from(bucketMap.values()).sort((a, b) => a.time - b.time);
                     } else {
-                      // Subdivisión orgánica con micro-estructura real para M5 y M1 sin líneas planas
                       const subCount = Math.round(otherInfo.stepSec / step);
-                      for (const dc of recentRaw) {
-                        const body = dc.close - dc.open;
-                        const range = dc.high - dc.low;
+                      for (let idx = 0; idx < recentRaw.length; idx++) {
+                        const dc = recentRaw[idx];
+                        const nextDc = recentRaw[idx + 1];
+                        const targetEndClose = nextDc && (nextDc.time - dc.time <= otherInfo.stepSec * 2) ? nextDc.open : dc.close;
+                        const body = targetEndClose - dc.open;
+                        const range = Math.max(0.00015, dc.high - dc.low);
+                        const isBull = dc.close >= dc.open;
+                        const highSubIdx = isBull ? Math.floor(subCount * 0.72) : Math.floor(subCount * 0.28);
+                        const lowSubIdx = isBull ? Math.floor(subCount * 0.28) : Math.floor(subCount * 0.72);
+
+                        let prevSubClose = dc.open;
                         for (let s = 0; s < subCount; s++) {
                           const subTime = dc.time + (s * step);
-                          const p1 = s / subCount;
                           const p2 = (s + 1) / subCount;
-                          const wave1 = Math.sin(p1 * Math.PI * 2) * (range * 0.18);
-                          const wave2 = Math.sin(p2 * Math.PI * 2) * (range * 0.18);
-                          const subO = Number((dc.open + body * p1 + (s === 0 ? 0 : wave1)).toFixed(5));
-                          const subC = Number((dc.open + body * p2 + (s === subCount - 1 ? 0 : wave2)).toFixed(5));
-                          const wick = range * 0.15;
-                          const subH = (s === Math.floor(subCount * 0.35))
+                          let pivotPrice = dc.open + body * p2;
+                          if (s === highSubIdx) pivotPrice = dc.high - range * 0.12;
+                          else if (s === lowSubIdx) pivotPrice = dc.low + range * 0.12;
+                          else pivotPrice += Math.sin((s + idx) * 1.9) * (range * 0.16);
+
+                          const subO = Number(prevSubClose.toFixed(5));
+                          const subC = (s === subCount - 1)
+                            ? Number(dc.close.toFixed(5))
+                            : Number(Math.min(dc.high, Math.max(dc.low, pivotPrice)).toFixed(5));
+                          const microWick = range * 0.14;
+                          const subH = (s === highSubIdx)
                             ? dc.high
-                            : Number(Math.min(dc.high, Math.max(subO, subC) + wick).toFixed(5));
-                          const subL = (s === Math.floor(subCount * 0.7))
+                            : Number(Math.min(dc.high, Math.max(subO, subC) + microWick).toFixed(5));
+                          const subL = (s === lowSubIdx)
                             ? dc.low
-                            : Number(Math.max(dc.low, Math.min(subO, subC) - wick).toFixed(5));
+                            : Number(Math.max(dc.low, Math.min(subO, subC) - microWick).toFixed(5));
+
                           barsToInject.push({
                             time: subTime,
                             open: subO,
@@ -9245,11 +9256,11 @@ async function catchUpAndPersistDataset(dataset, tf) {
                             low: Math.min(subO, subC, subL),
                             close: subC
                           });
+                          prevSubClose = subC;
                         }
                       }
                     }
 
-                    // Cosido continuo vela a vela (open = prev.close si no es gap de fin de semana)
                     for (const ac of barsToInject) {
                       if (!isSaneCandle(ac)) continue;
                       const slotT = Math.floor(ac.time / step) * step;
@@ -9265,11 +9276,6 @@ async function catchUpAndPersistDataset(dataset, tf) {
                           close: ac.close
                         });
                         modified = true;
-                      } else if (prev && slotT === prev.time) {
-                        prev.high = Math.max(prev.high, ac.high);
-                        prev.low = Math.min(prev.low, ac.low);
-                        prev.close = ac.close;
-                        modified = true;
                       }
                     }
                   }
@@ -9278,33 +9284,37 @@ async function catchUpAndPersistDataset(dataset, tf) {
             }
           } catch (e) {}
 
-          // PASO 3: EMPALME CONTINUO CON LA NUBE DESDE LA ÚLTIMA VELA SIN LÍNEAS PLANAS
+          // PASO 3: SOBRESCRITURA DE ALTA RESOLUCIÓN CON LAS 2,000 VELAS REALES DE LA NUBE (EN ESPECIAL PARA M1 Y M5)
           const lastTimeNow = candles.length > 0 ? candles[candles.length - 1].time : 0;
-          const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lastTimeNow - step * 10);
+          const lookbackCloudStart = lastTimeNow - (step * 1800);
+          const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lookbackCloudStart);
 
           if (feed.candles && feed.candles.length > 0 && candles.length > 0) {
-            const anchorCandle = candles[candles.length - 1];
-            let closestCloud = feed.candles[0];
-            let minDiff = Infinity;
-            for (const fc of feed.candles) {
-              const diff = Math.abs(fc.time - anchorCandle.time);
-              if (diff < minDiff) {
-                minDiff = diff;
-                closestCloud = fc;
+            const firstCloudTime = Math.floor(feed.candles[0].time / step) * step;
+            let anchorCandle = candles[candles.length - 1];
+            for (let i = candles.length - 1; i >= 0; i--) {
+              if (candles[i].time <= firstCloudTime) {
+                anchorCandle = candles[i];
+                break;
               }
             }
-            const rawOffset = closestCloud ? (anchorCandle.close - closestCloud.close) : 0;
-            const priceOffset = (minDiff <= step * 20 && Math.abs(rawOffset) < refPrice * 0.02) ? rawOffset : 0;
+            const rawOffset = anchorCandle ? (anchorCandle.close - feed.candles[0].open) : 0;
+            const priceOffset = (Math.abs(rawOffset) < refPrice * 0.015) ? rawOffset : 0;
+
+            // Si es M1 o M5, reemplazamos el tramo reciente por las velas 100% reales de M1/M5 de la nube
+            if (step < 900 && feed.candles.length > 30) {
+              candles = candles.filter(c => c.time < firstCloudTime);
+            }
 
             for (const fc of feed.candles) {
               const slotTime = Math.floor(fc.time / step) * step;
-              const currLast = candles[candles.length - 1];
-              if (slotTime > currLast.time) {
+              const currLast = candles.length > 0 ? candles[candles.length - 1] : null;
+              if (!currLast || slotTime > currLast.time) {
                 const adjO = Number((fc.open + priceOffset).toFixed(5));
                 const adjH = Number((fc.high + priceOffset).toFixed(5));
                 const adjL = Number((fc.low + priceOffset).toFixed(5));
                 const adjC = Number((fc.close + priceOffset).toFixed(5));
-                const openVal = (slotTime - currLast.time <= step * 4) ? currLast.close : adjO;
+                const openVal = (currLast && (slotTime - currLast.time <= step * 4)) ? currLast.close : adjO;
                 const cand = {
                   time: slotTime,
                   open: openVal,
