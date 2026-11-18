@@ -9115,158 +9115,180 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
         }
 
 async function catchUpAndPersistDataset(dataset, tf) {
-            if (!dataset || !dataset.candles || dataset.candles.length === 0) {
-                return { dataset, info: detectAssetInfoFromDatasetName(dataset ? dataset.name : "", tf), livePrice: null };
-            }
-            const info = detectAssetInfoFromDatasetName(dataset.name, tf);
-            const step = info.stepSec;
-            let candles = [...dataset.candles];
-            let modified = false;
+          if (!dataset || !dataset.candles || dataset.candles.length === 0) {
+            return { dataset, info: detectAssetInfoFromDatasetName(dataset ? dataset.name : "", tf), livePrice: null };
+          }
+          const info = detectAssetInfoFromDatasetName(dataset.name, tf);
+          const step = info.stepSec;
+          let candles = [...dataset.candles];
+          let modified = false;
 
-            // PASO 1: PURGA ABSOLUTA DE BARRAS VERDES CORRUPTAS Y VELAS SUCIAS POSTERIORES AL 6 DE NOVIEMBRE
-            // Si el nombre del archivo dice "20261106", originalmente terminaba el 6 de noviembre de 2026 (timestamp 1794009600).
-            // Cortamos cualquier barra corrupta o salto falso que se le haya pegado después del 6 de noviembre.
-            const isNov6Historical = /20261106/.test(dataset.name);
-            const nov6Cutoff = 1794013200; // 2026-11-07 01:00:00 UTC
+          // Precio de referencia institucional sano (tomado del primer tercio histórico limpio del dataset)
+          const sampleIdx = Math.min(candles.length - 1, Math.max(0, Math.floor(candles.length * 0.35)));
+          const refPrice = (candles[sampleIdx] && candles[sampleIdx].close > 0 && candles[sampleIdx].close < 20)
+            ? candles[sampleIdx].close
+            : (info.asset === 'EURUSD' ? 1.095 : (candles[0] ? candles[0].close : 1.0));
 
-            if (candles.length > 20) {
-                const refPrice = candles[Math.floor(candles.length / 2)].close || candles[0].close;
-                const cleaned = [];
-                for (let i = 0; i < candles.length; i++) {
-                    const c = candles[i];
-                    if (!c || isNaN(c.open) || isNaN(c.high) || isNaN(c.low) || isNaN(c.close) || c.low <= 0) {
-                        modified = true;
-                        continue;
-                    }
-                    const barRange = Math.abs(c.high - c.low);
-                    // Eliminar cualquier vela con mechas/cuerpos corruptos (ej. barras verdes de volumen 40.0, 150.0, 400.0)
-                    if (barRange > refPrice * 0.025 || c.high > refPrice * 1.25 || c.low < refPrice * 0.75) {
-                        modified = true;
-                        continue;
-                    }
-                    // Si es uno de los archivos históricos 2021-20261106, limpiar lo que se pegó después del 6 de nov para re-injertarlo limpio desde el donante bueno
-                    if (isNov6Historical && c.time > nov6Cutoff) {
-                        modified = true;
-                        continue;
-                    }
-                    cleaned.push(c);
+          function isSaneCandle(c) {
+            if (!c || isNaN(c.open) || isNaN(c.high) || isNaN(c.low) || isNaN(c.close) || c.low <= 0) return false;
+            if (c.high < c.low) return false;
+            const barRange = Math.abs(c.high - c.low);
+            if (barRange > refPrice * 0.025) return false;
+            if (c.high > refPrice * 1.20 || c.low < refPrice * 0.80) return false;
+            if (c.open > refPrice * 1.20 || c.open < refPrice * 0.80) return false;
+            if (c.close > refPrice * 1.20 || c.close < refPrice * 0.80) return false;
+            return true;
+          }
+
+          // PASO 1: PURGA ABSOLUTA DE BARRAS CORRUPTAS (50.0, 40.0, 400.0) EN TODO EL ARCHIVO
+          const isNov6Historical = /20261106/.test(dataset.name);
+          const nov6Cutoff = 1794009600; // Viernes 6 Nov 2026 23:59:59 UTC
+
+          if (candles.length > 20) {
+            const cleaned = [];
+            for (let i = 0; i < candles.length; i++) {
+              const c = candles[i];
+              if (!isSaneCandle(c)) {
+                modified = true;
+                continue;
+              }
+              if (isNov6Historical && c.time > nov6Cutoff) {
+                modified = true;
+                continue;
+              }
+              // Evitar saltos artificiales >1.5% entre velas consecutivas
+              if (cleaned.length > 0) {
+                const prevClose = cleaned[cleaned.length - 1].close;
+                if (Math.abs(c.open - prevClose) > refPrice * 0.02 || Math.abs(c.close - prevClose) > refPrice * 0.025) {
+                  modified = true;
+                  continue;
                 }
-                if (cleaned.length !== candles.length) {
-                    candles = cleaned;
-                    modified = true;
-                }
+              }
+              cleaned.push(c);
             }
+            if (cleaned.length !== candles.length) {
+              candles = cleaned;
+              modified = true;
+            }
+          }
 
-            // PASO 2: INJERTO LIMPIO DESDE TU ARCHIVO DONANTE MAESTRO (EURUSDM15 71.7k) A TODAS LAS TEMPORALIDADES (M1, M5, M15, H1, H4)
-            try {
-                const allMeta = await getDatasetsMetadata();
-                for (const meta of allMeta) {
-                    if (meta.id === dataset.id) continue;
-                    const otherInfo = detectAssetInfoFromDatasetName(meta.name, tf);
-                    // Solo usar como donante un archivo limpio que NO sea de los que cortaban el 20261106 (es decir, usar tu EURUSDM15 de 71.7k que llega al 17 de nov)
-                    if (otherInfo.asset === info.asset && meta.candlesCount > 10000 && !/20261106/.test(meta.name)) {
-                        const donor = await getDatasetFromDB(meta.id);
-                        if (donor && donor.candles && donor.candles.length > 10000) {
-                            const lastTimeBeforeMerge = candles.length > 0 ? candles[candles.length - 1].time : 0;
-                            const donorLastTime = donor.candles[donor.candles.length - 1].time;
+          // PASO 2: INJERTO LIMPIO DESDE EL DONANTE MAESTRO (FILTRANDO TAMBIÉN EL DONANTE CON isSaneCandle)
+          try {
+            const allMeta = await getDatasetsMetadata();
+            for (const meta of allMeta) {
+              if (meta.id === dataset.id) continue;
+              const otherInfo = detectAssetInfoFromDatasetName(meta.name, tf);
+              if (otherInfo.asset === info.asset && meta.candlesCount > 10000 && !/20261106/.test(meta.name)) {
+                const donor = await getDatasetFromDB(meta.id);
+                if (donor && donor.candles && donor.candles.length > 10000) {
+                  // Limpiar también el donante en caso de que tuviera barras de 50.0 incrustadas
+                  const cleanDonorCandles = donor.candles.filter(dc => isSaneCandle(dc));
+                  if (cleanDonorCandles.length !== donor.candles.length) {
+                    donor.candles = cleanDonorCandles;
+                    donor.candlesCount = cleanDonorCandles.length;
+                    await saveDatasetToDB(donor);
+                  }
 
-                            if (donorLastTime > lastTimeBeforeMerge) {
-                                const recentRaw = donor.candles.filter(dc =>
-                                    dc.time > lastTimeBeforeMerge &&
-                                    dc.high < dc.close * 1.05 &&
-                                    dc.low > dc.close * 0.95
-                                );
+                  const lastTimeBeforeMerge = candles.length > 0 ? candles[candles.length - 1].time : 0;
+                  const donorLastTime = cleanDonorCandles.length > 0 ? cleanDonorCandles[cleanDonorCandles.length - 1].time : 0;
 
-                                let barsToInject = [];
-                                if (otherInfo.stepSec === step) {
-                                    barsToInject = recentRaw;
-                                } else if (otherInfo.stepSec < step) {
-                                    barsToInject = aggregateCandlesToTimeframe(recentRaw, info.baseTf, Infinity);
-                                } else {
-                                    // Si el archivo destino es M1 o M5 y el donante es M15, desglosar cada vela M15 en velas M5/M1 reales sin saltos
-                                    const subCount = Math.round(otherInfo.stepSec / step);
-                                    for (const dc of recentRaw) {
-                                        for (let s = 0; s < subCount; s++) {
-                                            const subTime = dc.time + (s * step);
-                                            const p1 = s / subCount;
-                                            const p2 = (s + 1) / subCount;
-                                            const subO = Number((dc.open + (dc.close - dc.open) * p1).toFixed(5));
-                                            const subC = Number((dc.open + (dc.close - dc.open) * p2).toFixed(5));
-                                            const subH = (s === Math.floor(subCount / 2)) ? dc.high : Math.max(subO, subC);
-                                            const subL = (s === 0) ? dc.low : Math.min(subO, subC);
-                                            barsToInject.push({ time: subTime, open: subO, high: subH, low: subL, close: subC });
-                                        }
-                                    }
-                                }
+                  if (donorLastTime > lastTimeBeforeMerge) {
+                    const recentRaw = cleanDonorCandles.filter(dc => dc.time > lastTimeBeforeMerge && isSaneCandle(dc));
 
-                                for (const ac of barsToInject) {
-                                    const slotT = Math.floor(ac.time / step) * step;
-                                    if (slotT > candles[candles.length - 1].time) {
-                                        candles.push({ time: slotT, open: ac.open, high: ac.high, low: ac.low, close: ac.close });
-                                        modified = true;
-                                    }
-                                }
-                            }
+                    let barsToInject = [];
+                    if (otherInfo.stepSec === step) {
+                      barsToInject = recentRaw;
+                    } else if (otherInfo.stepSec < step) {
+                      barsToInject = aggregateCandlesToTimeframe(recentRaw, info.baseTf, Infinity);
+                    } else {
+                      const subCount = Math.round(otherInfo.stepSec / step);
+                      for (const dc of recentRaw) {
+                        for (let s = 0; s < subCount; s++) {
+                          const subTime = dc.time + (s * step);
+                          const p1 = s / subCount;
+                          const p2 = (s + 1) / subCount;
+                          const subO = Number((dc.open + (dc.close - dc.open) * p1).toFixed(5));
+                          const subC = Number((dc.open + (dc.close - dc.open) * p2).toFixed(5));
+                          const subH = (s === Math.floor(subCount / 2)) ? dc.high : Math.max(subO, subC);
+                          const subL = (s === 0) ? dc.low : Math.min(subO, subC);
+                          barsToInject.push({ time: subTime, open: subO, high: subH, low: subL, close: subC });
                         }
+                      }
                     }
-                }
-            } catch (e) {}
 
-            // PASO 3: EMPALME CONTINUO CON LA NUBE HASTA EL SEGUNDO ACTUAL SIN ESCALONES
-            const lastTimeNow = candles.length > 0 ? candles[candles.length - 1].time : 0;
-            const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lastTimeNow);
-
-            if (feed.candles && feed.candles.length > 0 && candles.length > 0) {
-                const anchorCandle = candles[candles.length - 1];
-                let closestCloud = feed.candles[0];
-                let minDiff = Infinity;
-                for (const fc of feed.candles) {
-                    const diff = Math.abs(fc.time - anchorCandle.time);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closestCloud = fc;
-                    }
-                }
-                const priceOffset = (minDiff <= step * 8 && closestCloud) ? (anchorCandle.close - closestCloud.close) : 0;
-
-                for (const fc of feed.candles) {
-                    const slotTime = Math.floor(fc.time / step) * step;
-                    const currLast = candles[candles.length - 1];
-                    if (slotTime > currLast.time) {
-                        const adjO = Number((fc.open + priceOffset).toFixed(5));
-                        const adjH = Number((fc.high + priceOffset).toFixed(5));
-                        const adjL = Number((fc.low + priceOffset).toFixed(5));
-                        const adjC = Number((fc.close + priceOffset).toFixed(5));
-                        const openVal = (slotTime - currLast.time <= step * 3) ? currLast.close : adjO;
-                        candles.push({
-                            time: slotTime,
-                            open: openVal,
-                            high: Math.max(openVal, adjH, adjC),
-                            low: Math.min(openVal, adjL, adjC),
-                            close: adjC
-                        });
+                    for (const ac of barsToInject) {
+                      if (!isSaneCandle(ac)) continue;
+                      const slotT = Math.floor(ac.time / step) * step;
+                      if (candles.length === 0 || slotT > candles[candles.length - 1].time) {
+                        candles.push({ time: slotT, open: ac.open, high: ac.high, low: ac.low, close: ac.close });
                         modified = true;
+                      }
                     }
+                  }
                 }
+              }
             }
+          } catch (e) {}
 
-            if (modified && candles.length > 0) {
-                candles.sort((a, b) => a.time - b.time);
-                const unique = [];
-                for (let i = 0; i < candles.length; i++) {
-                    if (i === 0 || candles[i].time > candles[i - 1].time) unique.push(candles[i]);
-                    else unique[unique.length - 1] = candles[i];
+          // PASO 3: EMPALME CONTINUO CON LA NUBE HASTA EL SEGUNDO ACTUAL SIN ESCALONES
+          const lastTimeNow = candles.length > 0 ? candles[candles.length - 1].time : 0;
+          const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lastTimeNow);
+
+          if (feed.candles && feed.candles.length > 0 && candles.length > 0) {
+            const anchorCandle = candles[candles.length - 1];
+            let closestCloud = feed.candles[0];
+            let minDiff = Infinity;
+            for (const fc of feed.candles) {
+              const diff = Math.abs(fc.time - anchorCandle.time);
+              if (diff < minDiff) {
+                minDiff = diff;
+                closestCloud = fc;
+              }
+            }
+            const rawOffset = closestCloud ? (anchorCandle.close - closestCloud.close) : 0;
+            const priceOffset = (minDiff <= step * 12 && Math.abs(rawOffset) < refPrice * 0.02) ? rawOffset : 0;
+
+            for (const fc of feed.candles) {
+              const slotTime = Math.floor(fc.time / step) * step;
+              const currLast = candles[candles.length - 1];
+              if (slotTime > currLast.time) {
+                const adjO = Number((fc.open + priceOffset).toFixed(5));
+                const adjH = Number((fc.high + priceOffset).toFixed(5));
+                const adjL = Number((fc.low + priceOffset).toFixed(5));
+                const adjC = Number((fc.close + priceOffset).toFixed(5));
+                const openVal = (slotTime - currLast.time <= step * 3) ? currLast.close : adjO;
+                const cand = {
+                  time: slotTime,
+                  open: openVal,
+                  high: Math.max(openVal, adjH, adjC),
+                  low: Math.min(openVal, adjL, adjC),
+                  close: adjC
+                };
+                if (isSaneCandle(cand)) {
+                  candles.push(cand);
+                  modified = true;
                 }
-                candles = unique;
-                dataset.candles = candles;
-                dataset.candlesCount = candles.length;
-                dataset.savedAt = new Date().toLocaleDateString();
-                await saveDatasetToDB(dataset);
-                await refreshSavedDatasetsDropdown(dataset.id);
+              }
             }
+          }
 
-            const finalPrice = (candles.length > 0) ? candles[candles.length - 1].close : feed.livePrice;
-            return { dataset, info, livePrice: finalPrice };
+          if (modified && candles.length > 0) {
+            candles.sort((a, b) => a.time - b.time);
+            const unique = [];
+            for (let i = 0; i < candles.length; i++) {
+              if (i === 0 || candles[i].time > candles[i - 1].time) unique.push(candles[i]);
+              else unique[unique.length - 1] = candles[i];
+            }
+            candles = unique;
+            dataset.candles = candles;
+            dataset.candlesCount = candles.length;
+            dataset.savedAt = new Date().toLocaleDateString();
+            await saveDatasetToDB(dataset);
+            await refreshSavedDatasetsDropdown(dataset.id);
+          }
+
+          const finalPrice = (candles.length > 0) ? candles[candles.length - 1].close : feed.livePrice;
+          return { dataset, info, livePrice: finalPrice };
         }
         function startLivePersistentEngine(dataset, info) {
             if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
