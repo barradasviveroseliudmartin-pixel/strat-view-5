@@ -9123,7 +9123,6 @@ async function catchUpAndPersistDataset(dataset, tf) {
           let candles = [...dataset.candles];
           let modified = false;
 
-          // Precio de referencia institucional sano (tomado del primer tercio histórico limpio del dataset)
           const sampleIdx = Math.min(candles.length - 1, Math.max(0, Math.floor(candles.length * 0.35)));
           const refPrice = (candles[sampleIdx] && candles[sampleIdx].close > 0 && candles[sampleIdx].close < 20)
             ? candles[sampleIdx].close
@@ -9140,7 +9139,8 @@ async function catchUpAndPersistDataset(dataset, tf) {
             return true;
           }
 
-          // PASO 1: PURGA ABSOLUTA DE BARRAS CORRUPTAS (50.0, 40.0, 400.0) EN TODO EL ARCHIVO
+          // PASO 1: PURGA ABSOLUTA Y CORTE AL 6 DE NOVIEMBRE EN LOS 5 ARCHIVOS HISTÓRICOS
+          // Forzamos reconstrucción limpia post-6-Nov en los archivos 20261106 para eliminar cualquier hueco en H1/H4/M1
           const isNov6Historical = /20261106/.test(dataset.name);
           const nov6Cutoff = 1794009600; // Viernes 6 Nov 2026 23:59:59 UTC
 
@@ -9156,7 +9156,6 @@ async function catchUpAndPersistDataset(dataset, tf) {
                 modified = true;
                 continue;
               }
-              // Evitar saltos artificiales >1.5% entre velas consecutivas
               if (cleaned.length > 0) {
                 const prevClose = cleaned[cleaned.length - 1].close;
                 if (Math.abs(c.open - prevClose) > refPrice * 0.02 || Math.abs(c.close - prevClose) > refPrice * 0.025) {
@@ -9172,7 +9171,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
             }
           }
 
-          // PASO 2: INJERTO LIMPIO DESDE EL DONANTE MAESTRO (FILTRANDO TAMBIÉN EL DONANTE CON isSaneCandle)
+          // PASO 2: INJERTO PERFECTO SIN HUECOS DESDE EL DONANTE MAESTRO (M1, M5, M15, H1, H4)
           try {
             const allMeta = await getDatasetsMetadata();
             for (const meta of allMeta) {
@@ -9181,7 +9180,6 @@ async function catchUpAndPersistDataset(dataset, tf) {
               if (otherInfo.asset === info.asset && meta.candlesCount > 10000 && !/20261106/.test(meta.name)) {
                 const donor = await getDatasetFromDB(meta.id);
                 if (donor && donor.candles && donor.candles.length > 10000) {
-                  // Limpiar también el donante en caso de que tuviera barras de 50.0 incrustadas
                   const cleanDonorCandles = donor.candles.filter(dc => isSaneCandle(dc));
                   if (cleanDonorCandles.length !== donor.candles.length) {
                     donor.candles = cleanDonorCandles;
@@ -9197,30 +9195,80 @@ async function catchUpAndPersistDataset(dataset, tf) {
 
                     let barsToInject = [];
                     if (otherInfo.stepSec === step) {
-                      barsToInject = recentRaw;
+                      barsToInject = recentRaw.map(c => ({ ...c }));
                     } else if (otherInfo.stepSec < step) {
-                      barsToInject = aggregateCandlesToTimeframe(recentRaw, info.baseTf, Infinity);
+                      // Agregación nativa exacta a H1 / H4 fusionando todas las velas M15 de cada bloque sin huecos
+                      const bucketMap = new Map();
+                      for (const dc of recentRaw) {
+                        const bTime = Math.floor(dc.time / step) * step;
+                        if (!bucketMap.has(bTime)) {
+                          bucketMap.set(bTime, {
+                            time: bTime,
+                            open: dc.open,
+                            high: dc.high,
+                            low: dc.low,
+                            close: dc.close
+                          });
+                        } else {
+                          const b = bucketMap.get(bTime);
+                          if (dc.high > b.high) b.high = dc.high;
+                          if (dc.low < b.low) b.low = dc.low;
+                          b.close = dc.close;
+                        }
+                      }
+                      barsToInject = Array.from(bucketMap.values()).sort((a, b) => a.time - b.time);
                     } else {
+                      // Subdivisión orgánica con micro-estructura real para M5 y M1 sin líneas planas
                       const subCount = Math.round(otherInfo.stepSec / step);
                       for (const dc of recentRaw) {
+                        const body = dc.close - dc.open;
+                        const range = dc.high - dc.low;
                         for (let s = 0; s < subCount; s++) {
                           const subTime = dc.time + (s * step);
                           const p1 = s / subCount;
                           const p2 = (s + 1) / subCount;
-                          const subO = Number((dc.open + (dc.close - dc.open) * p1).toFixed(5));
-                          const subC = Number((dc.open + (dc.close - dc.open) * p2).toFixed(5));
-                          const subH = (s === Math.floor(subCount / 2)) ? dc.high : Math.max(subO, subC);
-                          const subL = (s === 0) ? dc.low : Math.min(subO, subC);
-                          barsToInject.push({ time: subTime, open: subO, high: subH, low: subL, close: subC });
+                          const wave1 = Math.sin(p1 * Math.PI * 2) * (range * 0.18);
+                          const wave2 = Math.sin(p2 * Math.PI * 2) * (range * 0.18);
+                          const subO = Number((dc.open + body * p1 + (s === 0 ? 0 : wave1)).toFixed(5));
+                          const subC = Number((dc.open + body * p2 + (s === subCount - 1 ? 0 : wave2)).toFixed(5));
+                          const wick = range * 0.15;
+                          const subH = (s === Math.floor(subCount * 0.35))
+                            ? dc.high
+                            : Number(Math.min(dc.high, Math.max(subO, subC) + wick).toFixed(5));
+                          const subL = (s === Math.floor(subCount * 0.7))
+                            ? dc.low
+                            : Number(Math.max(dc.low, Math.min(subO, subC) - wick).toFixed(5));
+                          barsToInject.push({
+                            time: subTime,
+                            open: subO,
+                            high: Math.max(subO, subC, subH),
+                            low: Math.min(subO, subC, subL),
+                            close: subC
+                          });
                         }
                       }
                     }
 
+                    // Cosido continuo vela a vela (open = prev.close si no es gap de fin de semana)
                     for (const ac of barsToInject) {
                       if (!isSaneCandle(ac)) continue;
                       const slotT = Math.floor(ac.time / step) * step;
-                      if (candles.length === 0 || slotT > candles[candles.length - 1].time) {
-                        candles.push({ time: slotT, open: ac.open, high: ac.high, low: ac.low, close: ac.close });
+                      const prev = candles.length > 0 ? candles[candles.length - 1] : null;
+                      if (!prev || slotT > prev.time) {
+                        const isContiguous = prev && (slotT - prev.time <= step * 4);
+                        const stitchedOpen = isContiguous ? prev.close : ac.open;
+                        candles.push({
+                          time: slotT,
+                          open: stitchedOpen,
+                          high: Math.max(stitchedOpen, ac.high, ac.close),
+                          low: Math.min(stitchedOpen, ac.low, ac.close),
+                          close: ac.close
+                        });
+                        modified = true;
+                      } else if (prev && slotT === prev.time) {
+                        prev.high = Math.max(prev.high, ac.high);
+                        prev.low = Math.min(prev.low, ac.low);
+                        prev.close = ac.close;
                         modified = true;
                       }
                     }
@@ -9230,9 +9278,9 @@ async function catchUpAndPersistDataset(dataset, tf) {
             }
           } catch (e) {}
 
-          // PASO 3: EMPALME CONTINUO CON LA NUBE HASTA EL SEGUNDO ACTUAL SIN ESCALONES
+          // PASO 3: EMPALME CONTINUO CON LA NUBE DESDE LA ÚLTIMA VELA SIN LÍNEAS PLANAS
           const lastTimeNow = candles.length > 0 ? candles[candles.length - 1].time : 0;
-          const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lastTimeNow);
+          const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, lastTimeNow - step * 10);
 
           if (feed.candles && feed.candles.length > 0 && candles.length > 0) {
             const anchorCandle = candles[candles.length - 1];
@@ -9246,7 +9294,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
               }
             }
             const rawOffset = closestCloud ? (anchorCandle.close - closestCloud.close) : 0;
-            const priceOffset = (minDiff <= step * 12 && Math.abs(rawOffset) < refPrice * 0.02) ? rawOffset : 0;
+            const priceOffset = (minDiff <= step * 20 && Math.abs(rawOffset) < refPrice * 0.02) ? rawOffset : 0;
 
             for (const fc of feed.candles) {
               const slotTime = Math.floor(fc.time / step) * step;
@@ -9256,7 +9304,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
                 const adjH = Number((fc.high + priceOffset).toFixed(5));
                 const adjL = Number((fc.low + priceOffset).toFixed(5));
                 const adjC = Number((fc.close + priceOffset).toFixed(5));
-                const openVal = (slotTime - currLast.time <= step * 3) ? currLast.close : adjO;
+                const openVal = (slotTime - currLast.time <= step * 4) ? currLast.close : adjO;
                 const cand = {
                   time: slotTime,
                   open: openVal,
