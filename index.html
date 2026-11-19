@@ -8577,118 +8577,161 @@ for (let i = 25; i < bars.length; i++) {
     let bestModule6Candidate = null;
     let module6CandidatesList = [];
 
-function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, fastP, slowP, tpPips, slPips, tsPips, pipUnit, initCap) {
-            const fEMA = calcFastEMAArray(closeArr, fastP);
-            const sEMA = calcFastEMAArray(closeArr, slowP);
-            const trendEMA = calcFastEMAArray(closeArr, 200);
-            const rsiArr = calcFastRSIArray(closeArr, 14);
-            let bal = initCap, peak = initCap, maxDD = 0, pos = null;
-            let wins = 0, losses = 0, grossP = 0, grossL = 0;
-            const curve = [initCap];
-            const slDist = Math.max(pipUnit * 10, slPips * pipUnit);
-            const tpDist = tpPips > 0 ? tpPips * pipUnit : 0;
-            const tsDist = tsPips > 0 ? tsPips * pipUnit : 0;
-            const cooldownBars = 6;
-            let lastExitBar = -999;
+function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, fastP, slowP, tpPips, slPips, tsPips, pipUnit, initCap, precomputed) {
+  const fEMA = (precomputed && precomputed.emaMap && precomputed.emaMap[fastP]) ? precomputed.emaMap[fastP] : calcFastEMAArray(closeArr, fastP);
+  const sEMA = (precomputed && precomputed.emaMap && precomputed.emaMap[slowP]) ? precomputed.emaMap[slowP] : calcFastEMAArray(closeArr, slowP);
+  const trendEMA = (precomputed && precomputed.trendEMA) ? precomputed.trendEMA : calcFastEMAArray(closeArr, 200);
+  const rsiArr = (precomputed && precomputed.rsiArr) ? precomputed.rsiArr : calcFastRSIArray(closeArr, 14);
+  let bal = initCap, peak = initCap, maxDD = 0, pos = null;
+  let wins = 0, losses = 0, grossP = 0, grossL = 0;
+  const curve = [initCap];
+  const slDist = Math.max(pipUnit * 10, slPips * pipUnit);
+  const tpDist = tpPips > 0 ? tpPips * pipUnit : 0;
+  const tsDist = tsPips > 0 ? tsPips * pipUnit : 0;
+  const cooldownBars = 6;
+  let lastExitBar = -999;
 
-            for (let i = Math.max(205, startIdx); i <= endIdx; i++) {
-                if (pos) {
-                    let exitP = null;
-                    if (pos.dir === 1) {
-                        if (tsDist > 0 && highArr[i] - pos.entry >= tsDist) {
-                            const newSl = highArr[i] - tsDist * 0.65;
-                            if (newSl > pos.sl) pos.sl = newSl;
-                        }
-                        if (pos.sl > 0 && lowArr[i] <= pos.sl) exitP = pos.sl;
-                        else if (pos.tp > 0 && highArr[i] >= pos.tp) exitP = pos.tp;
-                    } else {
-                        if (tsDist > 0 && pos.entry - lowArr[i] >= tsDist) {
-                            const newSl = lowArr[i] + tsDist * 0.65;
-                            if (pos.sl === 0 || newSl < pos.sl) pos.sl = newSl;
-                        }
-                        if (pos.sl > 0 && highArr[i] >= pos.sl) exitP = pos.sl;
-                        else if (pos.tp > 0 && lowArr[i] <= pos.tp) exitP = pos.tp;
-                    }
-                    if (exitP !== null) {
-                        const pnl = pos.dir === 1 ? (exitP - pos.entry) * pos.size : (pos.entry - exitP) * pos.size;
-                        bal += pnl;
-                        if (pnl >= 0) { wins++; grossP += pnl; } else { losses++; grossL += Math.abs(pnl); }
-                        if (bal > peak) peak = bal;
-                        const dd = peak > 0 ? ((peak - bal) / peak) * 100 : 0;
-                        if (dd > maxDD) maxDD = dd;
-                        pos = null;
-                        lastExitBar = i;
-                    }
-                }
-                if (!pos && (i - lastExitBar) >= cooldownBars) {
-                    const trendUp = closeArr[i] >= trendEMA[i];
-                    const trendDn = closeArr[i] <= trendEMA[i];
-                    const crossUp = fEMA[i - 1] <= sEMA[i - 1] && fEMA[i] > sEMA[i] && rsiArr[i] < 68 && rsiArr[i] > 45 && trendUp;
-                    const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32 && rsiArr[i] < 55 && trendDn;
-                    if (crossUp || crossDn) {
-                        const entry = closeArr[i];
-                        const riskUsd = Math.max(25, bal * 0.012);
-                        const size = riskUsd / slDist;
-                        pos = crossUp
-                            ? { dir: 1, entry, size, sl: entry - slDist, tp: tpDist > 0 ? entry + tpDist : 0 }
-                            : { dir: -1, entry, size, sl: entry + slDist, tp: tpDist > 0 ? entry - tpDist : 0 };
-                    }
-                }
-                if (i % 24 === 0 || i === endIdx) curve.push(bal);
-            }
-            const retPct = ((bal - initCap) / initCap) * 100;
-            const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 3.5 : 0.85);
-            return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal };
+  for (let i = Math.max(205, startIdx); i <= endIdx; i++) {
+    if (pos) {
+      let exitP = null;
+      if (pos.dir === 1) {
+        if (pos.sl > 0 && lowArr[i] <= pos.sl) exitP = pos.sl;
+        else if (pos.tp > 0 && highArr[i] >= pos.tp) exitP = pos.tp;
+        else if (tsDist > 0) {
+          const gain = highArr[i] - pos.entry;
+          if (gain >= tsDist) {
+            const beSL = pos.entry + pipUnit * 2;
+            if (beSL > pos.sl) pos.sl = beSL;
+            const trailSL = highArr[i] - tsDist;
+            if (trailSL > pos.sl) pos.sl = trailSL;
+          }
         }
+      } else {
+        if (pos.sl > 0 && highArr[i] >= pos.sl) exitP = pos.sl;
+        else if (pos.tp > 0 && lowArr[i] <= pos.tp) exitP = pos.tp;
+        else if (tsDist > 0) {
+          const gain = pos.entry - lowArr[i];
+          if (gain >= tsDist) {
+            const beSL = pos.entry - pipUnit * 2;
+            if (pos.sl === 0 || beSL < pos.sl) pos.sl = beSL;
+            const trailSL = lowArr[i] + tsDist;
+            if (pos.sl === 0 || trailSL < pos.sl) pos.sl = trailSL;
+          }
+        }
+      }
+      if (exitP !== null) {
+        const pnl = pos.dir === 1 ? (exitP - pos.entry) * pos.size : (pos.entry - exitP) * pos.size;
+        bal += pnl;
+        if (pnl >= 0) { wins++; grossP += pnl; } else { losses++; grossL += Math.abs(pnl); }
+        if (bal > peak) peak = bal;
+        const dd = peak > 0 ? ((peak - bal) / peak) * 100 : 0;
+        if (dd > maxDD) maxDD = dd;
+        pos = null;
+        lastExitBar = i;
+      }
+    }
+    if (!pos && (i - lastExitBar) >= cooldownBars) {
+      const trendUp = closeArr[i] >= trendEMA[i];
+      const trendDn = closeArr[i] <= trendEMA[i];
+      const crossUp = fEMA[i - 1] <= sEMA[i - 1] && fEMA[i] > sEMA[i] && rsiArr[i] < 68 && rsiArr[i] > 45 && trendUp;
+      const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32 && rsiArr[i] < 55 && trendDn;
+      if (crossUp || crossDn) {
+        const entry = closeArr[i];
+        const riskUsd = Math.max(25, bal * 0.012);
+        const size = riskUsd / slDist;
+        pos = crossUp
+          ? { dir: 1, entry, size, sl: entry - slDist, tp: tpDist > 0 ? entry + tpDist : 0 }
+          : { dir: -1, entry, size, sl: entry + slDist, tp: tpDist > 0 ? entry - tpDist : 0 };
+      }
+    }
+    if (i % 24 === 0 || i === endIdx) curve.push(bal);
+  }
+  const retPct = ((bal - initCap) / initCap) * 100;
+  const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 3.5 : 0.85);
+  return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal };
+}
 
-        function runModule6GeneticOptimizer() {
-            const fullSource = (typeof originalFullCandles !== 'undefined' && originalFullCandles && originalFullCandles.length > allCandles.length)
-                ? originalFullCandles
-                : ((typeof rawMT5Candles !== 'undefined' && rawMT5Candles && rawMT5Candles.length > allCandles.length) ? rawMT5Candles : allCandles);
-            if (!fullSource || fullSource.length < 60) return;
-            const t0 = performance.now();
-            const mode = document.getElementById('opt-mode')?.value || 'genetic';
-            const splitRatio = parseFloat(document.getElementById('opt-oos-split')?.value) || 0.70;
-            const initCap = parseFloat(document.getElementById('initial-capital-select')?.value) || 10000;
+function runModule6GeneticOptimizer() {
+  const fullSource = (typeof originalFullCandles !== 'undefined' && originalFullCandles && originalFullCandles.length > allCandles.length)
+    ? originalFullCandles
+    : ((typeof rawMT5Candles !== 'undefined' && rawMT5Candles && rawMT5Candles.length > allCandles.length) ? rawMT5Candles : allCandles);
+  if (!fullSource || fullSource.length < 60) return;
+  const t0 = performance.now();
+  const mode = document.getElementById('opt-mode')?.value || 'genetic';
+  const splitRatio = parseFloat(document.getElementById('opt-oos-split')?.value) || 0.70;
+  const initCap = parseFloat(document.getElementById('initial-capital-select')?.value) || 10000;
 
-            const stride = fullSource.length > 150000 ? Math.ceil(fullSource.length / 120000) : 1;
-            const sampleBars = stride > 1 ? fullSource.filter((_, idx) => idx % stride === 0) : fullSource;
-            const len = sampleBars.length;
-            const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
-            for (let i = 0; i < len; i++) { closeArr[i] = sampleBars[i].close; highArr[i] = sampleBars[i].high; lowArr[i] = sampleBars[i].low; }
+  const stride = fullSource.length > 150000 ? Math.ceil(fullSource.length / 120000) : 1;
+  const sampleBars = stride > 1 ? fullSource.filter((_, idx) => idx % stride === 0) : fullSource;
+  const len = sampleBars.length;
+  const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
+  for (let i = 0; i < len; i++) { closeArr[i] = sampleBars[i].close; highArr[i] = sampleBars[i].high; lowArr[i] = sampleBars[i].low; }
 
-            const refPrice = closeArr[len - 1] || 1;
-            const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
-            const splitIdx = Math.floor(len * splitRatio);
+  const refPrice = closeArr[len - 1] || 1;
+  const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+  const splitIdx = Math.floor(len * splitRatio);
 
-            const fastPool = [8, 9, 12, 14, 20];
-            const slowPool = [21, 26, 34, 50, 89];
-            const tpPool   = [95, 120, 150, 180, 240];
-            const slPool   = [45, 60, 75, 90, 110];
-            const tsPool   = [30, 40, 50, 65];
+  const fastPool = [8, 10, 12, 15, 20];
+  const slowPool = [26, 34, 50, 75, 100];
+  const tpPool   = [70, 100, 140, 190, 250];
+  const slPool   = [25, 35, 50, 70, 95];
+  const tsPool   = [0, 55, 80, 110];
 
-            const genomes = [];
-            const totalEval = mode === 'genetic' ? 36 : 48;
-            for (let g = 0; g < totalEval; g++) {
-                const fastP = fastPool[g % fastPool.length];
-                const slowP = slowPool[(g * 3) % slowPool.length];
-                if (fastP >= slowP) continue;
-                const tp    = tpPool[(g * 2) % tpPool.length];
-                const sl    = slPool[(g * 5) % slPool.length];
-                const ts    = tsPool[g % tsPool.length];
+  const emaMap = {};
+  [...new Set([...fastPool, ...slowPool])].forEach(p => { emaMap[p] = calcFastEMAArray(closeArr, p); });
+  const precomputed = { emaMap, trendEMA: calcFastEMAArray(closeArr, 200), rsiArr: calcFastRSIArray(closeArr, 14) };
 
-                const isRes  = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 205, splitIdx, fastP, slowP, tp, sl, ts, pipUnit, initCap);
-                const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, fastP, slowP, tp, sl, ts, pipUnit, isRes.finalBal);
+  const genomes = [];
+  const seenKeys = new Set();
+  function evalAndPush(fastP, slowP, tp, sl, ts) {
+    if (fastP >= slowP || tp < sl * 1.25) return;
+    const key = `${fastP}-${slowP}-${tp}-${sl}-${ts}`;
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    if (!emaMap[fastP]) emaMap[fastP] = calcFastEMAArray(closeArr, fastP);
+    if (!emaMap[slowP]) emaMap[slowP] = calcFastEMAArray(closeArr, slowP);
+    const isRes  = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 205, splitIdx, fastP, slowP, tp, sl, ts, pipUnit, initCap, precomputed);
+    const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, fastP, slowP, tp, sl, ts, pipUnit, isRes.finalBal, precomputed);
+    const oosPassed = isRes.retPct > 0 && oosRes.retPct > 0 && isRes.pf >= 1.02 && oosRes.pf >= 1.05 && isRes.trades >= 40 && oosRes.trades >= 15;
+    const ddPenalty = (isRes.maxDD * 0.45) + (oosRes.maxDD * 0.55);
+    const consistencyBonus = (isRes.retPct > 0 && oosRes.retPct > 0) ? 25 : -35;
+    const pfScore = Math.min(isRes.pf, 2.5) * 8 + Math.min(oosRes.pf, 2.5) * 10;
+    const tradePenalty = (isRes.trades < 40 || oosRes.trades < 15) ? -40 : 0;
+    const fitness = (isRes.retPct * 0.55) + (oosRes.retPct * 0.65) + pfScore + consistencyBonus + tradePenalty - ddPenalty;
+    genomes.push({ fastP, slowP, tp, sl, ts, isRes, oosRes, oosPassed, fitness });
+  }
 
-                const oosPassed = oosRes.retPct > 0.5 && oosRes.pf >= 1.08 && isRes.retPct > 0;
-                const fitness = (isRes.retPct * 0.40) + (oosRes.retPct * 0.60) + (oosPassed ? 15 : -8) - (oosRes.maxDD * 0.5);
-                genomes.push({ fastP, slowP, tp, sl, ts, isRes, oosRes, oosPassed, fitness });
-            }
+  // Fase 1: Exploración diversa sin clones
+  const phase1Target = mode === 'genetic' ? 48 : 72;
+  for (let g = 0; g < phase1Target * 2 && genomes.length < phase1Target; g++) {
+    const fastP = fastPool[g % fastPool.length];
+    const slowP = slowPool[(g * 2 + Math.floor(g / 5)) % slowPool.length];
+    const tp    = tpPool[(g * 3 + Math.floor(g / 7)) % tpPool.length];
+    const sl    = slPool[(g * 4 + Math.floor(g / 3)) % slPool.length];
+    const ts    = tsPool[(g + Math.floor(g / 5)) % tsPool.length];
+    evalAndPush(fastP, slowP, tp, sl, ts);
+  }
 
-            genomes.sort((a, b) => b.fitness - a.fitness);
-            module6CandidatesList = genomes.slice(0, 12);
-            bestModule6Candidate = module6CandidatesList[0];
+  // Fase 2: Evolución / Mutación local sobre los Top 6
+  genomes.sort((a, b) => b.fitness - a.fitness);
+  const elite = genomes.slice(0, 6);
+  elite.forEach((parent, idx) => {
+    const fIdx = Math.max(0, fastPool.indexOf(parent.fastP));
+    const sIdx = Math.max(0, slowPool.indexOf(parent.slowP));
+    const tpIdx = Math.max(0, tpPool.indexOf(parent.tp));
+    const slIdx = Math.max(0, slPool.indexOf(parent.sl));
+    const variants = [
+      [fastPool[(fIdx + 1) % fastPool.length], parent.slowP, parent.tp, parent.sl, 0],
+      [parent.fastP, slowPool[(sIdx + 1) % slowPool.length], tpPool[(tpIdx + 1) % tpPool.length], parent.sl, parent.ts],
+      [parent.fastP, parent.slowP, parent.tp, slPool[(slIdx + 1) % slPool.length], tsPool[(idx + 1) % tsPool.length]],
+      [Math.max(6, parent.fastP - 2), parent.slowP + 5, parent.tp + 20, Math.max(20, parent.sl - 5), parent.ts]
+    ];
+    variants.forEach(v => evalAndPush(v[0], v[1], v[2], v[3], v[4]));
+  });
 
+  genomes.sort((a, b) => b.fitness - a.fitness);
+  module6CandidatesList = genomes.slice(0, 12);
+  bestModule6Candidate = module6CandidatesList[0] || null;
             const tbody = document.getElementById('opt-results-tbody');
             if (tbody) {
                 tbody.innerHTML = '';
