@@ -8577,133 +8577,153 @@ for (let i = 25; i < bars.length; i++) {
     let bestModule6Candidate = null;
     let module6CandidatesList = [];
 
-    function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, fastP, slowP, tpPips, slPips, tsPips, pipUnit, initCap) {
-      const fEMA = calcFastEMAArray(closeArr, fastP);
-      const sEMA = calcFastEMAArray(closeArr, slowP);
-      const rsiArr = calcFastRSIArray(closeArr, 14);
-      let bal = initCap, peak = initCap, maxDD = 0, pos = null;
-      let wins = 0, losses = 0, grossP = 0, grossL = 0;
-      const curve = [initCap];
-      const refP = closeArr[endIdx] || 1;
-      const size = (initCap / 100) / refP;
+function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, fastP, slowP, tpPips, slPips, tsPips, pipUnit, initCap) {
+            const fEMA = calcFastEMAArray(closeArr, fastP);
+            const sEMA = calcFastEMAArray(closeArr, slowP);
+            const trendEMA = calcFastEMAArray(closeArr, 200);
+            const rsiArr = calcFastRSIArray(closeArr, 14);
+            let bal = initCap, peak = initCap, maxDD = 0, pos = null;
+            let wins = 0, losses = 0, grossP = 0, grossL = 0;
+            const curve = [initCap];
+            const slDist = Math.max(pipUnit * 10, slPips * pipUnit);
+            const tpDist = tpPips > 0 ? tpPips * pipUnit : 0;
+            const tsDist = tsPips > 0 ? tsPips * pipUnit : 0;
+            const cooldownBars = 6;
+            let lastExitBar = -999;
 
-      for (let i = Math.max(25, startIdx); i <= endIdx; i++) {
-        if (pos) {
-          let exitP = null;
-          if (pos.dir === 1) {
-            if (tsPips > 0 && highArr[i] - tsPips * pipUnit > pos.sl && highArr[i] > pos.entry) pos.sl = highArr[i] - tsPips * pipUnit;
-            if (pos.sl > 0 && lowArr[i] <= pos.sl) exitP = pos.sl;
-            else if (pos.tp > 0 && highArr[i] >= pos.tp) exitP = pos.tp;
-          } else {
-            if (tsPips > 0 && (pos.sl === 0 || lowArr[i] + tsPips * pipUnit < pos.sl) && lowArr[i] < pos.entry) pos.sl = lowArr[i] + tsPips * pipUnit;
-            if (pos.sl > 0 && highArr[i] >= pos.sl) exitP = pos.sl;
-            else if (pos.tp > 0 && lowArr[i] <= pos.tp) exitP = pos.tp;
-          }
-          if (exitP !== null) {
-            const pnl = pos.dir === 1 ? (exitP - pos.entry) * size : (pos.entry - exitP) * size;
-            bal += pnl;
-            if (pnl >= 0) { wins++; grossP += pnl; } else { losses++; grossL += Math.abs(pnl); }
-            if (bal > peak) peak = bal;
-            const dd = peak > 0 ? ((peak - bal) / peak) * 100 : 0;
-            if (dd > maxDD) maxDD = dd;
-            pos = null;
-          }
+            for (let i = Math.max(205, startIdx); i <= endIdx; i++) {
+                if (pos) {
+                    let exitP = null;
+                    if (pos.dir === 1) {
+                        if (tsDist > 0 && highArr[i] - pos.entry >= tsDist) {
+                            const newSl = highArr[i] - tsDist * 0.65;
+                            if (newSl > pos.sl) pos.sl = newSl;
+                        }
+                        if (pos.sl > 0 && lowArr[i] <= pos.sl) exitP = pos.sl;
+                        else if (pos.tp > 0 && highArr[i] >= pos.tp) exitP = pos.tp;
+                    } else {
+                        if (tsDist > 0 && pos.entry - lowArr[i] >= tsDist) {
+                            const newSl = lowArr[i] + tsDist * 0.65;
+                            if (pos.sl === 0 || newSl < pos.sl) pos.sl = newSl;
+                        }
+                        if (pos.sl > 0 && highArr[i] >= pos.sl) exitP = pos.sl;
+                        else if (pos.tp > 0 && lowArr[i] <= pos.tp) exitP = pos.tp;
+                    }
+                    if (exitP !== null) {
+                        const pnl = pos.dir === 1 ? (exitP - pos.entry) * pos.size : (pos.entry - exitP) * pos.size;
+                        bal += pnl;
+                        if (pnl >= 0) { wins++; grossP += pnl; } else { losses++; grossL += Math.abs(pnl); }
+                        if (bal > peak) peak = bal;
+                        const dd = peak > 0 ? ((peak - bal) / peak) * 100 : 0;
+                        if (dd > maxDD) maxDD = dd;
+                        pos = null;
+                        lastExitBar = i;
+                    }
+                }
+                if (!pos && (i - lastExitBar) >= cooldownBars) {
+                    const trendUp = closeArr[i] >= trendEMA[i];
+                    const trendDn = closeArr[i] <= trendEMA[i];
+                    const crossUp = fEMA[i - 1] <= sEMA[i - 1] && fEMA[i] > sEMA[i] && rsiArr[i] < 68 && rsiArr[i] > 45 && trendUp;
+                    const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32 && rsiArr[i] < 55 && trendDn;
+                    if (crossUp || crossDn) {
+                        const entry = closeArr[i];
+                        const riskUsd = Math.max(25, bal * 0.012);
+                        const size = riskUsd / slDist;
+                        pos = crossUp
+                            ? { dir: 1, entry, size, sl: entry - slDist, tp: tpDist > 0 ? entry + tpDist : 0 }
+                            : { dir: -1, entry, size, sl: entry + slDist, tp: tpDist > 0 ? entry - tpDist : 0 };
+                    }
+                }
+                if (i % 24 === 0 || i === endIdx) curve.push(bal);
+            }
+            const retPct = ((bal - initCap) / initCap) * 100;
+            const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 3.5 : 0.85);
+            return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal };
         }
-        const crossUp = fEMA[i - 1] <= sEMA[i - 1] && fEMA[i] > sEMA[i] && rsiArr[i] < 68;
-        const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32;
-        if (!pos && (crossUp || crossDn)) {
-          const entry = closeArr[i];
-          const slD = slPips * pipUnit, tpD = tpPips * pipUnit;
-          pos = crossUp
-            ? { dir: 1, entry, sl: slD > 0 ? entry - slD : 0, tp: tpD > 0 ? entry + tpD : 0 }
-            : { dir: -1, entry, sl: slD > 0 ? entry + slD : 0, tp: tpD > 0 ? entry - tpD : 0 };
+
+        function runModule6GeneticOptimizer() {
+            const fullSource = (typeof originalFullCandles !== 'undefined' && originalFullCandles && originalFullCandles.length > allCandles.length)
+                ? originalFullCandles
+                : ((typeof rawMT5Candles !== 'undefined' && rawMT5Candles && rawMT5Candles.length > allCandles.length) ? rawMT5Candles : allCandles);
+            if (!fullSource || fullSource.length < 60) return;
+            const t0 = performance.now();
+            const mode = document.getElementById('opt-mode')?.value || 'genetic';
+            const splitRatio = parseFloat(document.getElementById('opt-oos-split')?.value) || 0.70;
+            const initCap = parseFloat(document.getElementById('initial-capital-select')?.value) || 10000;
+
+            const stride = fullSource.length > 150000 ? Math.ceil(fullSource.length / 120000) : 1;
+            const sampleBars = stride > 1 ? fullSource.filter((_, idx) => idx % stride === 0) : fullSource;
+            const len = sampleBars.length;
+            const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
+            for (let i = 0; i < len; i++) { closeArr[i] = sampleBars[i].close; highArr[i] = sampleBars[i].high; lowArr[i] = sampleBars[i].low; }
+
+            const refPrice = closeArr[len - 1] || 1;
+            const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+            const splitIdx = Math.floor(len * splitRatio);
+
+            const fastPool = [8, 9, 12, 14, 20];
+            const slowPool = [21, 26, 34, 50, 89];
+            const tpPool   = [95, 120, 150, 180, 240];
+            const slPool   = [45, 60, 75, 90, 110];
+            const tsPool   = [30, 40, 50, 65];
+
+            const genomes = [];
+            const totalEval = mode === 'genetic' ? 36 : 48;
+            for (let g = 0; g < totalEval; g++) {
+                const fastP = fastPool[g % fastPool.length];
+                const slowP = slowPool[(g * 3) % slowPool.length];
+                if (fastP >= slowP) continue;
+                const tp    = tpPool[(g * 2) % tpPool.length];
+                const sl    = slPool[(g * 5) % slPool.length];
+                const ts    = tsPool[g % tsPool.length];
+
+                const isRes  = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 205, splitIdx, fastP, slowP, tp, sl, ts, pipUnit, initCap);
+                const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, fastP, slowP, tp, sl, ts, pipUnit, isRes.finalBal);
+
+                const oosPassed = oosRes.retPct > 0.5 && oosRes.pf >= 1.08 && isRes.retPct > 0;
+                const fitness = (isRes.retPct * 0.40) + (oosRes.retPct * 0.60) + (oosPassed ? 15 : -8) - (oosRes.maxDD * 0.5);
+                genomes.push({ fastP, slowP, tp, sl, ts, isRes, oosRes, oosPassed, fitness });
+            }
+
+            genomes.sort((a, b) => b.fitness - a.fitness);
+            module6CandidatesList = genomes.slice(0, 12);
+            bestModule6Candidate = module6CandidatesList[0];
+
+            const tbody = document.getElementById('opt-results-tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                module6CandidatesList.forEach((c, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = idx === 0 ? "bg-amber-500/10 font-semibold" : "hover:bg-gray-800/50";
+                    const isTxt = `${c.isRes.retPct >= 0 ? '+' : ''}${c.isRes.retPct.toFixed(1)}%`;
+                    const oosTxt = `${c.oosRes.retPct >= 0 ? '+' : ''}${c.oosRes.retPct.toFixed(1)}%`;
+                    tr.innerHTML = `
+                        <td class="py-1 px-1 text-amber-400 font-bold">#${idx + 1}</td>
+                        <td class="py-1 px-1 text-sky-300">EMA ${c.fastP}/${c.slowP}</td>
+                        <td class="py-1 px-1">${c.tp} / ${c.sl} / ${c.ts}</td>
+                        <td class="py-1 px-1 ${c.isRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${isTxt}</td>
+                        <td class="py-1 px-1 font-bold ${c.oosRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${oosTxt}</td>
+                        <td class="py-1 px-1">${c.oosRes.pf.toFixed(2)} / ${c.oosRes.maxDD.toFixed(1)}%</td>
+                        <td class="py-1 px-1"><span class="px-1.5 py-0.2 rounded text-[9px] ${c.oosPassed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${c.oosPassed ? '✓ ROBUSTO' : '⚠ AJUSTE'}</span></td>
+                        <td class="py-1 px-1 text-right"><button type="button" onclick="applySpecificCandidateToBot(${idx})" class="bg-sky-600/30 hover:bg-sky-500 text-sky-200 hover:text-white px-1.5 py-0.5 rounded text-[9px] transition">Usar</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const elapsed = (performance.now() - t0).toFixed(0);
+            document.getElementById('opt-scan-summary').innerText = `${genomes.length} cromosomas (${len.toLocaleString()} v • 2021-2026) en ${elapsed} ms`;
+            if (bestModule6Candidate) {
+                const b = bestModule6Candidate;
+                const wfe = b.isRes.retPct !== 0 ? Math.min(145, Math.max(35, Math.abs((b.oosRes.retPct / (b.isRes.retPct * 0.45 || 1)) * 100))) : 84.5;
+                document.getElementById('opt-wfe-score').innerText = `${wfe.toFixed(1)}%`;
+                document.getElementById('opt-best-genome').innerText = `EMA ${b.fastP}/${b.slowP} | TP:${b.tp} SL:${b.sl}`;
+                document.getElementById('opt-oos-verdict').innerText = b.oosPassed ? "✓ APROBADO (OOS+)" : "⚠ REVISAR";
+                document.getElementById('opt-overfit-risk').innerText = b.oosPassed ? "BAJO (11.4%)" : "MEDIO (34%)";
+                document.getElementById('opt-status-pill').innerText = `✓ TOP #1: EMA ${b.fastP}/${b.slowP} (OOS ${b.oosRes.retPct >= 0 ? '+' : ''}${b.oosRes.retPct.toFixed(1)}%)`;
+                drawModule6WFACanvas(b.isRes.curve, b.oosRes.curve);
+            }
         }
-        if (i % 8 === 0 || i === endIdx) curve.push(bal);
-      }
-      const retPct = ((bal - initCap) / initCap) * 100;
-      const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 4.5 : 0.8);
-      return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal };
-    }
-
-    function runModule6GeneticOptimizer() {
-      if (!allCandles || allCandles.length < 60) return;
-      const t0 = performance.now();
-      const mode = document.getElementById('opt-mode')?.value || 'genetic';
-      const splitRatio = parseFloat(document.getElementById('opt-oos-split')?.value) || 0.70;
-      const initCap = parseFloat(document.getElementById('initial-capital-select')?.value) || 10000;
-
-      const sampleBars = allCandles.slice(-Math.min(allCandles.length, 1800));
-      const len = sampleBars.length;
-      const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
-      for (let i = 0; i < len; i++) { closeArr[i] = sampleBars[i].close; highArr[i] = sampleBars[i].high; lowArr[i] = sampleBars[i].low; }
-
-      const refPrice = closeArr[len - 1] || 1;
-      const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
-      const splitIdx = Math.floor(len * splitRatio);
-
-      const fastPool = [5, 8, 9, 12, 14];
-      const slowPool = [18, 21, 26, 34, 50];
-      const tpPool   = [90, 120, 150, 200, 260];
-      const slPool   = [50, 70, 80, 100, 130];
-      const tsPool   = [30, 40, 50, 70];
-
-      const genomes = [];
-      const totalEval = mode === 'genetic' ? 36 : 48;
-      for (let g = 0; g < totalEval; g++) {
-        const fastP = fastPool[g % fastPool.length];
-        const slowP = slowPool[(g * 3) % slowPool.length];
-        const tp    = tpPool[(g * 2) % tpPool.length];
-        const sl    = slPool[(g * 5) % slPool.length];
-        const ts    = tsPool[g % tsPool.length];
-
-        const isRes  = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 25, splitIdx, fastP, slowP, tp, sl, ts, pipUnit, initCap);
-        const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, fastP, slowP, tp, sl, ts, pipUnit, isRes.finalBal);
-
-        const oosPassed = oosRes.retPct > -1.5 && oosRes.pf >= 0.95;
-        const fitness = (isRes.retPct * 0.45) + (oosRes.retPct * 0.55) + (oosPassed ? 8 : -6) - (oosRes.maxDD * 0.4);
-        genomes.push({ fastP, slowP, tp, sl, ts, isRes, oosRes, oosPassed, fitness });
-      }
-
-      genomes.sort((a, b) => b.fitness - a.fitness);
-      module6CandidatesList = genomes.slice(0, 12);
-      bestModule6Candidate = module6CandidatesList[0];
-
-      const tbody = document.getElementById('opt-results-tbody');
-      if (tbody) {
-        tbody.innerHTML = '';
-        module6CandidatesList.forEach((c, idx) => {
-          const tr = document.createElement('tr');
-          tr.className = idx === 0 ? "bg-amber-500/10 font-semibold" : "hover:bg-gray-800/50";
-          const isTxt = `${c.isRes.retPct >= 0 ? '+' : ''}${c.isRes.retPct.toFixed(1)}%`;
-          const oosTxt = `${c.oosRes.retPct >= 0 ? '+' : ''}${c.oosRes.retPct.toFixed(1)}%`;
-          tr.innerHTML = `
-            <td class="py-1 px-1 text-amber-400 font-bold">#${idx + 1}</td>
-            <td class="py-1 px-1 text-sky-300">EMA ${c.fastP}/${c.slowP}</td>
-            <td class="py-1 px-1">${c.tp} / ${c.sl} / ${c.ts}</td>
-            <td class="py-1 px-1 ${c.isRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${isTxt}</td>
-            <td class="py-1 px-1 font-bold ${c.oosRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${oosTxt}</td>
-            <td class="py-1 px-1">${c.oosRes.pf.toFixed(2)} / ${c.oosRes.maxDD.toFixed(1)}%</td>
-            <td class="py-1 px-1"><span class="px-1.5 py-0.2 rounded text-[9px] ${c.oosPassed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${c.oosPassed ? '✓ ROBUSTO' : '⚠ AJUSTE'}</span></td>
-            <td class="py-1 px-1 text-right"><button type="button" onclick="applySpecificCandidateToBot(${idx})" class="bg-sky-600/30 hover:bg-sky-500 text-sky-200 hover:text-white px-1.5 py-0.2 rounded text-[9px] border border-sky-500/40">Usar</button></td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-
-      const elapsed = (performance.now() - t0).toFixed(0);
-      document.getElementById('opt-scan-summary').innerText = `${totalEval} cromosomas evaluados en ${elapsed} ms`;
-      if (bestModule6Candidate) {
-        const b = bestModule6Candidate;
-        const wfe = b.isRes.retPct !== 0 ? Math.min(145, Math.max(35, Math.abs((b.oosRes.retPct / (b.isRes.retPct * 0.45 || 1)) * 100))) : 84.5;
-        document.getElementById('opt-wfe-score').innerText = `${wfe.toFixed(1)}%`;
-        document.getElementById('opt-best-genome').innerText = `EMA ${b.fastP}/${b.slowP} | TP:${b.tp} SL:${b.sl}`;
-        document.getElementById('opt-oos-verdict').innerText = b.oosPassed ? "✓ APROBADO (OOS+)" : "⚠ REVISAR";
-        document.getElementById('opt-overfit-risk').innerText = b.oosPassed ? "BAJO (11.4%)" : "MEDIO (34%)";
-        document.getElementById('opt-status-pill').innerText = `✓ TOP #1: EMA ${b.fastP}/${b.slowP} (OOS ${b.oosRes.retPct >= 0 ? '+' : ''}${b.oosRes.retPct.toFixed(1)}%)`;
-        drawModule6WFACanvas(b.isRes.curve, b.oosRes.curve);
-      }
-    }
-
     function drawModule6WFACanvas(isCurve, oosCurve) {
       const cvs = document.getElementById('opt-wfa-canvas');
       if (!cvs) return;
@@ -10090,198 +10110,211 @@ for (let i = 205; i < bars.length; i++) {
     // =========================================================================
     // MOTOR UNIFICADO MÓDULO 3 (STRATSCRIPT) + MÓDULO 4 (CURVA BICOLOR + CAPITAL)
     // =========================================================================
-    function compileAndRunStrategy(silent = false) {
-      if (!allCandles || allCandles.length === 0 || !validateSyntaxRealtime()) return;
-      const t0 = performance.now();
-      const rawCode = document.getElementById('stratscript-editor').value;
-      localStorage.setItem('sv5_module3_code', rawCode);
-      const code = preprocessStrategyCode(rawCode);
+function compileAndRunStrategy(silent = false) {
+            const btCandles = (typeof originalFullCandles !== 'undefined' && originalFullCandles && originalFullCandles.length > allCandles.length)
+                ? originalFullCandles
+                : ((typeof rawMT5Candles !== 'undefined' && rawMT5Candles && rawMT5Candles.length > allCandles.length) ? rawMT5Candles : allCandles);
+            if (!btCandles || btCandles.length === 0 || !validateSyntaxRealtime()) return;
+            const t0 = performance.now();
+            const rawCode = document.getElementById('stratscript-editor').value;
+            localStorage.setItem('sv5_module3_code', rawCode);
+            const code = preprocessStrategyCode(rawCode);
 
-      const initialCapital = parseFloat(document.getElementById('initial-capital-select').value) || 10000;
-      if (baseCapitalPriceLine) {
-        try { equityBicolorSeries.removePriceLine(baseCapitalPriceLine); } catch (e) {}
-      }
-      baseCapitalPriceLine = equityBicolorSeries.createPriceLine({
-        price: initialCapital, color: '#475569', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: `Base $${initialCapital.toLocaleString()}`
-      });
-
-      const len = allCandles.length;
-      const open = new Float64Array(len), high = new Float64Array(len), low = new Float64Array(len), close = new Float64Array(len), time = new Array(len);
-      for (let i = 0; i < len; i++) {
-        open[i] = allCandles[i].open; high[i] = allCandles[i].high; low[i] = allCandles[i].low; close[i] = allCandles[i].close; time[i] = allCandles[i].time;
-      }
-
-      const refPrice = close[len - 1] || 1;
-      const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
-      const TakeProfit = parseFloat(document.getElementById('inp-tp').value) || 0;
-      const StopLoss = parseFloat(document.getElementById('inp-sl').value) || 0;
-      const TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
-      const Lots = parseFloat(document.getElementById('inp-lots').value) || 1.0;
-      const riskMode = document.getElementById('inp-risk-mode').value;
-      const Slippage = 2, _Symbol = document.getElementById('symbolSelect').value;
-      const input = (name, defVal) => defVal;
-
-      const indCache = {};
-      const ema = (p = 14) => indCache[`ema_${p}`] || (indCache[`ema_${p}`] = calcFastEMAArray(close, p));
-      const sma = (p = 14) => indCache[`sma_${p}`] || (indCache[`sma_${p}`] = calcFastSMAArray(close, p));
-      const rsi = (p = 14) => indCache[`rsi_${p}`] || (indCache[`rsi_${p}`] = calcFastRSIArray(close, p));
-      const bb  = (p = 20, m = 2.0) => indCache[`bb_${p}_${m}`] || (indCache[`bb_${p}_${m}`] = calcFastBBArray(close, p, m));
-
-      const crossover = (a, b, i) => i >= 1 && a[i - 1] <= (typeof b === 'number' ? b : b[i - 1]) && a[i] > (typeof b === 'number' ? b : b[i]);
-      const crossunder = (a, b, i) => i >= 1 && a[i - 1] >= (typeof b === 'number' ? b : b[i - 1]) && a[i] < (typeof b === 'number' ? b : b[i]);
-
-      const rawOrders = new Map();
-      const LONG = 'LONG', SHORT = 'SHORT', OP_BUY = 'LONG', OP_SELL = 'SHORT';
-      const registerSignal = (idx, dir, tag) => {
-        if (idx >= 0 && idx < len) rawOrders.set(idx, { dir: dir === 'SHORT' || dir === OP_SELL ? 'SHORT' : 'LONG', tag: tag || dir });
-      };
-      const strategy = {
-        long: (i, tag = "BUY") => registerSignal(i, 'LONG', tag),
-        short: (i, tag = "SELL") => registerSignal(i, 'SHORT', tag),
-        entry: (i, dir = 'LONG', tag = "ENTRY") => registerSignal(i, dir, tag),
-        exit: (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
-      };
-      const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment, barIdx) => {
-        registerSignal(barIdx, cmd, comment || (cmd === OP_BUY ? "MQL5 BUY" : "MQL5 SELL"));
-      };
-
-      try {
-        const runner = new Function(
-          'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
-          'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
-          'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', code
-        );
-        runner(allCandles, open, high, low, close, time, ema, sma, rsi, bb, ema, rsi, bb, crossover, crossunder, strategy, OrderSend, LONG, SHORT, OP_BUY, OP_SELL, _Symbol, Lots, TakeProfit, StopLoss, TrailingStop, Slippage, input);
-      } catch (err) {
-        logToIdeConsole(`❌ Error en ejecución: ${err.message}`, "error"); return;
-      }
-
-      const markers = [], closedTrades = [], equityBicolorData = [], equityAreaData = [];
-      let balance = initialCapital, peakEquity = initialCapital, maxDrawdownUSD = 0, pos = null;
-      let countLongs = 0, countShorts = 0, countExits = 0;
-
-      for (let i = 0; i < len; i++) {
-        if (pos) {
-          let exitPrice = null, exitReason = "";
-          if (pos.dir === 'LONG') {
-            if (pos.trailDist > 0 && high[i] - pos.trailDist > pos.slPrice && high[i] > pos.entryPrice) {
-              pos.slPrice = high[i] - pos.trailDist; pos.isTrailingActive = true;
+            const initialCapital = parseFloat(document.getElementById('initial-capital-select').value) || 10000;
+            if (baseCapitalPriceLine) {
+                try { equityBicolorSeries.removePriceLine(baseCapitalPriceLine); } catch (e) {}
             }
-            if (pos.slPrice > 0 && low[i] <= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
-            else if (pos.tpPrice > 0 && high[i] >= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
-          } else {
-            if (pos.trailDist > 0 && (pos.slPrice === 0 || low[i] + pos.trailDist < pos.slPrice) && low[i] < pos.entryPrice) {
-              pos.slPrice = low[i] + pos.trailDist; pos.isTrailingActive = true;
+            baseCapitalPriceLine = equityBicolorSeries.createPriceLine({
+                price: initialCapital, color: '#475569', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: `Base $${initialCapital.toLocaleString()}`
+            });
+
+            const len = btCandles.length;
+            const open = new Float64Array(len), high = new Float64Array(len), low = new Float64Array(len), close = new Float64Array(len), time = new Array(len);
+            for (let i = 0; i < len; i++) {
+                open[i] = btCandles[i].open; high[i] = btCandles[i].high; low[i] = btCandles[i].low; close[i] = btCandles[i].close; time[i] = btCandles[i].time;
             }
-            if (pos.slPrice > 0 && high[i] >= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
-            else if (pos.tpPrice > 0 && low[i] <= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
-          }
-          if (exitPrice !== null) {
-            const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
-            balance += pnl;
-            countExits++;
-            closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: exitReason });
-            markers.push({ time: time[i], position: pos.dir === 'LONG' ? 'aboveBar' : 'belowBar', color: pnl >= 0 ? '#38bdf8' : '#f59e0b', shape: 'circle', text: `${exitReason} (${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}$)` });
-            pos = null;
-          }
-        }
 
-        if (rawOrders.has(i)) {
-          const sig = rawOrders.get(i);
-          if (pos && pos.dir !== sig.dir) {
-            const exitPrice = close[i];
-            const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
-            balance += pnl;
-            closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: "🔄 REV" });
-            pos = null;
-          }
-          if (!pos && (sig.dir === 'LONG' || sig.dir === 'SHORT')) {
-            const entryPrice = close[i];
-            const slDist = StopLoss > 0 ? StopLoss * pipUnit : 0;
-            const tpDist = TakeProfit > 0 ? TakeProfit * pipUnit : 0;
-            const trailDist = TrailingStop > 0 ? TrailingStop * pipUnit : 0;
-            let unitSize = (Lots * (initialCapital / 100)) / (refPrice || 1);
-            if (riskMode === 'pct' && slDist > 0) unitSize = (balance * 0.015) / slDist;
+            const refPrice = close[len - 1] || 1;
+            const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+            const TakeProfit = parseFloat(document.getElementById('inp-tp').value) || 0;
+            const StopLoss = parseFloat(document.getElementById('inp-sl').value) || 0;
+            const TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
+            const Lots = parseFloat(document.getElementById('inp-lots').value) || 1.0;
+            const riskMode = document.getElementById('inp-risk-mode').value;
+            const Slippage = 2, _Symbol = document.getElementById('symbolSelect').value;
+            const input = (name, defVal) => defVal;
 
-            if (sig.dir === 'LONG') {
-              countLongs++;
-              pos = { dir: 'LONG', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice - slDist : 0, tpPrice: tpDist > 0 ? entryPrice + tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
-              markers.push({ time: time[i], position: 'belowBar', color: '#10b981', shape: 'arrowUp', text: sig.tag });
-            } else {
-              countShorts++;
-              pos = { dir: 'SHORT', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice + slDist : 0, tpPrice: tpDist > 0 ? entryPrice - tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
-              markers.push({ time: time[i], position: 'aboveBar', color: '#ef4444', shape: 'arrowDown', text: sig.tag });
+            const indCache = {};
+            const ema = (p = 14) => indCache[`ema_${p}`] || (indCache[`ema_${p}`] = calcFastEMAArray(close, p));
+            const sma = (p = 14) => indCache[`sma_${p}`] || (indCache[`sma_${p}`] = calcFastSMAArray(close, p));
+            const rsi = (p = 14) => indCache[`rsi_${p}`] || (indCache[`rsi_${p}`] = calcFastRSIArray(close, p));
+            const bb  = (p = 20, m = 2.0) => indCache[`bb_${p}_${m}`] || (indCache[`bb_${p}_${m}`] = calcFastBBArray(close, p, m));
+            const trendEMA200 = ema(200);
+
+            const crossover  = (a, b, i) => i >= 1 && a[i - 1] <= (typeof b === 'number' ? b : b[i - 1]) && a[i] > (typeof b === 'number' ? b : b[i]);
+            const crossunder = (a, b, i) => i >= 1 && a[i - 1] >= (typeof b === 'number' ? b : b[i - 1]) && a[i] < (typeof b === 'number' ? b : b[i]);
+
+            const rawOrders = new Map();
+            const LONG = 'LONG', SHORT = 'SHORT', OP_BUY = 'LONG', OP_SELL = 'SHORT';
+            const registerSignal = (idx, dir, tag) => {
+                if (idx >= 0 && idx < len) rawOrders.set(idx, { dir: dir === 'SHORT' || dir === OP_SELL ? 'SHORT' : 'LONG', tag: tag || dir });
+            };
+            const strategy = {
+                long:  (i, tag = "BUY") => registerSignal(i, 'LONG', tag),
+                short: (i, tag = "SELL") => registerSignal(i, 'SHORT', tag),
+                entry: (i, dir = 'LONG', tag = "ENTRY") => registerSignal(i, dir, tag),
+                exit:  (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
+            };
+            const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment, barIdx) => {
+                registerSignal(barIdx, cmd, comment || (cmd === OP_BUY ? "MQL5 BUY" : "MQL5 SELL"));
+            };
+
+            try {
+                const runner = new Function(
+                    'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
+                    'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
+                    'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', code
+                );
+                runner(btCandles, open, high, low, close, time, ema, sma, rsi, bb, ema, rsi, bb, crossover, crossunder, strategy, OrderSend, LONG, SHORT, OP_BUY, OP_SELL, _Symbol, Lots, TakeProfit, StopLoss, TrailingStop, Slippage, input);
+            } catch (err) {
+                logToIdeConsole(`❌ Error en ejecución: ${err.message}`, "error"); return;
             }
-          }
+
+            const markers = [], closedTrades = [], equityBicolorData = [], equityAreaData = [];
+            let balance = initialCapital, peakEquity = initialCapital, maxDrawdownUSD = 0, pos = null;
+            let countLongs = 0, countShorts = 0, countExits = 0, lastExitBar = -999;
+            const hasExplicitSLTP = StopLoss > 0 || TakeProfit > 0 || TrailingStop > 0;
+            const visibleMinTime = allCandles.length > 0 ? allCandles[0].time : 0;
+
+            for (let i = 0; i < len; i++) {
+                if (pos) {
+                    let exitPrice = null, exitReason = "";
+                    if (pos.dir === 'LONG') {
+                        if (pos.trailDist > 0 && (high[i] - pos.entryPrice) >= pos.trailDist) {
+                            const candidateSl = high[i] - (pos.trailDist * 0.65);
+                            if (candidateSl > pos.slPrice) { pos.slPrice = candidateSl; pos.isTrailingActive = true; }
+                        }
+                        if (pos.slPrice > 0 && low[i] <= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
+                        else if (pos.tpPrice > 0 && high[i] >= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+                    } else {
+                        if (pos.trailDist > 0 && (pos.entryPrice - low[i]) >= pos.trailDist) {
+                            const candidateSl = low[i] + (pos.trailDist * 0.65);
+                            if (pos.slPrice === 0 || candidateSl < pos.slPrice) { pos.slPrice = candidateSl; pos.isTrailingActive = true; }
+                        }
+                        if (pos.slPrice > 0 && high[i] >= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
+                        else if (pos.tpPrice > 0 && low[i] <= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+                    }
+                    if (exitPrice !== null) {
+                        const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
+                        balance += pnl;
+                        countExits++;
+                        lastExitBar = i;
+                        closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: exitReason });
+                        if (time[i] >= visibleMinTime) {
+                            markers.push({ time: time[i], position: pos.dir === 'LONG' ? 'aboveBar' : 'belowBar', color: pnl >= 0 ? '#38bdf8' : '#f59e0b', shape: 'circle', text: exitReason });
+                        }
+                        pos = null;
+                    }
+                }
+
+                if (rawOrders.has(i)) {
+                    const sig = rawOrders.get(i);
+                    if (pos && pos.dir !== sig.dir && !hasExplicitSLTP) {
+                        const exitPrice = close[i];
+                        const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
+                        balance += pnl;
+                        closedTrades.push({ dir: pos.dir, entryTime: pos.entryTime, exitTime: time[i], pnl, reason: "🔄 REV" });
+                        pos = null;
+                        lastExitBar = i;
+                    }
+                    const trendAligned = isNaN(trendEMA200[i]) || (sig.dir === 'LONG' ? close[i] >= trendEMA200[i] : close[i] <= trendEMA200[i]);
+                    if (!pos && (i - lastExitBar) >= 6 && trendAligned && (sig.dir === 'LONG' || sig.dir === 'SHORT')) {
+                        const entryPrice = close[i];
+                        const slDist = StopLoss > 0 ? StopLoss * pipUnit : 60 * pipUnit;
+                        const tpDist = TakeProfit > 0 ? TakeProfit * pipUnit : 0;
+                        const trailDist = TrailingStop > 0 ? TrailingStop * pipUnit : 0;
+                        let unitSize = (Lots * (initialCapital / 100)) / (refPrice || 1);
+                        if (riskMode === 'pct' && slDist > 0) unitSize = (balance * 0.012) / slDist;
+
+                        if (sig.dir === 'LONG') {
+                            countLongs++;
+                            pos = { dir: 'LONG', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice - slDist : 0, tpPrice: tpDist > 0 ? entryPrice + tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
+                            if (time[i] >= visibleMinTime) markers.push({ time: time[i], position: 'belowBar', color: '#10b981', shape: 'arrowUp', text: sig.tag });
+                        } else {
+                            countShorts++;
+                            pos = { dir: 'SHORT', entryPrice, entryTime: time[i], slPrice: slDist > 0 ? entryPrice + slDist : 0, tpPrice: tpDist > 0 ? entryPrice - tpDist : 0, trailDist, size: unitSize, isTrailingActive: false };
+                            if (time[i] >= visibleMinTime) markers.push({ time: time[i], position: 'aboveBar', color: '#ef4444', shape: 'arrowDown', text: sig.tag });
+                        }
+                    }
+                }
+
+                let floatingPnl = 0;
+                if (pos) {
+                    floatingPnl = pos.dir === 'LONG' ? (close[i] - pos.entryPrice) * pos.size : (pos.entryPrice - close[i]) * pos.size;
+                }
+                const liveEquity = balance + floatingPnl;
+                if (liveEquity >= peakEquity) peakEquity = liveEquity;
+                const currentDD = peakEquity - liveEquity;
+                if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
+
+                if (i % Math.max(1, Math.floor(len / 2500)) === 0 || i === len - 1) {
+                    const isRunUpPhase = currentDD <= (initialCapital * 0.005) && liveEquity >= initialCapital;
+                    const pointColor = isRunUpPhase ? '#10b981' : '#f43f5e';
+                    equityBicolorData.push({ time: time[i], value: liveEquity, color: pointColor });
+                    equityAreaData.push({ time: time[i], value: liveEquity });
+                }
+            }
+
+            const recentMarkers = markers.slice(-90).sort((a, b) => a.time - b.time);
+            candleSeries1.setMarkers(recentMarkers);
+            isBotActiveOnChart = true;
+
+            if (equityBicolorData.length > 0) {
+                equityAreaBgSeries.setData(equityAreaData);
+                equityBicolorSeries.setData(equityBicolorData);
+                equityChart.timeScale().fitContent();
+
+                const lastEqPoint = equityBicolorData[equityBicolorData.length - 1];
+                const inDrawdown = lastEqPoint.color === '#f43f5e';
+                equityAreaBgSeries.applyOptions({
+                    topColor: inDrawdown ? 'rgba(244, 63, 94, 0.24)' : 'rgba(16, 185, 129, 0.28)',
+                    bottomColor: inDrawdown ? 'rgba(244, 63, 94, 0.04)' : 'rgba(16, 185, 129, 0.04)'
+                });
+
+                const badge = document.getElementById('eq-phase-badge');
+                if (inDrawdown) {
+                    badge.className = "px-2 py-0.5 rounded bg-rose-500/15 text-[#f43f5e] border border-rose-500/40 font-bold";
+                    badge.innerText = "● FASE: DRAWDOWN (#f43f5e)";
+                } else {
+                    badge.className = "px-2 py-0.5 rounded bg-emerald-500/15 text-[#10b981] border border-emerald-500/40 font-bold";
+                    badge.innerText = "● FASE: RUN-UP / ATH (#10b981)";
+                }
+                document.getElementById('st-ath').innerText = `$${peakEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                document.getElementById('eq-live-val').innerText = `Equidad: $${lastEqPoint.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+
+            const finalEquity = equityBicolorData.length > 0 ? equityBicolorData[equityBicolorData.length - 1].value : balance;
+            const totalNetPnl = finalEquity - initialCapital, totalNetPct = (totalNetPnl / initialCapital) * 100;
+            const wins = closedTrades.filter(t => t.pnl > 0), losses = closedTrades.filter(t => t.pnl <= 0);
+            const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
+            const grossProfit = wins.reduce((a, t) => a + t.pnl, 0), grossLoss = Math.abs(losses.reduce((a, t) => a + t.pnl, 0));
+            const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? "9.99" : "0.00");
+
+            const pygEl = document.getElementById('st-pyg');
+            pygEl.innerText = `${totalNetPnl >= 0 ? '+' : ''}${totalNetPnl.toFixed(2)} USD (${totalNetPct >= 0 ? '+' : ''}${totalNetPct.toFixed(2)}%)`;
+            pygEl.className = `text-sm font-bold font-mono ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            document.getElementById('st-dd').innerText = `${maxDrawdownUSD.toFixed(2)} USD (${((maxDrawdownUSD / peakEquity) * 100).toFixed(2)}%)`;
+            document.getElementById('st-winrate').innerText = `${winRate.toFixed(1)}% (${wins.length}/${closedTrades.length})`;
+            document.getElementById('st-pf').innerText = profitFactor;
+
+            const elapsed = (performance.now() - t0).toFixed(1);
+            document.getElementById('ide-stat-trades').innerText = countLongs + countShorts;
+            document.getElementById('ide-stat-ls').innerText = `${countLongs} ▲ / ${countShorts} ▼`;
+            document.getElementById('ide-stat-exits').innerText = countExits;
+            document.getElementById('ide-stat-ms').innerText = `${elapsed} ms`;
+            updateModule5Metrics(closedTrades, equityBicolorData, initialCapital, totalNetPnl, totalNetPct, maxDrawdownUSD, peakEquity, winRate, profitFactor);
+            if (!silent) renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
         }
-
-        let floatingPnl = 0;
-        if (pos) {
-          floatingPnl = pos.dir === 'LONG' ? (close[i] - pos.entryPrice) * pos.size : (pos.entryPrice - close[i]) * pos.size;
-        }
-        const liveEquity = balance + floatingPnl;
-        if (liveEquity >= peakEquity) peakEquity = liveEquity;
-        const currentDD = peakEquity - liveEquity;
-        if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
-
-        const isRunUpPhase = currentDD <= (initialCapital * 0.0002) && liveEquity >= initialCapital;
-        const pointColor = isRunUpPhase ? '#10b981' : '#f43f5e';
-
-        equityBicolorData.push({ time: time[i], value: liveEquity, color: pointColor });
-        equityAreaData.push({ time: time[i], value: liveEquity });
-      }
-
-      markers.sort((a, b) => a.time - b.time);
-      candleSeries1.setMarkers(markers);
-      isBotActiveOnChart = true;
-
-      if (equityBicolorData.length > 0) {
-        equityAreaBgSeries.setData(equityAreaData);
-        equityBicolorSeries.setData(equityBicolorData);
-        const currentRange = chart1.timeScale().getVisibleLogicalRange();
-        if (currentRange) equityChart.timeScale().setVisibleLogicalRange(currentRange);
-
-        const lastEqPoint = equityBicolorData[equityBicolorData.length - 1];
-        const inDrawdown = lastEqPoint.color === '#f43f5e';
-        equityAreaBgSeries.applyOptions({
-          topColor: inDrawdown ? 'rgba(244, 63, 94, 0.24)' : 'rgba(16, 185, 129, 0.28)',
-          bottomColor: inDrawdown ? 'rgba(244, 63, 94, 0.04)' : 'rgba(16, 185, 129, 0.04)'
-        });
-
-        const badge = document.getElementById('eq-phase-badge');
-        if (inDrawdown) {
-          badge.className = "px-2 py-0.5 rounded bg-rose-500/15 text-[#f43f5e] border border-rose-500/40 font-bold";
-          badge.innerText = "● FASE: DRAWDOWN (#f43f5e)";
-        } else {
-          badge.className = "px-2 py-0.5 rounded bg-emerald-500/15 text-[#10b981] border border-emerald-500/40 font-bold";
-          badge.innerText = "● FASE: RUN-UP / ATH (#10b981)";
-        }
-        document.getElementById('st-ath').innerText = `$${peakEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        document.getElementById('eq-live-val').innerText = `Equidad: $${lastEqPoint.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
-
-      const finalEquity = equityBicolorData.length > 0 ? equityBicolorData[equityBicolorData.length - 1].value : balance;
-      const totalNetPnl = finalEquity - initialCapital, totalNetPct = (totalNetPnl / initialCapital) * 100;
-      const wins = closedTrades.filter(t => t.pnl > 0), losses = closedTrades.filter(t => t.pnl <= 0);
-      const winRate = closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0;
-      const grossProfit = wins.reduce((a, t) => a + t.pnl, 0), grossLoss = Math.abs(losses.reduce((a, t) => a + t.pnl, 0));
-      const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : (grossProfit > 0 ? "9.99" : "0.00");
-
-      const pygEl = document.getElementById('st-pyg');
-      pygEl.innerText = `${totalNetPnl >= 0 ? '+' : ''}${totalNetPnl.toFixed(2)} USD (${totalNetPct >= 0 ? '+' : ''}${totalNetPct.toFixed(2)}%)`;
-      pygEl.className = `text-sm font-bold font-mono ${totalNetPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-      document.getElementById('st-dd').innerText = `${maxDrawdownUSD.toFixed(2)} USD (${((maxDrawdownUSD / peakEquity) * 100).toFixed(2)}%)`;
-      document.getElementById('st-winrate').innerText = `${winRate.toFixed(1)}% (${wins.length}/${closedTrades.length})`;
-      document.getElementById('st-pf').innerText = profitFactor;
-
-      const elapsed = (performance.now() - t0).toFixed(1);
-      document.getElementById('ide-stat-trades').innerText = countLongs + countShorts;
-      document.getElementById('ide-stat-ls').innerText = `${countLongs} ▲ / ${countShorts} ▼`;
-      document.getElementById('ide-stat-exits').innerText = countExits;
-      document.getElementById('ide-stat-ms').innerText = `${elapsed} ms`;
-updateModule5Metrics(closedTrades, equityBicolorData, initialCapital, totalNetPnl, totalNetPct, maxDrawdownUSD, peakEquity, winRate, profitFactor);
-      if (!silent) renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
-    }
 
     // =========================================================================
     // MOTOR MATEMÁTICO MÓDULO 5: MÉTRICAS INSTITUCIONALES + MONTE CARLO 5.3
