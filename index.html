@@ -8836,10 +8836,10 @@ const slowEMA = ema(${cand.slowP});
 const rsi14   = rsi(14);
 
 for (let i = 25; i < bars.length; i++) {
-    if (crossover(fastEMA, slowEMA, i) && rsi14[i] < 68) {
+if (crossover(fastEMA, slowEMA, i) && rsi14[i] > 45) {
         strategy.entry(i, LONG, "OPT BUY ${cand.fastP}/${cand.slowP}");
     }
-    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] > 32) {
+if (crossunder(fastEMA, slowEMA, i) && rsi14[i] < 55) {
         strategy.entry(i, SHORT, "OPT SELL ${cand.fastP}/${cand.slowP}");
     }
 }`;
@@ -10209,21 +10209,23 @@ function compileAndRunStrategy(silent = false) {
             for (let i = 0; i < len; i++) {
                 if (pos) {
                     let exitPrice = null, exitReason = "";
-                    if (pos.dir === 'LONG') {
-                        if (pos.trailDist > 0 && (high[i] - pos.entryPrice) >= pos.trailDist) {
-                            const candidateSl = high[i] - (pos.trailDist * 0.65);
-                            if (candidateSl > pos.slPrice) { pos.slPrice = candidateSl; pos.isTrailingActive = true; }
-                        }
-                        if (pos.slPrice > 0 && low[i] <= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
-                        else if (pos.tpPrice > 0 && high[i] >= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
-                    } else {
-                        if (pos.trailDist > 0 && (pos.entryPrice - low[i]) >= pos.trailDist) {
-                            const candidateSl = low[i] + (pos.trailDist * 0.65);
-                            if (pos.slPrice === 0 || candidateSl < pos.slPrice) { pos.slPrice = candidateSl; pos.isTrailingActive = true; }
-                        }
-                        if (pos.slPrice > 0 && high[i] >= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "✖ SL"; }
-                        else if (pos.tpPrice > 0 && low[i] <= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
-                    }
+if (pos.dir === 'LONG') {
+                if (pos.slPrice > 0 && low[i] <= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "❌ SL"; }
+                else if (pos.tpPrice > 0 && high[i] >= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+                else if (pos.trailDist > 0 && (high[i] - pos.entryPrice) >= pos.trailDist) {
+                    const candidateSL = pos.entryPrice + (2 * pipUnit);
+                    const trailSL = Math.max(candidateSL, high[i] - pos.trailDist);
+                    if (trailSL > pos.slPrice) { pos.slPrice = trailSL; pos.isTrailingActive = true; }
+                }
+            } else {
+                if (pos.slPrice > 0 && high[i] >= pos.slPrice) { exitPrice = pos.slPrice; exitReason = pos.isTrailingActive ? "🛡️ TS" : "❌ SL"; }
+                else if (pos.tpPrice > 0 && low[i] <= pos.tpPrice) { exitPrice = pos.tpPrice; exitReason = "★ TP"; }
+                else if (pos.trailDist > 0 && (pos.entryPrice - low[i]) >= pos.trailDist) {
+                    const candidateSL = pos.entryPrice - (2 * pipUnit);
+                    const trailSL = Math.min(candidateSL, low[i] + pos.trailDist);
+                    if (pos.slPrice === 0 || trailSL < pos.slPrice) { pos.slPrice = trailSL; pos.isTrailingActive = true; }
+                }
+            }
                     if (exitPrice !== null) {
                         const pnl = pos.dir === 'LONG' ? (exitPrice - pos.entryPrice) * pos.size : (pos.entryPrice - exitPrice) * pos.size;
                         balance += pnl;
