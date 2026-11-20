@@ -10301,15 +10301,15 @@ function compileAndRunStrategy(silent = false) {
                 if (pos) {
                     floatingPnl = pos.dir === 'LONG' ? (close[i] - pos.entryPrice) * pos.size : (pos.entryPrice - close[i]) * pos.size;
                 }
-equityBicolorData.push({ time: time[i], value: liveEquity });
-                if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
+const liveEquity = balance + floatingPnl;
+            if (liveEquity > peakEquity) peakEquity = liveEquity;
+            const currentDD = peakEquity - liveEquity;
+            if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
 
-                if (i % Math.max(1, Math.floor(len / 2500)) === 0 || i === len - 1) {
-                    const isRunUpPhase = currentDD <= (initialCapital * 0.005) && liveEquity >= initialCapital;
-                    const pointColor = isRunUpPhase ? '#10b981' : '#f43f5e';
-                    equityBicolorData.push({ time: time[i], value: liveEquity, color: pointColor });
-                    equityAreaData.push({ time: time[i], value: liveEquity });
-                }
+            if (i % Math.max(1, Math.floor(len / 2500)) === 0 || i === len - 1) {
+                equityBicolorData.push({ time: time[i], value: liveEquity });
+                equityAreaData.push({ time: time[i], value: liveEquity });
+            }
             }
 
             const recentMarkers = markers.slice(-90).sort((a, b) => a.time - b.time);
