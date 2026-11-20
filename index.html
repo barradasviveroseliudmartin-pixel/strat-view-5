@@ -9109,80 +9109,51 @@ let liveMT5SyncTimer = null;
         }
 
 async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
-            const limit = 2000;
-            const liveCandles = [];
-            let livePrice = null;
+    const liveCandles = [];
+    let livePrice = null;
+    const nowMaxSec = Math.floor(Date.now() / 1000) + 900;
 
-            // 1. CryptoCompare / CCData Global (Soporta hasta 2000 velas hacia atrás sin huecos)
-            try {
-                const fsym = (asset === "XAUUSD") ? "PAXG" : (asset === "BTCUSD") ? "BTC" : (asset === "US30") ? "YM" : asset.slice(0, 3);
-                const tsym = (asset === "XAUUSD" || asset === "BTCUSD" || asset === "US30") ? "USD" : asset.slice(3, 6);
-                if (asset !== "US30" && asset !== "NAS100") {
-                    const isMinute = (baseTf === "1m" || baseTf === "5m" || baseTf === "15m" || baseTf === "30m");
-                    const endpoint = isMinute ? "histominute" : "histohour";
-                    const agg = (baseTf === "5m") ? 5 : (baseTf === "15m") ? 15 : (baseTf === "30m") ? 30 : (baseTf === "4h") ? 4 : 1;
+    // Kraken Institutional OHLC (sin bloqueo CORS y con parámetro 'since')
+    try {
+        const krakenPairMap = {
+            "EURUSD": "ZEURZUSD",
+            "GBPUSD": "ZGBPZUSD",
+            "USDJPY": "ZUSDZJPY",
+            "XAUUSD": "PAXGUSD",
+            "BTCUSD": "XXBTZUSD"
+        };
+        const kIntervalMap = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
+        const kPair = krakenPairMap[asset];
+        const kInt = kIntervalMap[baseTf] || 15;
 
-                    const url = `https://min-api.cryptocompare.com/data/v2/${endpoint}?fsym=${fsym}&tsym=${tsym}&limit=${limit}&aggregate=${agg}`;
-                    const res = await fetch(url, { cache: "no-store" });
-                    const json = await res.json();
-                    if (json && json.Data && Array.isArray(json.Data.Data)) {
-                        for (const b of json.Data.Data) {
-                            if (b.open > 0 && b.close > 0) {
-                                liveCandles.push({
-                                    time: b.time,
-                                    open: Number(b.open),
-                                    high: Number(b.high),
-                                    low: Number(b.low),
-                                    close: Number(b.close)
-                                });
-                            }
+        if (kPair) {
+            const sinceParam = sinceTimeSec > 0 ? `&since=${sinceTimeSec - 3600}` : "";
+            const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=${kInt}${sinceParam}`, { cache: "no-store" });
+            const json = await res.json();
+            if (json && json.result) {
+                const key = Object.keys(json.result).find(k => k !== "last");
+                if (key && Array.isArray(json.result[key])) {
+                    for (const row of json.result[key]) {
+                        const t = parseInt(row[0], 10);
+                        const o = parseFloat(row[1]);
+                        const h = parseFloat(row[2]);
+                        const l = parseFloat(row[3]);
+                        const c = parseFloat(row[4]);
+                        if (!isNaN(t) && !isNaN(c) && o > 0 && t <= nowMaxSec) {
+                            liveCandles.push({ time: t, open: o, high: h, low: l, close: c });
                         }
                     }
                 }
-            } catch (e) {}
-
-            // 2. Kraken Institutional OHLC (con parámetro 'since' para traer desde la fecha exacta del archivo)
-            try {
-                const krakenPairMap = {
-                    "EURUSD": "ZEURZUSD",
-                    "GBPUSD": "ZGBPZUSD",
-                    "USDJPY": "ZUSDZJPY",
-                    "XAUUSD": "PAXGUSD",
-                    "BTCUSD": "XXBTZUSD"
-                };
-                const kIntervalMap = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
-                const kPair = krakenPairMap[asset];
-                const kInt = kIntervalMap[baseTf] || 15;
-
-                if (kPair) {
-                    const sinceParam = sinceTimeSec > 0 ? `&since=${sinceTimeSec - 3600}` : "";
-                    const res = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=${kInt}${sinceParam}`, { cache: "no-store" });
-                    const json = await res.json();
-                    if (json && json.result) {
-                        const key = Object.keys(json.result).find(k => k !== "last");
-                        if (key && Array.isArray(json.result[key])) {
-                            for (const row of json.result[key]) {
-                                const t = parseInt(row[0], 10);
-                                const o = parseFloat(row[1]);
-                                const h = parseFloat(row[2]);
-                                const l = parseFloat(row[3]);
-                                const c = parseFloat(row[4]);
-                                if (!isNaN(t) && !isNaN(c) && o > 0) {
-                                    liveCandles.push({ time: t, open: o, high: h, low: l, close: c });
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (e) {}
-
-            if (liveCandles.length > 0) {
-                liveCandles.sort((a, b) => a.time - b.time);
-                livePrice = liveCandles[liveCandles.length - 1].close;
             }
-            return { candles: liveCandles, livePrice };
         }
+    } catch (e) {}
 
+    if (liveCandles.length > 0) {
+        liveCandles.sort((a, b) => a.time - b.time);
+        livePrice = liveCandles[liveCandles.length - 1].close;
+    }
+    return { candles: liveCandles, livePrice };
+}
 async function catchUpAndPersistDataset(dataset, tf) {
           if (!dataset || !dataset.candles || dataset.candles.length === 0) {
             return { dataset, info: detectAssetInfoFromDatasetName(dataset ? dataset.name : "", tf), livePrice: null };
@@ -9222,10 +9193,10 @@ async function catchUpAndPersistDataset(dataset, tf) {
                 modified = true;
                 continue;
               }
-              if (isNov6Historical && c.time > nov6Cutoff) {
+if ((isNov6Historical && c.time > nov6Cutoff) || c.time > Math.floor(Date.now() / 1000) + step) {
                 modified = true;
                 continue;
-              }
+            }
               if (cleaned.length > 0) {
                 const prevClose = cleaned[cleaned.length - 1].close;
                 const maxAllowedJump = (c.time > recentSpikeCutoff) ? (refPrice * 0.0018) : (refPrice * 0.015);
@@ -9444,7 +9415,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
               return;
             }
 
-            const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf);
+const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, Math.floor(Date.now() / 1000) - info.stepSec * 4);
             if (!rawMT5Candles || rawMT5Candles.length === 0) return;
 
             const step = info.stepSec;
