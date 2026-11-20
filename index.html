@@ -4251,19 +4251,25 @@ signalSell = crossunder(fast, slow) and osc > OverSold;</textarea>
       timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 10 }
     });
 
-    const equityAreaBgSeries = equityChart.addAreaSeries({
-      topColor: 'rgba(16, 185, 129, 0.25)',
-      bottomColor: 'rgba(244, 63, 94, 0.08)',
-      lineColor: 'rgba(0, 0, 0, 0)',
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false
-    });
-    const equityBicolorSeries = equityChart.addLineSeries({
-      color: '#10b981',
-      lineWidth: 2.5,
-      title: 'Equidad'
-    });
+const equityAreaBgSeries = equityChart.addAreaSeries({
+  topColor: 'rgba(0, 0, 0, 0)',
+  bottomColor: 'rgba(0, 0, 0, 0)',
+  lineColor: 'rgba(0, 0, 0, 0)',
+  lineWidth: 1,
+  priceLineVisible: false,
+  lastValueVisible: false
+});
+const equityBicolorSeries = equityChart.addBaselineSeries({
+  baseValue: { type: 'price', price: 10000 },
+  topLineColor: '#10b981',
+  topFillColor1: 'rgba(16, 185, 129, 0.28)',
+  topFillColor2: 'rgba(16, 185, 129, 0.03)',
+  bottomLineColor: '#f43f5e',
+  bottomFillColor1: 'rgba(244, 63, 94, 0.03)',
+  bottomFillColor2: 'rgba(244, 63, 94, 0.28)',
+  lineWidth: 2.5,
+  title: 'Equidad'
+});
     let baseCapitalPriceLine = equityBicolorSeries.createPriceLine({
       price: 10000, color: '#475569', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'Base'
     });
@@ -10295,9 +10301,7 @@ function compileAndRunStrategy(silent = false) {
                 if (pos) {
                     floatingPnl = pos.dir === 'LONG' ? (close[i] - pos.entryPrice) * pos.size : (pos.entryPrice - close[i]) * pos.size;
                 }
-                const liveEquity = balance + floatingPnl;
-                if (liveEquity >= peakEquity) peakEquity = liveEquity;
-                const currentDD = peakEquity - liveEquity;
+equityBicolorData.push({ time: time[i], value: liveEquity });
                 if (currentDD > maxDrawdownUSD) maxDrawdownUSD = currentDD;
 
                 if (i % Math.max(1, Math.floor(len / 2500)) === 0 || i === len - 1) {
@@ -10313,25 +10317,22 @@ function compileAndRunStrategy(silent = false) {
             isBotActiveOnChart = true;
 
             if (equityBicolorData.length > 0) {
-                equityAreaBgSeries.setData(equityAreaData);
-                equityBicolorSeries.setData(equityBicolorData);
-                equityChart.timeScale().fitContent();
+equityBicolorSeries.applyOptions({ baseValue: { type: 'price', price: initialCapital } });
+        equityAreaBgSeries.setData(equityAreaData);
+        equityBicolorSeries.setData(equityBicolorData);
+        equityChart.timeScale().fitContent();
 
-                const lastEqPoint = equityBicolorData[equityBicolorData.length - 1];
-                const inDrawdown = lastEqPoint.color === '#f43f5e';
-                equityAreaBgSeries.applyOptions({
-                    topColor: inDrawdown ? 'rgba(244, 63, 94, 0.24)' : 'rgba(16, 185, 129, 0.28)',
-                    bottomColor: inDrawdown ? 'rgba(244, 63, 94, 0.04)' : 'rgba(16, 185, 129, 0.04)'
-                });
+        const lastEqPoint = equityBicolorData[equityBicolorData.length - 1];
+        const inDrawdown = lastEqPoint.value < initialCapital;
 
-                const badge = document.getElementById('eq-phase-badge');
-                if (inDrawdown) {
-                    badge.className = "px-2 py-0.5 rounded bg-rose-500/15 text-[#f43f5e] border border-rose-500/40 font-bold";
-                    badge.innerText = "● FASE: DRAWDOWN (#f43f5e)";
-                } else {
-                    badge.className = "px-2 py-0.5 rounded bg-emerald-500/15 text-[#10b981] border border-emerald-500/40 font-bold";
-                    badge.innerText = "● FASE: RUN-UP / ATH (#10b981)";
-                }
+        const badge = document.getElementById('eq-phase-badge');
+        if (inDrawdown) {
+          badge.className = "px-2 py-0.5 rounded bg-rose-500/15 text-[#f43f5e] border border-rose-500/40 font-bold";
+          badge.innerText = "• BAJO CAPITAL INICIAL (#f43f5e)";
+        } else {
+          badge.className = "px-2 py-0.5 rounded bg-emerald-500/15 text-[#10b981] border border-emerald-500/40 font-bold";
+          badge.innerText = "• EN GANANCIA / SOBRE BASE (#10b981)";
+        }
                 document.getElementById('st-ath').innerText = `$${peakEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 document.getElementById('eq-live-val').innerText = `Equidad: $${lastEqPoint.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
