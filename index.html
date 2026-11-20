@@ -4285,10 +4285,9 @@ const equityBicolorSeries = equityChart.addBaselineSeries({
         redrawAllCanvasShapes();
       });
     }
-    syncTimeScale(chart1, [chartRSI, chartMACD, equityChart]);
-    syncTimeScale(chartRSI, [chart1, chartMACD, equityChart]);
-    syncTimeScale(chartMACD, [chart1, chartRSI, equityChart]);
-    syncTimeScale(equityChart, [chart1, chartRSI, chartMACD]);
+syncTimeScale(chart1, [chartRSI, chartMACD]);
+syncTimeScale(chartRSI, [chart1, chartMACD]);
+syncTimeScale(chartMACD, [chart1, chartRSI]);
     chart1.subscribeCrosshairMove(() => { if (customDrawings.length > 0 || currentDrawing) redrawAllCanvasShapes(); });
 
     let drawnLines = [];
@@ -4671,7 +4670,8 @@ function resetChart() {
       });
       if (allCandles.length > 0) {
         const liveRange = { from: Math.max(0, allCandles.length - 120), to: allCandles.length - 1 };
-        [chart1, chartRSI, chartMACD, equityChart].forEach(ch => ch.timeScale().setVisibleLogicalRange(liveRange));
+     [chart1, chartRSI, chartMACD].forEach(ch => ch.timeScale().setVisibleLogicalRange(liveRange));
+        if (equityChart) equityChart.timeScale().fitContent();
       }
       [2, 3, 4].forEach(w => {
         const arr = winCandles[w];
@@ -4689,7 +4689,7 @@ function resetChart() {
         if (c2.clientWidth && c2.clientHeight) chart2.resize(c2.clientWidth, c2.clientHeight);
         if (c3.clientWidth && c3.clientHeight) chart3.resize(c3.clientWidth, c3.clientHeight);
         if (c4.clientWidth && c4.clientHeight) chart4.resize(c4.clientWidth, c4.clientHeight);
-        if (eqContainer.clientWidth && eqContainer.clientHeight) equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight);
+if (eqContainer.clientWidth && eqContainer.clientHeight) { equityChart.resize(eqContainer.clientWidth, eqContainer.clientHeight); equityChart.timeScale().fitContent(); }
         if (rsiCont.clientWidth && rsiCont.clientHeight) chartRSI.resize(rsiCont.clientWidth, rsiCont.clientHeight);
         if (macdCont.clientWidth && macdCont.clientHeight) chartMACD.resize(macdCont.clientWidth, macdCont.clientHeight);
         resizeCanvas();
@@ -10293,7 +10293,8 @@ const liveEquity = balance + floatingPnl;
 equityBicolorSeries.applyOptions({ baseValue: { type: 'price', price: initialCapital } });
         equityAreaBgSeries.setData(equityAreaData);
         equityBicolorSeries.setData(equityBicolorData);
-        equityChart.timeScale().fitContent();
+resizeAllCharts();
+            if (chart1 && allCandles.length > 0) chart1.timeScale().scrollToRealTime();
 
         const lastEqPoint = equityBicolorData[equityBicolorData.length - 1];
         const inDrawdown = lastEqPoint.value < initialCapital;
