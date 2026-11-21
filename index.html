@@ -4369,41 +4369,71 @@ syncTimeScale(chartMACD, [chart1, chartRSI]);
     // --- VELAS EN VIVO TICK-BY-TICK DESDE APERTURA HASTA CIERRE EN CADA VENTANA Y TEMPORALIDAD ---
     let lastBucketByWindow = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
-    function updateAllCandleCountdowns() {
-      const now = Math.floor(Date.now() / 1000);
-      [1, 2, 3, 4].forEach(w => {
+function isActiveMarketClosedNow() {
+    if (typeof isForexMarketClosed !== 'function') return false;
+    const sel = document.getElementById('symbolSelect');
+    const lbl = document.getElementById('active-sym-label');
+    const activeSymText = (lbl ? lbl.innerText : '') + ' ' + (sel && sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0].text : (sel ? sel.value : ''));
+    return isForexMarketClosed(Math.floor(Date.now() / 1000), activeSymText);
+}
+
+function updateAllCandleCountdowns() {
+    const now = Math.floor(Date.now() / 1000);
+    const closedNow = isActiveMarketClosedNow();
+    [1, 2, 3, 4].forEach(w => {
+        const badge = document.getElementById(`tv-countdown-p${w}`);
+        if (closedNow) {
+            if (badge) badge.innerText = 'CERRADO';
+            if (w === 1) {
+                const cdEl = document.getElementById('countdown-timer');
+                if (cdEl) cdEl.innerText = 'CERRADO';
+            }
+            lastBucketByWindow[w] = 0;
+            return;
+        }
         const tfSec = getIntervalSeconds(winTimeframes[w]);
         const rem = tfSec - (now % tfSec);
         const txt = formatTimeRemaining(rem);
-        const badge = document.getElementById(`tv-countdown-p${w}`);
         if (badge) badge.innerText = txt;
-        if (w === 1) document.getElementById('countdown-timer').innerText = txt;
+        if (w === 1) {
+            const cdEl = document.getElementById('countdown-timer');
+            if (cdEl) cdEl.innerText = txt;
+        }
 
         if (!isReplayActive && winCandles[w] && winCandles[w].length > 0) {
-          const currentBucketTime = Math.floor(now / tfSec) * tfSec;
-          const arr = winCandles[w];
-          const lastC = arr[arr.length - 1];
-          if (lastBucketByWindow[w] !== 0 && currentBucketTime > lastBucketByWindow[w]) {
-            const nextTime = Math.max(currentBucketTime, lastC.time + tfSec);
-            const freshCandle = { time: nextTime, open: lastC.close, high: lastC.close, low: lastC.close, close: lastC.close };
-            arr.push(freshCandle);
-            const seriesMap = { 1: candleSeries1, 2: candleSeries2, 3: candleSeries3, 4: candleSeries4 };
-            seriesMap[w].update(freshCandle);
-            if (w === 1) {
-              originalFullCandles.push({ ...freshCandle });
-              updateAllTechnicalIndicators();
-              if (isBotActiveOnChart) compileAndRunStrategy(true);
+            const currentBucketTime = Math.floor(now / tfSec) * tfSec;
+            const arr = winCandles[w];
+            const lastC = arr[arr.length - 1];
+            if (lastBucketByWindow[w] !== 0 && currentBucketTime > lastBucketByWindow[w]) {
+                const nextTime = Math.max(currentBucketTime, lastC.time + tfSec);
+                const freshCandle = { time: nextTime, open: lastC.close, high: lastC.close, low: lastC.close, close: lastC.close };
+                arr.push(freshCandle);
+                const seriesMap = { 1: candleSeries1, 2: candleSeries2, 3: candleSeries3, 4: candleSeries4 };
+                seriesMap[w].update(freshCandle);
+                if (w === 1) {
+                    originalFullCandles.push({ ...freshCandle });
+                    updateAllTechnicalIndicators();
+                    if (isBotActiveOnChart) compileAndRunStrategy(true);
+                }
             }
-          }
-          lastBucketByWindow[w] = currentBucketTime;
+            lastBucketByWindow[w] = currentBucketTime;
         }
-      });
-    }
-    setInterval(updateAllCandleCountdowns, 250);
+    });
+}
+setInterval(updateAllCandleCountdowns, 250);
 
-    // Movimiento de la vela en vivo desde su apertura hasta su cierre en las 4 ventanas sincronizadas
-    setInterval(() => {
-      if (isReplayActive || isCutModeActive || allCandles.length === 0) return;
+// Movimiento de la vela en vivo desde su apertura hasta su cierre en las 4 ventanas sincronizadas
+setInterval(() => {
+    if (isReplayActive || isCutModeActive || allCandles.length === 0) return;
+    if (isActiveMarketClosedNow()) {
+        const lastClosed = allCandles[allCandles.length - 1];
+        const priceEl = document.getElementById('price-display');
+        if (priceEl && lastClosed) {
+            priceEl.innerText = formatPrice(lastClosed.close);
+            priceEl.className = 'text-lg font-mono font-extrabold text-amber-400';
+        }
+        return;
+    }
       const last1 = allCandles[allCandles.length - 1];
       const decimals = last1.close < 10 ? 5 : (last1.close < 500 ? 3 : 2);
       const step = last1.close < 10 ? 0.00003 : (last1.close < 500 ? 0.012 : last1.close * 0.00014);
