@@ -9106,7 +9106,35 @@ let liveMT5SyncTimer = null;
 
             const tfSecMap = { "1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400, "1d": 86400 };
             return { asset, baseTf, stepSec: tfSecMap[baseTf] || 900 };
+}
+
+// Guardia Institucional de Horario Forex (Cierre oficial NY: Vie 17:00 NY -> Dom 17:00 NY, auto EST/EDT)
+const _sv5NyMarketFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    hour: '2-digit',
+    hourCycle: 'h23'
+});
+function isForexMarketClosed(unixSec, asset) {
+    const sym = String(asset || '').toUpperCase();
+    // Criptomonedas operan 24/7 sin cierre de fin de semana
+    if (/BTC|ETH|SOL|XRP|DOGE|ADA|BNB|LTC|CRYPTO/.test(sym)) return false;
+    try {
+        const parts = _sv5NyMarketFmt.formatToParts(new Date(unixSec * 1000));
+        let wd = '';
+        let hr = 0;
+        for (const p of parts) {
+            if (p.type === 'weekday') wd = p.value;
+            else if (p.type === 'hour') hr = parseInt(p.value, 10) % 24;
         }
+        if (wd === 'Sat') return true;
+        if (wd === 'Fri' && hr >= 17) return true;
+        if (wd === 'Sun' && hr < 17) return true;
+        return false;
+    } catch (e) {
+        return false;
+    }
+}
 
 async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
     const liveCandles = [];
@@ -9139,7 +9167,7 @@ async function fetchRealMarketCandlesAndPrice(asset, baseTf, sinceTimeSec = 0) {
                         const h = parseFloat(row[2]);
                         const l = parseFloat(row[3]);
                         const c = parseFloat(row[4]);
-                        if (!isNaN(t) && !isNaN(c) && o > 0 && t <= nowMaxSec) {
+if (!isNaN(t) && !isNaN(c) && o > 0 && t <= nowMaxSec && !isForexMarketClosed(t, asset)) {
                             liveCandles.push({ time: t, open: o, high: h, low: l, close: c });
                         }
                     }
@@ -9193,7 +9221,7 @@ async function catchUpAndPersistDataset(dataset, tf) {
                 modified = true;
                 continue;
               }
-if ((isNov6Historical && c.time > nov6Cutoff) || c.time > Math.floor(Date.now() / 1000) + step) {
+if ((isNov6Historical && c.time > nov6Cutoff) || c.time > Math.floor(Date.now() / 1000) + step || (c.time > nov6Cutoff && isForexMarketClosed(c.time, info.asset))) {
                 modified = true;
                 continue;
             }
@@ -9225,7 +9253,7 @@ if ((isNov6Historical && c.time > nov6Cutoff) || c.time > Math.floor(Date.now() 
                   const cleanDonorCandles = [];
                   for (let i = 0; i < donor.candles.length; i++) {
                     const dc = donor.candles[i];
-                    if (!isSaneCandle(dc)) continue;
+if (!isSaneCandle(dc) || (dc.time > nov6Cutoff && isForexMarketClosed(dc.time, info.asset))) continue;
                     if (cleanDonorCandles.length > 0 && dc.time > recentSpikeCutoff) {
                       const pClose = cleanDonorCandles[cleanDonorCandles.length - 1].close;
                       if (Math.abs(dc.close - pClose) > refPrice * 0.0018 || (dc.high - dc.low) > refPrice * 0.0022) continue;
@@ -9404,18 +9432,28 @@ if ((isNov6Historical && c.time > nov6Cutoff) || c.time > Math.floor(Date.now() 
           if (liveMT5SyncTimer) clearInterval(liveMT5SyncTimer);
           activePersistentDatasetId = dataset.id;
 
-          const labelEl = document.getElementById('active-sym-label');
-          if (labelEl) labelEl.innerText = `${info.asset} • LIVE`;
+const labelEl = document.getElementById('active-sym-label');
+    const syncMarketStatusBadge = () => {
+        const closedNow = isForexMarketClosed(Math.floor(Date.now() / 1000), info.asset);
+        if (labelEl) labelEl.innerText = closedNow ? `${info.asset} • CERRADO (FIN DE SEMANA)` : `${info.asset} • LIVE`;
+        if (closedNow) {
+            const cdEl = document.getElementById('countdown-timer');
+            if (cdEl) cdEl.innerText = 'CERRADO';
+        }
+        return closedNow;
+    };
+    syncMarketStatusBadge();
 
-          liveMT5SyncTimer = setInterval(async () => {
-            if (isReplayActive) return;
-            const currentSel = document.getElementById('symbolSelect').value;
-            if (currentSel !== activePersistentDatasetId) {
-              clearInterval(liveMT5SyncTimer);
-              return;
-            }
+    liveMT5SyncTimer = setInterval(async () => {
+        if (isReplayActive) return;
+        const currentSel = document.getElementById('symbolSelect').value;
+        if (currentSel !== activePersistentDatasetId) {
+            clearInterval(liveMT5SyncTimer);
+            return;
+        }
+        if (syncMarketStatusBadge()) return;
 
-const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, Math.floor(Date.now() / 1000) - info.stepSec * 4);
+        const feed = await fetchRealMarketCandlesAndPrice(info.asset, info.baseTf, Math.floor(Date.now() / 1000) - info.stepSec * 4);
             if (!rawMT5Candles || rawMT5Candles.length === 0) return;
 
             const step = info.stepSec;
