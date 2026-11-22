@@ -807,12 +807,49 @@
               <button type="button" onclick="runModule6GeneticOptimizer()" class="bg-amber-600 hover:bg-amber-500 text-black font-extrabold px-3 py-0.5 rounded shadow transition flex items-center gap-1">
                 <span>🧬 Ejecutar Optimización + WFA</span>
               </button>
-              <button type="button" onclick="applyBestGeneticParamsToBot()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-0.5 rounded shadow transition flex items-center gap-1" title="Inyecta el Mejor Cromosoma en el Bot y actualiza el gráfico">
+<button type="button" onclick="applyBestGeneticParamsToBot()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-0.5 rounded shadow transition flex items-center gap-1" title="Inyecta el Mejor Cromosoma en el Bot y actualiza el gráfico">
                 <span>⚡ Aplicar #1 al Bot</span>
+              </button>
+              <button id="btn-m6-mtf-scan" type="button" onclick="runModule6MultiTFScanner()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-2.5 py-0.5 rounded shadow transition flex items-center gap-1" title="Escanea todos tus históricos MT5 en IndexedDB (M1, M5, M15, H1, H4) y calcula Kelly + OOS independiente por temporalidad">
+                <span>🌐 Escanear Multi-TF</span>
               </button>
             </div>
           </div>
 
+          <!-- 6.4 ESCÁNER GENÉTICO MULTI-TIMEFRAME & PORTAFOLIO INDEXEDDB (Panel Desplegable) -->
+          <div id="m6-mtf-panel" class="hidden shrink-0 mx-2 mt-2 bg-[#131722] border border-purple-500/40 rounded p-2 font-mono max-h-[52%] overflow-y-auto shadow-lg">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-1.5 mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold text-purple-300 uppercase">6.4 Escáner Genético Multi-Timeframe (IndexedDB · 100% Velas Reales + Spread ECN + Kelly f*)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="m6-mtf-status" class="text-[10px] text-amber-300">Listo para escanear</span>
+                <button type="button" onclick="toggleModule6MTFPanel(false)" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold">✕ Ocultar</button>
+              </div>
+            </div>
+            <div id="m6-mtf-summary" class="text-[10px] text-gray-300 bg-[#090d16] border border-gray-800 rounded px-2 py-1 mb-1.5">
+              Pulsa <b>🌐 Escanear Multi-TF</b> para evaluar cada temporalidad con su propia malla genética y detectar cuáles pasan OOS+ y Kelly positivo.
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-[10px] border-collapse">
+                <thead>
+                  <tr class="text-[9px] text-gray-400 uppercase border-b border-gray-800 bg-[#0d111a]">
+                    <th class="py-1 px-2 text-left">Dataset / TF</th>
+                    <th class="py-1 px-2 text-left">Genoma #1 + Filtro</th>
+                    <th class="py-1 px-2 text-left">TP / SL / TS</th>
+                    <th class="py-1 px-2 text-right">IS %</th>
+                    <th class="py-1 px-2 text-right">OOS %</th>
+                    <th class="py-1 px-2 text-right">Full 5A %</th>
+                    <th class="py-1 px-2 text-right">PF / DD%</th>
+                    <th class="py-1 px-2 text-right">Kelly f* / Ops</th>
+                    <th class="py-1 px-2 text-center">Veredicto</th>
+                    <th class="py-1 px-2 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="m6-mtf-tbody"></tbody>
+              </table>
+            </div>
+          </div>
           <!-- Cuerpo dividido: Tabla de Mejores Cromosomas (6.2) | Matriz Walk-Forward & Curva IS vs OOS (6.3) -->
           <div class="flex-1 grid grid-cols-12 gap-2 p-2 overflow-hidden">
             <!-- 6.2 RANKING DE MEJORES PARÁMETROS SIN SOBREOPTIMIZAR (7 columnas) -->
@@ -8728,10 +8765,379 @@ const _rm = document.getElementById('inp-risk-mode')?.value || 'pct';
   }
   const retPct = ((bal - initCap) / initCap) * 100;
   const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 3.5 : 0.85);
-  return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal };
-}
-var M6_FILTER_LABELS = ['24h', 'LDN/NY', 'ATR', 'LDN+ATR'];
-    var _m6ActiveFilterMode = 0, _m6HourArr = null, _m6AtrOkArr = null;
+return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal, wins, losses, grossP, grossL };
+  }
+  var M6_FILTER_LABELS = ['24h', 'LDN/NY', 'ATR', 'LDN+ATR'];
+  var _m6ActiveFilterMode = 0, _m6HourArr = null, _m6AtrOkArr = null;
+  window.sv5LastMTFResults = [];
+
+  function detectMTFLabelFromDataset(name, candles) {
+    const up = String(name || '').toUpperCase();
+    const symMatch = up.match(/(EURUSD|GBPUSD|USDJPY|XAUUSD|USDCHF|AUDUSD|USDCAD|NZDUSD|EURJPY|GBPJPY|BTCUSD|ETHUSD|SOLUSD|US30|NAS100|SPX500)/);
+    const asset = symMatch ? symMatch[1] : (up.split(/[\s_-]+/)[0] || 'ACTIVO');
+
+    const tfMatch = up.match(/(?:^|[^A-Z0-9])(M1|M5|M15|M30|H1|H4|D1|W1)(?:[^A-Z0-9]|$)/) || up.match(/(M15|M30|M5|M1|H4|H1|D1)/);
+    let tf = tfMatch ? tfMatch[1] : '';
+    let stepSec = 900;
+
+    if (!tf && candles && candles.length > 5) {
+      const diffs = [];
+      for (let i = 1; i < Math.min(80, candles.length); i++) {
+        const d = (candles[i].time || 0) - (candles[i - 1].time || 0);
+        if (d > 0) diffs.push(d);
+      }
+      diffs.sort((a, b) => a - b);
+      stepSec = diffs.length ? diffs[Math.floor(diffs.length / 2)] : 900;
+      if (stepSec <= 90) tf = 'M1';
+      else if (stepSec <= 420) tf = 'M5';
+      else if (stepSec <= 1200) tf = 'M15';
+      else if (stepSec <= 2400) tf = 'M30';
+      else if (stepSec <= 5400) tf = 'H1';
+      else if (stepSec <= 20000) tf = 'H4';
+      else tf = 'D1';
+    } else {
+      const mapSec = { M1: 60, M5: 300, M15: 900, M30: 1800, H1: 3600, H4: 14400, D1: 86400, W1: 604800 };
+      stepSec = mapSec[tf] || 900;
+    }
+    return { asset, tf, stepSec };
+  }
+
+  function toggleModule6MTFPanel(forceOpen) {
+    const panel = document.getElementById('m6-mtf-panel');
+    if (!panel) return;
+    if (typeof forceOpen === 'boolean') {
+      panel.classList.toggle('hidden', !forceOpen);
+    } else {
+      panel.classList.toggle('hidden');
+    }
+  }
+
+  async function runModule6MultiTFScanner() {
+    const panel = document.getElementById('m6-mtf-panel');
+    const tbody = document.getElementById('m6-mtf-tbody');
+    const statusEl = document.getElementById('m6-mtf-status');
+    const summaryEl = document.getElementById('m6-mtf-summary');
+    const btn = document.getElementById('btn-m6-mtf-scan');
+    if (!panel || !tbody) return;
+
+    panel.classList.remove('hidden');
+    if (btn) btn.disabled = true;
+    if (statusEl) statusEl.innerText = 'Leyendo IndexedDB (StratView5_Storage)...';
+    tbody.innerHTML = '<tr><td colspan="10" class="py-3 text-center text-amber-300">⏳ Escaneando históricos MT5 en IndexedDB sin recorte de temporalidad...</td></tr>';
+
+    const tStartAll = performance.now();
+    const prevFilterMode = _m6ActiveFilterMode;
+    const prevHourArr = _m6HourArr;
+    const prevAtrOkArr = _m6AtrOkArr;
+
+    try {
+      const allMeta = await getDatasetsMetadata();
+      const validMeta = (allMeta || []).filter(m => (m.candlesCount || 0) >= 300);
+
+      if (!validMeta.length) {
+        if (statusEl) statusEl.innerText = 'Sin datasets válidos en IndexedDB.';
+        tbody.innerHTML = '<tr><td colspan="10" class="py-3 text-center text-rose-400">No se encontraron históricos MT5 (≥ 300 velas) en IndexedDB.</td></tr>';
+        return;
+      }
+
+      // Ordenar por temporalidad de menor a mayor (M1 -> M5 -> M15 -> H1 -> H4 -> D1)
+      const enriched = validMeta.map(m => ({ ...m, info: detectMTFLabelFromDataset(m.name, null) }));
+      enriched.sort((a, b) => a.info.stepSec - b.info.stepSec || b.candlesCount - a.candlesCount);
+
+      const splitRatio = parseFloat(document.getElementById('opt-oos-split')?.value) || 0.70;
+      const initCap = parseFloat(document.getElementById('initial-capital-select')?.value) || 10000;
+      const results = [];
+      tbody.innerHTML = '';
+
+      for (let dIdx = 0; dIdx < enriched.length; dIdx++) {
+        const meta = enriched[dIdx];
+        if (statusEl) {
+          statusEl.innerText = `Escaneando ${dIdx + 1}/${enriched.length}: ${meta.info.asset} ${meta.info.tf} (${(meta.candlesCount || 0).toLocaleString()} velas)...`;
+        }
+        await new Promise(r => setTimeout(r, 20));
+
+        const ds = await getDatasetFromDB(meta.id);
+        const bars = (ds && Array.isArray(ds.candles)) ? ds.candles : [];
+        if (bars.length < 300) continue;
+
+        const info = detectMTFLabelFromDataset(meta.name, bars);
+        const len = bars.length;
+        const closeArr = new Float64Array(len);
+        const highArr = new Float64Array(len);
+        const lowArr = new Float64Array(len);
+        const hourArr = new Uint8Array(len);
+
+        for (let i = 0; i < len; i++) {
+          closeArr[i] = bars[i].close;
+          highArr[i] = bars[i].high;
+          lowArr[i] = bars[i].low;
+          const t = bars[i].time || 0;
+          hourArr[i] = Math.floor((((t % 86400) + 86400) % 86400) / 3600);
+        }
+
+        const atr14Arr = calcFastATRArray(highArr, lowArr, closeArr, 14);
+        const atrMa50Arr = calcFastSMAArray(atr14Arr, 50);
+        const atrOkArr = new Uint8Array(len);
+        for (let i = 50; i < len; i++) {
+          atrOkArr[i] = (atr14Arr[i] > atrMa50Arr[i] * 0.90) ? 1 : 0;
+        }
+        _m6HourArr = hourArr;
+        _m6AtrOkArr = atrOkArr;
+
+        const refPrice = closeArr[len - 1] || 1;
+        const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+        const splitIdx = Math.floor(len * splitRatio);
+
+        // Malla adaptativa por temporalidad (M15 mantiene exactamente tu malla base certificada)
+        const fastPool = [8, 10, 12, 15, 20];
+        const slowPool = [26, 34, 50, 75, 100];
+        let tpPool = [70, 100, 140, 190, 250];
+        let slPool = [25, 35, 50, 70, 95];
+        let tsPool = [0, 55, 80, 110];
+        if (info.stepSec <= 300) {
+          tpPool = [35, 60, 90, 140, 200];
+          slPool = [15, 25, 35, 50, 70];
+          tsPool = [0, 25, 45, 75];
+        } else if (info.stepSec >= 3600) {
+          tpPool = [120, 180, 250, 350, 480];
+          slPool = [45, 65, 90, 120, 160];
+          tsPool = [0, 70, 110, 160];
+        }
+        const filterPool = [0, 1, 2, 3];
+
+        const emaMap = {};
+        [...new Set([...fastPool, ...slowPool])].forEach(p => { emaMap[p] = calcFastEMAArray(closeArr, p); });
+        const precomputed = {
+          emaMap,
+          trendEMA: calcFastEMAArray(closeArr, 200),
+          rsiArr: calcFastRSIArray(closeArr, 14)
+        };
+
+        // Generador determinista reproducible por dataset + semillas institucionales élites
+        let seed = (info.stepSec * 131 + len) >>> 0;
+        const nextRand = () => {
+          seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+          return seed / 4294967296;
+        };
+        const pick = (arr) => arr[Math.floor(nextRand() * arr.length)];
+
+        const seen = new Set();
+        const pool = [];
+        const addCand = (fast, slow, tp, sl, ts, fm) => {
+          if (fast >= slow || tp <= sl) return;
+          const key = `${fast}_${slow}_${tp}_${sl}_${ts}_${fm}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          pool.push({ fast, slow, tp, sl, ts, fm });
+        };
+
+        // Incluir siempre élites de referencia (incluyendo tu Campeón #1 EMA 15/34 [LDN+ATR])
+        addCand(15, 34, tpPool[4], slPool[3], tsPool[3], 3);
+        addCand(15, 34, tpPool[4], slPool[3], tsPool[3], 0);
+        addCand(10, 34, tpPool[4], slPool[4], tsPool[3], 0);
+        addCand(10, 34, tpPool[3], slPool[3], tsPool[2], 3);
+        addCand(12, 50, tpPool[3], slPool[2], tsPool[2], 3);
+        addCand(12, 50, tpPool[4], slPool[3], tsPool[2], 1);
+        addCand(8, 34,  tpPool[2], slPool[1], tsPool[1], 3);
+        addCand(20, 75, tpPool[4], slPool[3], tsPool[0], 2);
+
+        // Generación 1: 72 cromosomas diversos
+        let guard = 0;
+        while (pool.length < 80 && guard < 600) {
+          guard++;
+          addCand(pick(fastPool), pick(slowPool), pick(tpPool), pick(slPool), pick(tsPool), pick(filterPool));
+        }
+
+        const evalChrom = (c) => {
+          _m6ActiveFilterMode = c.fm;
+          const isRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 0, splitIdx, c.fast, c.slow, c.tp, c.sl, c.ts, pipUnit, initCap, precomputed);
+          const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, c.fast, c.slow, c.tp, c.sl, c.ts, pipUnit, initCap, precomputed);
+          const totalTrades = (isRes.trades || 0) + (oosRes.trades || 0);
+          const ddPen = Math.max(isRes.maxDD || 0, oosRes.maxDD || 0) * 0.45;
+          const oosBonus = oosRes.retPct > 0 ? oosRes.retPct * 1.65 : oosRes.retPct * 2.2;
+          const tradeBonus = totalTrades >= 20 ? 6 : (totalTrades < 8 ? -25 : -8);
+          const score = (isRes.retPct * 0.75) + oosBonus - ddPen + ((isRes.pf - 1) * 12) + tradeBonus;
+          return { ...c, isRes, oosRes, totalTrades, score };
+        };
+
+        const gen1 = pool.map(evalChrom).sort((a, b) => b.score - a.score);
+
+        // Generación 2: 24 mutaciones sobre el Top 8 de Gen 1
+        const topParents = gen1.slice(0, 8);
+        const gen2Cands = [];
+        for (let m = 0; m < 24; m++) {
+          const p = topParents[m % topParents.length];
+          const mutFast = nextRand() < 0.3 ? pick(fastPool) : p.fast;
+          const mutSlow = nextRand() < 0.3 ? pick(slowPool) : p.slow;
+          const mutTp   = nextRand() < 0.35 ? pick(tpPool) : p.tp;
+          const mutSl   = nextRand() < 0.35 ? pick(slPool) : p.sl;
+          const mutTs   = nextRand() < 0.35 ? pick(tsPool) : p.ts;
+          const mutFm   = nextRand() < 0.35 ? pick(filterPool) : p.fm;
+          const key = `${mutFast}_${mutSlow}_${mutTp}_${mutSl}_${mutTs}_${mutFm}`;
+          if (mutFast < mutSlow && mutTp > mutSl && !seen.has(key)) {
+            seen.add(key);
+            gen2Cands.push({ fast: mutFast, slow: mutSlow, tp: mutTp, sl: mutSl, ts: mutTs, fm: mutFm });
+          }
+        }
+        const allEval = gen1.concat(gen2Cands.map(evalChrom)).sort((a, b) => b.score - a.score);
+        const best = allEval[0];
+
+        // Evaluación completa 2021-2026 del Ganador #1 para métricas exactas + Kelly f*
+        _m6ActiveFilterMode = best.fm;
+        const fullRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 0, len - 1, best.fast, best.slow, best.tp, best.sl, best.ts, pipUnit, initCap, precomputed);
+        const fTrades = fullRes.trades || 0;
+        const fWins = fullRes.wins || 0;
+        const fLosses = fullRes.losses || 0;
+        const wrDec = fTrades > 0 ? (fWins / fTrades) : 0;
+        const avgWin = fWins > 0 ? (fullRes.grossP / fWins) : 0;
+        const avgLoss = fLosses > 0 ? (fullRes.grossL / fLosses) : 0;
+        const payoffR = avgLoss > 0 ? (avgWin / avgLoss) : (avgWin > 0 ? 2.5 : 0);
+        const kellyPct = payoffR > 0 ? ((wrDec - ((1 - wrDec) / payoffR)) * 100) : -100;
+
+        const isAnn = best.isRes.retPct / splitRatio;
+        const oosAnn = best.oosRes.retPct / (1 - splitRatio);
+        const wfe = isAnn > 0.5 ? Math.max(-200, Math.min(300, (oosAnn / isAnn) * 100)) : (best.oosRes.retPct > 0 ? 100 : 0);
+
+        let verdict = 'DESCARTADO';
+        let verdictCode = 'reject';
+        if (best.oosRes.retPct > 0 && fullRes.retPct > 0 && kellyPct > 1.5 && fullRes.pf >= 1.10 && fTrades >= 20) {
+          verdict = '✓ APTO PORTAFOLIO';
+          verdictCode = 'pass';
+        } else if (fullRes.retPct > 0 && kellyPct > 0 && fTrades >= 10) {
+          verdict = '⚠️ MARGINAL';
+          verdictCode = 'warn';
+        } else {
+          verdict = '✗ DESCARTADO';
+          verdictCode = 'reject';
+        }
+
+        const item = {
+          datasetId: meta.id,
+          datasetName: meta.name,
+          asset: info.asset,
+          tf: info.tf,
+          stepSec: info.stepSec,
+          candlesCount: len,
+          fast: best.fast,
+          slow: best.slow,
+          tp: best.tp,
+          sl: best.sl,
+          ts: best.ts,
+          filterMode: best.fm,
+          filterLabel: M6_FILTER_LABELS[best.fm] || '24h',
+          retIS: best.isRes.retPct,
+          retOOS: best.oosRes.retPct,
+          retFull: fullRes.retPct,
+          wfe,
+          pf: fullRes.pf,
+          maxDD: fullRes.maxDD,
+          trades: fTrades,
+          winRate: wrDec * 100,
+          payoffR,
+          kellyPct,
+          verdict,
+          verdictCode
+        };
+        results.push(item);
+
+        // Render progresivo fila por fila
+        const rowIdx = results.length - 1;
+        const vCls = verdictCode === 'pass'
+          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40'
+          : (verdictCode === 'warn' ? 'bg-amber-500/15 text-amber-300 border-amber-500/40' : 'bg-rose-500/15 text-rose-400 border-rose-500/40');
+        const kCls = kellyPct >= 5 ? 'text-emerald-400' : (kellyPct > 0 ? 'text-amber-300' : 'text-rose-400');
+
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr class="border-b border-gray-800/70 hover:bg-[#1a2030] transition">
+            <td class="py-1.5 px-2">
+              <div class="font-bold text-white">${item.asset} <span class="px-1 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px]">${item.tf}</span></div>
+              <div class="text-[9px] text-gray-500">${item.candlesCount.toLocaleString()} velas</div>
+            </td>
+            <td class="py-1.5 px-2 font-bold text-amber-300">
+              EMA ${item.fast}/${item.slow} <span class="px-1 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 text-[9px]">${item.filterLabel}</span>
+            </td>
+            <td class="py-1.5 px-2 text-gray-300">${item.tp} / ${item.sl} / ${item.ts}</td>
+            <td class="py-1.5 px-2 text-right font-bold ${item.retIS >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${item.retIS >= 0 ? '+' : ''}${item.retIS.toFixed(1)}%</td>
+            <td class="py-1.5 px-2 text-right font-bold ${item.retOOS >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${item.retOOS >= 0 ? '+' : ''}${item.retOOS.toFixed(1)}%</td>
+            <td class="py-1.5 px-2 text-right font-bold ${item.retFull >= 0 ? 'text-emerald-300' : 'text-rose-400'}">${item.retFull >= 0 ? '+' : ''}${item.retFull.toFixed(1)}%</td>
+            <td class="py-1.5 px-2 text-right text-gray-200">${item.pf.toFixed(2)} <span class="text-gray-500">/</span> <span class="${item.maxDD <= 12 ? 'text-emerald-300' : 'text-amber-300'}">${item.maxDD.toFixed(1)}%</span></td>
+            <td class="py-1.5 px-2 text-right font-bold ${kCls}">${kellyPct > -50 ? kellyPct.toFixed(2) + '%' : 'N/A'} <div class="text-[9px] text-gray-500">${item.trades} ops · ${item.winRate.toFixed(0)}%</div></td>
+            <td class="py-1.5 px-2 text-center"><span class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${vCls}">${item.verdict}</span></td>
+            <td class="py-1.5 px-2 text-right">
+              <button type="button" onclick="applyM6MultiTFCandidate(${rowIdx})" class="px-2 py-0.5 rounded bg-sky-600/80 hover:bg-sky-500 text-white text-[10px] font-bold transition" title="Inyecta este genoma en M3 (StratScript IDE)">Inyectar</button>
+            </td>
+          </tr>
+        `);
+      }
+
+      window.sv5LastMTFResults = results;
+      try { localStorage.setItem('sv5_mtf_champions_v1', JSON.stringify(results)); } catch (e) {}
+
+      const passed = results.filter(r => r.verdictCode === 'pass');
+      const elapsedSec = ((performance.now() - tStartAll) / 1000).toFixed(2);
+      if (statusEl) {
+        statusEl.innerText = `✓ Escaneo completado (${results.length} datasets en ${elapsedSec}s) · ${passed.length} APTOS para Portafolio MTF`;
+      }
+      if (summaryEl) {
+        if (passed.length > 0) {
+          const n = passed.length;
+          const propSplit = (0.50 / n).toFixed(3);
+          const instSplit = (1.00 / n).toFixed(2);
+          const tfsList = passed.map(p => `${p.asset} ${p.tf}`).join(' + ');
+          summaryEl.innerHTML = `<span class="text-emerald-400 font-bold">PORTAFOLIO CANDIDATO (${n} TFs):</span> <span class="text-white">${tfsList}</span> <span class="text-gray-500">|</span> Fondeo 0.50% ÷ ${n} = <b class="text-emerald-300">${propSplit}% c/u</b> <span class="text-gray-500">|</span> Inst. 1.00% ÷ ${n} = <b class="text-sky-300">${instSplit}% c/u</b>`;
+        } else {
+          summaryEl.innerHTML = `<span class="text-amber-300 font-bold">Sin temporalidades con veredicto APTO estricto todavía.</span> Revisa la columna OOS / Kelly para ajustar filtros o cargar nuevos pares.`;
+        }
+      }
+    } catch (err) {
+      console.error('Error en Escáner Multi-TF:', err);
+      if (statusEl) statusEl.innerText = 'Error en escaneo Multi-TF (revisa consola).';
+    } finally {
+      _m6ActiveFilterMode = prevFilterMode;
+      _m6HourArr = prevHourArr;
+      _m6AtrOkArr = prevAtrOkArr;
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function applyM6MultiTFCandidate(idx) {
+    const item = (window.sv5LastMTFResults || [])[idx];
+    if (!item) return;
+
+    const tpEl = document.getElementById('inp-tp');
+    const slEl = document.getElementById('inp-sl');
+    const tsEl = document.getElementById('inp-ts');
+    if (tpEl) tpEl.value = item.tp;
+    if (slEl) slEl.value = item.sl;
+    if (tsEl) tsEl.value = item.ts;
+
+    let filterLine = '  const filtroInst = true; // 24h sin filtro';
+    if (item.filterMode === 1) filterLine = '  const filtroInst = inSession(i, 7, 20);';
+    else if (item.filterMode === 2) filterLine = '  const filtroInst = (atr14[i] > atrBase[i] * 0.90);';
+    else if (item.filterMode === 3) filterLine = '  const filtroInst = inSession(i, 7, 20) && (atr14[i] > atrBase[i] * 0.90);';
+
+    const newCode = `// =========================================================================\n// [MÓDULO 6.4 MULTI-TF] ${item.asset} ${item.tf} | EMA (${item.fast}/${item.slow}) [${item.filterLabel}] | TP:${item.tp} SL:${item.sl} TS:${item.ts}\n// Kelly f*: ${item.kellyPct.toFixed(2)}% | OOS: ${item.retOOS >= 0 ? '+' : ''}${item.retOOS.toFixed(1)}% | PF: ${item.pf.toFixed(2)} | DD: ${item.maxDD.toFixed(1)}%\n// =========================================================================\nconst fastEMA     = ema(${item.fast});\nconst slowEMA     = ema(${item.slow});\nconst trendEMA200 = ema(200);\nconst rsi14       = rsi(14);\nconst atr14       = atr(14);\nconst atrBase     = atrMA(14, 50);\n\nfor (let i = 205; i < bars.length; i++) {\n${filterLine}\n  if (!filtroInst) continue;\n  const trendUp = close[i] >= trendEMA200[i];\n  const trendDn = close[i] <= trendEMA200[i];\n  if (crossover(fastEMA, slowEMA, i) && rsi14[i] > 45 && rsi14[i] < 68 && trendUp) {\n    strategy.entry(i, LONG, "MTF ${item.tf} BUY ${item.fast}/${item.slow}");\n  }\n  if (crossunder(fastEMA, slowEMA, i) && rsi14[i] < 55 && rsi14[i] > 32 && trendDn) {\n    strategy.entry(i, SHORT, "MTF ${item.tf} SELL ${item.fast}/${item.slow}");\n  }\n}`;
+
+    const codeArea = document.getElementById('strat-code-editor');
+    if (codeArea) {
+      codeArea.value = newCode;
+      try { localStorage.setItem('sv5_module3_code', newCode); } catch (e) {}
+    }
+
+    // Intentar sincronizar selector de dataset si está disponible en barra superior
+    const dsSel = document.getElementById('saved-datasets-select') || document.getElementById('dataset-selector');
+    if (dsSel && item.datasetId) {
+      const opt = Array.from(dsSel.options).find(o => o.value === item.datasetId);
+      if (opt && dsSel.value !== item.datasetId) {
+        dsSel.value = item.datasetId;
+        dsSel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+
+    if (typeof compileAndRunStrategy === 'function') compileAndRunStrategy();
+    const statusEl = document.getElementById('m6-mtf-status');
+    if (statusEl) statusEl.innerText = `✓ Genoma ${item.asset} ${item.tf} (EMA ${item.fast}/${item.slow} [${item.filterLabel}]) inyectado en M3.`;
+  }
 function runModule6GeneticOptimizer() {
   const fullSource = (typeof originalFullCandles !== 'undefined' && originalFullCandles && originalFullCandles.length > allCandles.length)
     ? originalFullCandles
