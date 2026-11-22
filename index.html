@@ -8666,7 +8666,9 @@ function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, f
         lastExitBar = i;
       }
     }
-    if (!pos && (i - lastExitBar) >= cooldownBars) {
+const _m6SessOk = (_m6ActiveFilterMode === 1 || _m6ActiveFilterMode === 3) ? (_m6HourArr ? (_m6HourArr[i] >= 7 && _m6HourArr[i] < 20) : true) : true;
+            const _m6AtrOk  = (_m6ActiveFilterMode === 2 || _m6ActiveFilterMode === 3) ? (_m6AtrOkArr ? _m6AtrOkArr[i] === 1 : true) : true;
+            if (!pos && _m6SessOk && _m6AtrOk && (i - lastExitBar) >= cooldownBars) {
       const trendUp = closeArr[i] >= trendEMA[i];
       const trendDn = closeArr[i] <= trendEMA[i];
       const crossUp = fEMA[i - 1] <= sEMA[i - 1] && fEMA[i] > sEMA[i] && rsiArr[i] < 68 && rsiArr[i] > 45 && trendUp;
@@ -8686,7 +8688,8 @@ function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, f
   const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 3.5 : 0.85);
   return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal };
 }
-
+var M6_FILTER_LABELS = ['24h', 'LDN/NY', 'ATR', 'LDN+ATR'];
+    var _m6ActiveFilterMode = 0, _m6HourArr = null, _m6AtrOkArr = null;
 function runModule6GeneticOptimizer() {
   const fullSource = (typeof originalFullCandles !== 'undefined' && originalFullCandles && originalFullCandles.length > allCandles.length)
     ? originalFullCandles
@@ -8700,71 +8703,95 @@ function runModule6GeneticOptimizer() {
   const stride = fullSource.length > 150000 ? Math.ceil(fullSource.length / 120000) : 1;
   const sampleBars = stride > 1 ? fullSource.filter((_, idx) => idx % stride === 0) : fullSource;
   const len = sampleBars.length;
-  const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
-  for (let i = 0; i < len; i++) { closeArr[i] = sampleBars[i].close; highArr[i] = sampleBars[i].high; lowArr[i] = sampleBars[i].low; }
+const closeArr = new Float64Array(len), highArr = new Float64Array(len), lowArr = new Float64Array(len);
+        const hourArr = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            closeArr[i] = sampleBars[i].close;
+            highArr[i]  = sampleBars[i].high;
+            lowArr[i]   = sampleBars[i].low;
+            const t = sampleBars[i].time || 0;
+            hourArr[i]  = Math.floor((((t % 86400) + 86400) % 86400) / 3600);
+        }
+        const atr14Arr = calcFastATRArray(highArr, lowArr, closeArr, 14);
+        const atrMa50Arr = calcFastSMAArray(atr14Arr, 50);
+        const atrOkArr = new Uint8Array(len);
+        for (let i = 50; i < len; i++) {
+            atrOkArr[i] = (atr14Arr[i] > atrMa50Arr[i] * 0.90) ? 1 : 0;
+        }
+        _m6HourArr = hourArr;
+        _m6AtrOkArr = atrOkArr;
 
-  const refPrice = closeArr[len - 1] || 1;
-  const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
-  const splitIdx = Math.floor(len * splitRatio);
+        const refPrice = closeArr[len - 1] || 1;
+        const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+        const splitIdx = Math.floor(len * splitRatio);
 
-  const fastPool = [8, 10, 12, 15, 20];
-  const slowPool = [26, 34, 50, 75, 100];
-  const tpPool   = [70, 100, 140, 190, 250];
-  const slPool   = [25, 35, 50, 70, 95];
-  const tsPool   = [0, 55, 80, 110];
+        const fastPool   = [8, 10, 12, 15, 20];
+        const slowPool   = [26, 34, 50, 75, 100];
+        const tpPool     = [70, 100, 140, 190, 250];
+        const slPool     = [25, 35, 50, 70, 95];
+        const tsPool     = [0, 55, 80, 110];
+        const filterPool = [0, 1, 2, 3]; // 0:24h, 1:LDN/NY, 2:ATR, 3:LDN+ATR
 
-  const emaMap = {};
-  [...new Set([...fastPool, ...slowPool])].forEach(p => { emaMap[p] = calcFastEMAArray(closeArr, p); });
-  const precomputed = { emaMap, trendEMA: calcFastEMAArray(closeArr, 200), rsiArr: calcFastRSIArray(closeArr, 14) };
+        const emaMap = {};
+        [...new Set([...fastPool, ...slowPool])].forEach(p => { emaMap[p] = calcFastEMAArray(closeArr, p); });
+        const precomputed = { emaMap, trendEMA: calcFastEMAArray(closeArr, 200), rsiArr: calcFastRSIArray(closeArr, 14) };
 
-  const genomes = [];
-  const seenKeys = new Set();
-  function evalAndPush(fastP, slowP, tp, sl, ts) {
-    if (fastP >= slowP || tp < sl * 1.25) return;
-    const key = `${fastP}-${slowP}-${tp}-${sl}-${ts}`;
-    if (seenKeys.has(key)) return;
-    seenKeys.add(key);
-    if (!emaMap[fastP]) emaMap[fastP] = calcFastEMAArray(closeArr, fastP);
-    if (!emaMap[slowP]) emaMap[slowP] = calcFastEMAArray(closeArr, slowP);
-    const isRes  = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 205, splitIdx, fastP, slowP, tp, sl, ts, pipUnit, initCap, precomputed);
-    const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, fastP, slowP, tp, sl, ts, pipUnit, isRes.finalBal, precomputed);
-    const oosPassed = isRes.retPct > 0 && oosRes.retPct > 0 && isRes.pf >= 1.02 && oosRes.pf >= 1.05 && isRes.trades >= 40 && oosRes.trades >= 15;
-    const ddPenalty = (isRes.maxDD * 0.45) + (oosRes.maxDD * 0.55);
-    const consistencyBonus = (isRes.retPct > 0 && oosRes.retPct > 0) ? 25 : -35;
-    const pfScore = Math.min(isRes.pf, 2.5) * 8 + Math.min(oosRes.pf, 2.5) * 10;
-    const tradePenalty = (isRes.trades < 40 || oosRes.trades < 15) ? -40 : 0;
-    const fitness = (isRes.retPct * 0.55) + (oosRes.retPct * 0.65) + pfScore + consistencyBonus + tradePenalty - ddPenalty;
-    genomes.push({ fastP, slowP, tp, sl, ts, isRes, oosRes, oosPassed, fitness });
-  }
+        const genomes = [];
+        const seenKeys = new Set();
+        function evalAndPush(fastP, slowP, tp, sl, ts, filterMode = 0) {
+            if (fastP >= slowP || tp < sl * 1.25) return;
+            const key = `${fastP}-${slowP}-${tp}-${sl}-${ts}-${filterMode}`;
+            if (seenKeys.has(key)) return;
+            seenKeys.add(key);
+            if (!emaMap[fastP]) emaMap[fastP] = calcFastEMAArray(closeArr, fastP);
+            if (!emaMap[slowP]) emaMap[slowP] = calcFastEMAArray(closeArr, slowP);
+            _m6ActiveFilterMode = filterMode;
+            const isRes  = evaluateCandidateOnSlice(closeArr, highArr, lowArr, 205, splitIdx, fastP, slowP, tp, sl, ts, pipUnit, initCap, precomputed);
+            const oosRes = evaluateCandidateOnSlice(closeArr, highArr, lowArr, splitIdx + 1, len - 1, fastP, slowP, tp, sl, ts, pipUnit, isRes.finalBal, precomputed);
+            _m6ActiveFilterMode = 0;
+            const oosPassed = isRes.retPct > 0 && oosRes.retPct > 0 && isRes.pf >= 1.02 && oosRes.pf >= 1.05 && isRes.trades >= 25 && oosRes.trades >= 10;
+            const ddPenalty = (isRes.maxDD * 0.60) + (oosRes.maxDD * 0.70);
+            const consistencyBonus = (isRes.retPct > 0 && oosRes.retPct > 0) ? 25 : -35;
+            const pfScore = Math.min(isRes.pf, 2.5) * 8 + Math.min(oosRes.pf, 2.5) * 10;
+            const tradePenalty = (isRes.trades < 25 || oosRes.trades < 10) ? -40 : 0;
+            const fitness = (isRes.retPct * 0.55) + (oosRes.retPct * 0.65) + pfScore + consistencyBonus + tradePenalty - ddPenalty;
+            genomes.push({ fastP, slowP, tp, sl, ts, filterMode, isRes, oosRes, oosPassed, fitness });
+        }
 
-  // Fase 1: Exploración diversa sin clones
-  const phase1Target = mode === 'genetic' ? 48 : 72;
-  for (let g = 0; g < phase1Target * 2 && genomes.length < phase1Target; g++) {
-    const fastP = fastPool[g % fastPool.length];
-    const slowP = slowPool[(g * 2 + Math.floor(g / 5)) % slowPool.length];
-    const tp    = tpPool[(g * 3 + Math.floor(g / 7)) % tpPool.length];
-    const sl    = slPool[(g * 4 + Math.floor(g / 3)) % slPool.length];
-    const ts    = tsPool[(g + Math.floor(g / 5)) % tsPool.length];
-    evalAndPush(fastP, slowP, tp, sl, ts);
-  }
+        // Semilla científica de control: Genoma #1 actual compitiendo en los 4 filtros
+        filterPool.forEach(fm => evalAndPush(10, 34, 250, 95, 110, fm));
 
-  // Fase 2: Evolución / Mutación local sobre los Top 6
-  genomes.sort((a, b) => b.fitness - a.fitness);
-  const elite = genomes.slice(0, 6);
-  elite.forEach((parent, idx) => {
-    const fIdx = Math.max(0, fastPool.indexOf(parent.fastP));
-    const sIdx = Math.max(0, slowPool.indexOf(parent.slowP));
-    const tpIdx = Math.max(0, tpPool.indexOf(parent.tp));
-    const slIdx = Math.max(0, slPool.indexOf(parent.sl));
-    const variants = [
-      [fastPool[(fIdx + 1) % fastPool.length], parent.slowP, parent.tp, parent.sl, 0],
-      [parent.fastP, slowPool[(sIdx + 1) % slowPool.length], tpPool[(tpIdx + 1) % tpPool.length], parent.sl, parent.ts],
-      [parent.fastP, parent.slowP, parent.tp, slPool[(slIdx + 1) % slPool.length], tsPool[(idx + 1) % tsPool.length]],
-      [Math.max(6, parent.fastP - 2), parent.slowP + 5, parent.tp + 20, Math.max(20, parent.sl - 5), parent.ts]
-    ];
-    variants.forEach(v => evalAndPush(v[0], v[1], v[2], v[3], v[4]));
-  });
+        // Fase 1: Exploración diversa multi-filtro sin clones
+        const phase1Target = mode === 'genetic' ? 68 : 100;
+        for (let g = 0; g < phase1Target * 2 && genomes.length < phase1Target; g++) {
+            const fastP = fastPool[g % fastPool.length];
+            const slowP = slowPool[(g * 2 + Math.floor(g / 5)) % slowPool.length];
+            const tp    = tpPool[(g * 3 + Math.floor(g / 7)) % tpPool.length];
+            const sl    = slPool[(g * 4 + Math.floor(g / 3)) % slPool.length];
+            const ts    = tsPool[(g + Math.floor(g / 5)) % tsPool.length];
+            const fm    = filterPool[g % filterPool.length];
+            evalAndPush(fastP, slowP, tp, sl, ts, fm);
+        }
 
+        // Fase 2: Evolución / Mutación local + cruce de filtros sobre los Top 6
+        genomes.sort((a, b) => b.fitness - a.fitness);
+        const elite = genomes.slice(0, 6);
+        elite.forEach((parent, idx) => {
+            const fIdx  = Math.max(0, fastPool.indexOf(parent.fastP));
+            const sIdx  = Math.max(0, slowPool.indexOf(parent.slowP));
+            const tpIdx = Math.max(0, tpPool.indexOf(parent.tp));
+            const slIdx = Math.max(0, slPool.indexOf(parent.sl));
+            const fm    = parent.filterMode || 0;
+            const variants = [
+                [fastPool[(fIdx + 1) % fastPool.length], parent.slowP, parent.tp, parent.sl, parent.ts, fm],
+                [parent.fastP, slowPool[(sIdx + 1) % slowPool.length], tpPool[(tpIdx + 1) % tpPool.length], parent.sl, parent.ts, fm],
+                [parent.fastP, parent.slowP, parent.tp, slPool[(slIdx + 1) % slPool.length], tsPool[(idx + 1) % tsPool.length], fm],
+                [Math.max(6, parent.fastP - 2), parent.slowP + 5, parent.tp + 20, Math.max(20, parent.sl - 5), parent.ts, fm],
+                [parent.fastP, parent.slowP, parent.tp, parent.sl, parent.ts, (fm + 1) % 4],
+                [parent.fastP, parent.slowP, parent.tp, parent.sl, parent.ts, 3]
+            ];
+            variants.forEach(v => evalAndPush(v[0], v[1], v[2], v[3], v[4], v[5]));
+        });
   genomes.sort((a, b) => b.fitness - a.fitness);
   module6CandidatesList = genomes.slice(0, 12);
   bestModule6Candidate = module6CandidatesList[0] || null;
@@ -8778,7 +8805,7 @@ function runModule6GeneticOptimizer() {
                     const oosTxt = `${c.oosRes.retPct >= 0 ? '+' : ''}${c.oosRes.retPct.toFixed(1)}%`;
                     tr.innerHTML = `
                         <td class="py-1 px-1 text-amber-400 font-bold">#${idx + 1}</td>
-                        <td class="py-1 px-1 text-sky-300">EMA ${c.fastP}/${c.slowP}</td>
+<td class="py-1 px-1 text-sky-300">EMA ${c.fastP}/${c.slowP} <span class="text-[8px] px-1 rounded ml-1 ${c.filterMode ? 'bg-indigo-500/25 text-indigo-300' : 'bg-gray-700/60 text-gray-400'}">${M6_FILTER_LABELS[c.filterMode || 0]}</span></td>
                         <td class="py-1 px-1">${c.tp} / ${c.sl} / ${c.ts}</td>
                         <td class="py-1 px-1 ${c.isRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${isTxt}</td>
                         <td class="py-1 px-1 font-bold ${c.oosRes.retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${oosTxt}</td>
@@ -8796,7 +8823,7 @@ function runModule6GeneticOptimizer() {
                 const b = bestModule6Candidate;
                 const wfe = b.isRes.retPct !== 0 ? Math.min(145, Math.max(35, Math.abs((b.oosRes.retPct / (b.isRes.retPct * 0.45 || 1)) * 100))) : 84.5;
                 document.getElementById('opt-wfe-score').innerText = `${wfe.toFixed(1)}%`;
-                document.getElementById('opt-best-genome').innerText = `EMA ${b.fastP}/${b.slowP} | TP:${b.tp} SL:${b.sl}`;
+document.getElementById('opt-best-genome').innerText = `EMA ${b.fastP}/${b.slowP} [${M6_FILTER_LABELS[b.filterMode || 0]}] | TP:${b.tp} SL:${b.sl}`;
                 document.getElementById('opt-oos-verdict').innerText = b.oosPassed ? "✓ APROBADO (OOS+)" : "⚠ REVISAR";
                 document.getElementById('opt-overfit-risk').innerText = b.oosPassed ? "BAJO (11.4%)" : "MEDIO (34%)";
                 document.getElementById('opt-status-pill').innerText = `✓ TOP #1: EMA ${b.fastP}/${b.slowP} (OOS ${b.oosRes.retPct >= 0 ? '+' : ''}${b.oosRes.retPct.toFixed(1)}%)`;
@@ -8848,37 +8875,46 @@ function runModule6GeneticOptimizer() {
       c.fillStyle = '#38bdf8'; c.fillText('OUT-OF-SAMPLE (Futuro WFA)', splitX + 6, 13);
     }
 
-    function applySpecificCandidateToBot(idx) {
-      const cand = module6CandidatesList[idx];
-      if (!cand) return;
-      document.getElementById('inp-tp').value = cand.tp;
-      document.getElementById('inp-sl').value = cand.sl;
-      document.getElementById('inp-ts').value = cand.ts;
+function applySpecificCandidateToBot(idx) {
+        const cand = module6CandidatesList[idx];
+        if (!cand) return;
+        document.getElementById('inp-tp').value = cand.tp;
+        document.getElementById('inp-sl').value = cand.sl;
+        document.getElementById('inp-ts').value = cand.ts;
 
-      const editor = document.getElementById('stratscript-editor');
-      if (editor) {
-        editor.value = `// ============================================================================
-// [MÓDULO 6 AUTO-OPTIMIZADO] Genoma #${idx + 1}: EMA (${cand.fastP}/${cand.slowP}) | TP:${cand.tp} SL:${cand.sl} TS:${cand.ts}
-// Validado con Filtro Out-of-Sample (OOS) y Walk-Forward Analysis (WFA)
-// ============================================================================
+        const fm = cand.filterMode || 0;
+        const fLabel = M6_FILTER_LABELS[fm] || '24h';
+        const useSess = (fm === 1 || fm === 3);
+        const useAtr  = (fm === 2 || fm === 3);
+        const startBar = useAtr ? 55 : 25;
+        const atrDecl = useAtr ? `\nconst atr14   = atr(14);\nconst atrBase = atrMA(14, 50);` : '';
+        const gateLine = (useSess || useAtr)
+            ? `\n    const filtroInst = ${useSess ? 'inSession(i, 7, 20)' : 'true'}${useAtr ? ' && (atr14[i] > atrBase[i] * 0.90)' : ''};\n    if (!filtroInst) continue;`
+            : '';
+
+        const editor = document.getElementById('stratscript-editor');
+        if (editor) {
+            editor.value = `// =========================================================================
+// [MÓDULO 6 AUTO-OPTIMIZADO] Genoma #${idx + 1}: EMA (${cand.fastP}/${cand.slowP}) [${fLabel}] | TP:${cand.tp} SL:${cand.sl} TS:${cand.ts}
+// Validado con Filtro Out-of-Sample (OOS), Walk-Forward (WFA) y Filtro Institucional
+// =========================================================================
 const fastEMA = ema(${cand.fastP});
 const slowEMA = ema(${cand.slowP});
-const rsi14   = rsi(14);
+const rsi14   = rsi(14);${atrDecl}
 
-for (let i = 25; i < bars.length; i++) {
-if (crossover(fastEMA, slowEMA, i) && rsi14[i] > 45) {
+for (let i = ${startBar}; i < bars.length; i++) {${gateLine}
+    if (crossover(fastEMA, slowEMA, i) && rsi14[i] > 45) {
         strategy.entry(i, LONG, "OPT BUY ${cand.fastP}/${cand.slowP}");
     }
-if (crossunder(fastEMA, slowEMA, i) && rsi14[i] < 55) {
+    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] < 55) {
         strategy.entry(i, SHORT, "OPT SELL ${cand.fastP}/${cand.slowP}");
     }
 }`;
-        updateIdeLineNumbers();
-      }
-      compileAndRunStrategy(false);
-      document.getElementById('agent-verdict').innerText = `🧬 Genoma #${idx + 1} aplicado: EMA ${cand.fastP}/${cand.slowP}, TP ${cand.tp}, SL ${cand.sl}, Trail ${cand.ts}. Curva Bicolor actualizada.`;
+            updateIdeLineNumbers();
+        }
+        compileAndRunStrategy(false);
+        document.getElementById('agent-verdict').innerText = `🚀 Genoma #${idx + 1} aplicado: EMA ${cand.fastP}/${cand.slowP} [${fLabel}], TP ${cand.tp}, SL ${cand.sl}, Trail ${cand.ts}. Curva Bicolor actualizada.`;
     }
-
  function applyBestGeneticParamsToBot() {
       if (!bestModule6Candidate) runModule6GeneticOptimizer();
       applySpecificCandidateToBot(0);
@@ -10193,6 +10229,29 @@ for (let i = 205; i < bars.length; i++) {
         middle[i] = mean; upper[i] = mean + mult * std; lower[i] = mean - mult * std;
       }
       return { upper, middle, lower };
+}
+
+    function calcFastATRArray(highArr, lowArr, closeArr, period = 14) {
+        const len = closeArr.length;
+        const atr = new Float64Array(len);
+        if (len === 0) return atr;
+        const tr = new Float64Array(len);
+        tr[0] = highArr[0] - lowArr[0];
+        let sum = tr[0];
+        atr[0] = tr[0];
+        for (let i = 1; i < len; i++) {
+            const hl = highArr[i] - lowArr[i];
+            const hc = Math.abs(highArr[i] - closeArr[i - 1]);
+            const lc = Math.abs(lowArr[i] - closeArr[i - 1]);
+            tr[i] = hl > hc ? (hl > lc ? hl : lc) : (hc > lc ? hc : lc);
+            if (i < period) {
+                sum += tr[i];
+                atr[i] = sum / (i + 1);
+            } else {
+                atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period;
+            }
+        }
+        return atr;
     }
 
     // =========================================================================
@@ -10237,38 +10296,46 @@ const TakeProfit = parseFloat(document.getElementById('inp-tp').value) || 0;
             const Slippage = 2, _Symbol = document.getElementById('symbolSelect').value;
             const input = (name, defVal) => defVal;
 
-            const indCache = {};
-            const ema = (p = 14) => indCache[`ema_${p}`] || (indCache[`ema_${p}`] = calcFastEMAArray(close, p));
-            const sma = (p = 14) => indCache[`sma_${p}`] || (indCache[`sma_${p}`] = calcFastSMAArray(close, p));
-            const rsi = (p = 14) => indCache[`rsi_${p}`] || (indCache[`rsi_${p}`] = calcFastRSIArray(close, p));
-            const bb  = (p = 20, m = 2.0) => indCache[`bb_${p}_${m}`] || (indCache[`bb_${p}_${m}`] = calcFastBBArray(close, p, m));
-            const trendEMA200 = ema(200);
+const indCache = {};
+        const ema = (p = 14) => indCache[`ema_${p}`] || (indCache[`ema_${p}`] = calcFastEMAArray(close, p));
+        const sma = (p = 14) => indCache[`sma_${p}`] || (indCache[`sma_${p}`] = calcFastSMAArray(close, p));
+        const rsi = (p = 14) => indCache[`rsi_${p}`] || (indCache[`rsi_${p}`] = calcFastRSIArray(close, p));
+        const bb  = (p = 20, m = 2.0) => indCache[`bb_${p}_${m}`] || (indCache[`bb_${p}_${m}`] = calcFastBBArray(close, p, m));
+        const atr = (p = 14) => indCache[`atr_${p}`] || (indCache[`atr_${p}`] = calcFastATRArray(high, low, close, p));
+        const atrMA = (p = 14, maP = 50) => indCache[`atrma_${p}_${maP}`] || (indCache[`atrma_${p}_${maP}`] = calcFastSMAArray(atr(p), maP));
+        const inSession = (idx, startH = 7, endH = 20) => {
+            const t = time[idx];
+            if (!t) return true;
+            const h = Math.floor((((t % 86400) + 86400) % 86400) / 3600);
+            return startH <= endH ? (h >= startH && h < endH) : (h >= startH || h < endH);
+        };
+        const trendEMA200 = ema(200);
 
-            const crossover  = (a, b, i) => i >= 1 && a[i - 1] <= (typeof b === 'number' ? b : b[i - 1]) && a[i] > (typeof b === 'number' ? b : b[i]);
-            const crossunder = (a, b, i) => i >= 1 && a[i - 1] >= (typeof b === 'number' ? b : b[i - 1]) && a[i] < (typeof b === 'number' ? b : b[i]);
+        const crossover  = (a, b, i) => i >= 1 && a[i - 1] <= (typeof b === 'number' ? b : b[i - 1]) && a[i] > (typeof b === 'number' ? b : b[i]);
+        const crossunder = (a, b, i) => i >= 1 && a[i - 1] >= (typeof b === 'number' ? b : b[i - 1]) && a[i] < (typeof b === 'number' ? b : b[i]);
 
-            const rawOrders = new Map();
-            const LONG = 'LONG', SHORT = 'SHORT', OP_BUY = 'LONG', OP_SELL = 'SHORT';
-            const registerSignal = (idx, dir, tag) => {
-                if (idx >= 0 && idx < len) rawOrders.set(idx, { dir: dir === 'SHORT' || dir === OP_SELL ? 'SHORT' : 'LONG', tag: tag || dir });
-            };
-            const strategy = {
-                long:  (i, tag = "BUY") => registerSignal(i, 'LONG', tag),
-                short: (i, tag = "SELL") => registerSignal(i, 'SHORT', tag),
-                entry: (i, dir = 'LONG', tag = "ENTRY") => registerSignal(i, dir, tag),
-                exit:  (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
-            };
-            const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment, barIdx) => {
-                registerSignal(barIdx, cmd, comment || (cmd === OP_BUY ? "MQL5 BUY" : "MQL5 SELL"));
-            };
+        const rawOrders = new Map();
+        const LONG = 'LONG', SHORT = 'SHORT', OP_BUY = 'LONG', OP_SELL = 'SHORT';
+        const registerSignal = (idx, dir, tag) => {
+            if (idx >= 0 && idx < len) rawOrders.set(idx, { dir: dir === 'SHORT' || dir === OP_SELL ? 'SHORT' : 'LONG', tag: tag || dir });
+        };
+        const strategy = {
+            long:  (i, tag = "BUY") => registerSignal(i, 'LONG', tag),
+            short: (i, tag = "SELL") => registerSignal(i, 'SHORT', tag),
+            entry: (i, dir = 'LONG', tag = "ENTRY") => registerSignal(i, dir, tag),
+            exit:  (i, tag = "EXIT") => registerSignal(i, 'EXIT', tag)
+        };
+        const OrderSend = (sym, cmd, vol, price, slip, sl, tp, comment, barIdx) => {
+            registerSignal(barIdx, cmd, comment || (cmd === OP_BUY ? "MQL5 BUY" : "MQL5 SELL"));
+        };
 
-            try {
-                const runner = new Function(
-                    'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
-                    'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
-                    'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', code
-                );
-                runner(btCandles, open, high, low, close, time, ema, sma, rsi, bb, ema, rsi, bb, crossover, crossunder, strategy, OrderSend, LONG, SHORT, OP_BUY, OP_SELL, _Symbol, Lots, TakeProfit, StopLoss, TrailingStop, Slippage, input);
+        try {
+            const runner = new Function(
+                'bars', 'open', 'high', 'low', 'close', 'time', 'ema', 'sma', 'rsi', 'bb', 'iMA', 'iRSI', 'iBands',
+                'crossover', 'crossunder', 'strategy', 'OrderSend', 'LONG', 'SHORT', 'OP_BUY', 'OP_SELL', '_Symbol',
+                'Lots', 'TakeProfit', 'StopLoss', 'TrailingStop', 'Slippage', 'input', 'atr', 'atrMA', 'inSession', code
+            );
+            runner(btCandles, open, high, low, close, time, ema, sma, rsi, bb, ema, rsi, bb, crossover, crossunder, strategy, OrderSend, LONG, SHORT, OP_BUY, OP_SELL, _Symbol, Lots, TakeProfit, StopLoss, TrailingStop, Slippage, input, atr, atrMA, inSession);
             } catch (err) {
                 logToIdeConsole(`❌ Error en ejecución: ${err.message}`, "error"); return;
             }
@@ -10404,7 +10471,7 @@ resizeAllCharts();
             document.getElementById('ide-stat-exits').innerText = countExits;
             document.getElementById('ide-stat-ms').innerText = `${elapsed} ms`;
             updateModule5Metrics(closedTrades, equityBicolorData, initialCapital, totalNetPnl, totalNetPct, maxDrawdownUSD, peakEquity, winRate, profitFactor);
-            if (!silent) renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
+renderIdeExecutionLog(closedTrades, countLongs, countShorts, totalNetPnl, elapsed);
         }
 
     // =========================================================================
