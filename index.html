@@ -8656,7 +8656,8 @@ function evaluateCandidateOnSlice(closeArr, highArr, lowArr, startIdx, endIdx, f
         }
       }
       if (exitP !== null) {
-        const pnl = pos.dir === 1 ? (exitP - pos.entry) * pos.size : (pos.entry - exitP) * pos.size;
+const spreadCost = pipUnit * 1.2;
+            const pnl = pos.dir === 1 ? (exitP - pos.entry - spreadCost) * pos.size : (pos.entry - exitP - spreadCost) * pos.size;
         bal += pnl;
         if (pnl >= 0) { wins++; grossP += pnl; } else { losses++; grossL += Math.abs(pnl); }
         if (bal > peak) peak = bal;
@@ -8675,7 +8676,7 @@ const _m6SessOk = (_m6ActiveFilterMode === 1 || _m6ActiveFilterMode === 3) ? (_m
       const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32 && rsiArr[i] < 55 && trendDn;
       if (crossUp || crossDn) {
         const entry = closeArr[i];
-        const riskUsd = Math.max(25, bal * 0.012);
+const riskUsd = Math.max(25, bal * 0.015);
         const size = riskUsd / slDist;
         pos = crossUp
           ? { dir: 1, entry, size, sl: entry - slDist, tp: tpDist > 0 ? entry + tpDist : 0 }
@@ -8886,7 +8887,7 @@ function applySpecificCandidateToBot(idx) {
         const fLabel = M6_FILTER_LABELS[fm] || '24h';
         const useSess = (fm === 1 || fm === 3);
         const useAtr  = (fm === 2 || fm === 3);
-        const startBar = useAtr ? 55 : 25;
+        const startBar = 205;
         const atrDecl = useAtr ? `\nconst atr14   = atr(14);\nconst atrBase = atrMA(14, 50);` : '';
         const gateLine = (useSess || useAtr)
             ? `\n    const filtroInst = ${useSess ? 'inSession(i, 7, 20)' : 'true'}${useAtr ? ' && (atr14[i] > atrBase[i] * 0.90)' : ''};\n    if (!filtroInst) continue;`
@@ -8896,24 +8897,27 @@ function applySpecificCandidateToBot(idx) {
         if (editor) {
             editor.value = `// =========================================================================
 // [MÓDULO 6 AUTO-OPTIMIZADO] Genoma #${idx + 1}: EMA (${cand.fastP}/${cand.slowP}) [${fLabel}] | TP:${cand.tp} SL:${cand.sl} TS:${cand.ts}
-// Validado con Filtro Out-of-Sample (OOS), Walk-Forward (WFA) y Filtro Institucional
+// Validado 1:1 con M6: Tendencia EMA200 + Banda RSI (45-68 / 32-55) + Filtro Institucional
 // =========================================================================
-const fastEMA = ema(${cand.fastP});
-const slowEMA = ema(${cand.slowP});
-const rsi14   = rsi(14);${atrDecl}
+const fastEMA     = ema(${cand.fastP});
+const slowEMA     = ema(${cand.slowP});
+const trendEMA200 = ema(200);
+const rsi14       = rsi(14);${atrDecl}
 
 for (let i = ${startBar}; i < bars.length; i++) {${gateLine}
-    if (crossover(fastEMA, slowEMA, i) && rsi14[i] > 45) {
+    const trendUp = close[i] >= trendEMA200[i];
+    const trendDn = close[i] <= trendEMA200[i];
+    if (crossover(fastEMA, slowEMA, i) && rsi14[i] > 45 && rsi14[i] < 68 && trendUp) {
         strategy.entry(i, LONG, "OPT BUY ${cand.fastP}/${cand.slowP}");
     }
-    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] < 55) {
+    if (crossunder(fastEMA, slowEMA, i) && rsi14[i] < 55 && rsi14[i] > 32 && trendDn) {
         strategy.entry(i, SHORT, "OPT SELL ${cand.fastP}/${cand.slowP}");
     }
 }`;
             updateIdeLineNumbers();
         }
         compileAndRunStrategy(false);
-        document.getElementById('agent-verdict').innerText = `🚀 Genoma #${idx + 1} aplicado: EMA ${cand.fastP}/${cand.slowP} [${fLabel}], TP ${cand.tp}, SL ${cand.sl}, Trail ${cand.ts}. Curva Bicolor actualizada.`;
+        document.getElementById('agent-verdict').innerText = `🚀 Genoma #${idx + 1} aplicado 1:1 (EMA200+RSI): EMA ${cand.fastP}/${cand.slowP} [${fLabel}], TP ${cand.tp}, SL ${cand.sl}, Trail ${cand.ts}. Curva Bicolor actualizada.`;
     }
  function applyBestGeneticParamsToBot() {
       if (!bestModule6Candidate) runModule6GeneticOptimizer();
