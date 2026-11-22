@@ -816,24 +816,52 @@
             </div>
           </div>
 
-          <!-- 6.4 ESCÁNER GENÉTICO MULTI-TIMEFRAME & PORTAFOLIO INDEXEDDB (Panel Desplegable) -->
-          <div id="m6-mtf-panel" class="hidden shrink-0 mx-2 mt-2 bg-[#131722] border border-purple-500/40 rounded p-2 font-mono max-h-[52%] overflow-y-auto shadow-lg">
+<!-- 6.4 ESCÁNER GENÉTICO MULTI-TIMEFRAME & SIMULADOR DE PORTAFOLIO COMBINADO (Panel Desplegable) -->
+          <div id="m6-mtf-panel" class="hidden shrink-0 mx-2 mt-2 bg-[#131722] border border-purple-500/40 rounded p-2 font-mono max-h-[68%] overflow-y-auto shadow-lg">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-1.5 mb-1.5">
               <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold text-purple-300 uppercase">6.4 Escáner Genético Multi-Timeframe (IndexedDB · 100% Velas Reales + Spread ECN + Kelly f*)</span>
+                <span class="text-[10px] font-bold text-purple-300 uppercase">6.4 Escáner Multi-TF &amp; Simulador de Portafolio Combinado (IndexedDB · Riesgo Dividido)</span>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-1.5">
                 <span id="m6-mtf-status" class="text-[10px] text-amber-300">Listo para escanear</span>
+                <button type="button" onclick="loadCachedM6MTFResults()" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-sky-300 text-[10px] font-bold" title="Restaura el último escaneo sin volver a escanear">📂 Caché</button>
                 <button type="button" onclick="toggleModule6MTFPanel(false)" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold">✕ Ocultar</button>
               </div>
             </div>
-            <div id="m6-mtf-summary" class="text-[10px] text-gray-300 bg-[#090d16] border border-gray-800 rounded px-2 py-1 mb-1.5">
-              Pulsa <b>🌐 Escanear Multi-TF</b> para evaluar cada temporalidad con su propia malla genética y detectar cuáles pasan OOS+ y Kelly positivo.
+
+            <!-- Barra de Presets Rápidos + Presupuesto de Riesgo Global + Simular -->
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-[#090d16] border border-gray-800 rounded px-2 py-1.5 mb-1.5 text-[10px]">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-gray-400">Presets:</span>
+                <button type="button" onclick="selectM6PortfolioPreset('eurusd')" class="px-2 py-0.5 rounded bg-sky-600/30 hover:bg-sky-600/60 border border-sky-500/40 text-sky-200 font-bold">Solo EURUSD (Multi-TF)</button>
+                <button type="button" onclick="selectM6PortfolioPreset('top4')" class="px-2 py-0.5 rounded bg-emerald-600/30 hover:bg-emerald-600/60 border border-emerald-500/40 text-emerald-200 font-bold">Top 4 Descorrelacionados</button>
+                <button type="button" onclick="selectM6PortfolioPreset('multipar')" class="px-2 py-0.5 rounded bg-purple-600/30 hover:bg-purple-600/60 border border-purple-500/40 text-purple-200 font-bold">Todos los APTOS</button>
+                <button type="button" onclick="selectM6PortfolioPreset('none')" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Limpiar</button>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="flex items-center gap-1 text-gray-300">
+                  <span>Riesgo Global:</span>
+                  <select id="m6-port-risk" onchange="updateM6PortfolioSelectionInfo()" class="bg-[#131722] border border-gray-700 rounded px-1.5 py-0.5 text-amber-300 font-bold">
+                    <option value="0.50" selected>0.50% (Fondeo Prop)</option>
+                    <option value="0.75">0.75% (Conservador)</option>
+                    <option value="1.00">1.00% (Institucional)</option>
+                    <option value="1.50">1.50% (Real Dinámico)</option>
+                    <option value="2.00">2.00% (Acelerado)</option>
+                  </select>
+                </label>
+                <button id="btn-m6-port-sim" type="button" onclick="runModule6PortfolioSimulator()" class="px-2.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow transition">📊 Simular Portafolio Combinado</button>
+              </div>
             </div>
-            <div class="overflow-x-auto">
+
+            <div id="m6-mtf-summary" class="text-[10px] text-gray-300 bg-[#0d111a] border border-gray-800/80 rounded px-2 py-1 mb-1.5">
+              Pulsa <b>🌐 Escanear Multi-TF</b> (o <b>📂 Caché</b> si ya escaneaste) para seleccionar bots y simular el Portafolio Combinado.
+            </div>
+
+            <div class="overflow-x-auto max-h-48 overflow-y-auto border border-gray-800/70 rounded">
               <table class="w-full text-[10px] border-collapse">
-                <thead>
+                <thead class="sticky top-0 z-10">
                   <tr class="text-[9px] text-gray-400 uppercase border-b border-gray-800 bg-[#0d111a]">
+                    <th class="py-1 px-2 text-center">Sel</th>
                     <th class="py-1 px-2 text-left">Dataset / TF</th>
                     <th class="py-1 px-2 text-left">Genoma #1 + Filtro</th>
                     <th class="py-1 px-2 text-left">TP / SL / TS</th>
@@ -848,6 +876,38 @@
                 </thead>
                 <tbody id="m6-mtf-tbody"></tbody>
               </table>
+            </div>
+
+            <!-- Resultados del Simulador de Portafolio Combinado (Fase 2) -->
+            <div id="m6-port-results" class="hidden mt-2 pt-2 border-t border-emerald-500/30 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold text-emerald-400 uppercase">6.5 Simulación Real Portafolio Combinado (2021–2026 · Riesgo Dividido)</span>
+                  <span id="m6-port-cert-badge" class="px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 text-[9px] font-bold">PENDIENTE DE CERTIFICACIÓN</span>
+                </div>
+                <button type="button" onclick="certifyAndSaveM6Portfolio()" class="px-2.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] shadow transition">💾 Certificar Portafolio (Para Macho Alfa &amp; MQL5)</button>
+              </div>
+
+              <div class="grid grid-cols-7 gap-1.5 text-[10px]">
+                <div class="bg-[#090d16] border border-gray-800 rounded p-1.5"><div class="text-[9px] text-gray-400">Capital Final</div><div id="m6-p-final" class="font-bold text-emerald-400">--</div></div>
+                <div class="bg-[#090d16] border border-gray-800 rounded p-1.5"><div class="text-[9px] text-gray-400">DD Máx Comb.</div><div id="m6-p-dd" class="font-bold text-emerald-400">--</div></div>
+                <div class="bg-[#090d16] border border-gray-800 rounded p-1.5" title="Peor pérdida en un mismo día combinando todos los bots (Límite Prop Firm típico: -5%)"><div class="text-[9px] text-gray-400">Peor Día (Prop)</div><div id="m6-p-daydd" class="font-bold text-emerald-400">--</div></div>
+                <div class="bg-[#090d16] border border-gray-800 rounded p-1.5"><div class="text-[9px] text-gray-400">Máx. Simultáneos</div><div id="m6-p-conc" class="font-bold text-sky-300">--</div></div>
+                <div class="bg-[#090d16] border border-gray-800 rounded p-1.5"><div class="text-[9px] text-gray-400">PF / Sharpe / Cal</div><div id="m6-p-ratios" class="font-bold text-indigo-300">--</div></div>
+                <div class="bg-[#090d16] border border-gray-800 rounded p-1.5"><div class="text-[9px] text-gray-400">Kelly Portafolio</div><div id="m6-p-kelly" class="font-bold text-emerald-400">--</div></div>
+                <div class="bg-[#090d16] border border-gray-800 rounded p-1.5"><div class="text-[9px] text-gray-400">Correlación Media</div><div id="m6-p-corr" class="font-bold text-emerald-400">--</div></div>
+              </div>
+
+              <div class="grid grid-cols-12 gap-2">
+                <div class="col-span-7 bg-[#090d16] border border-gray-800 rounded p-1.5">
+                  <div class="text-[9px] text-gray-400 uppercase mb-1">Curva Unificada Portafolio (Verde) vs Contribución Individual (Tenues)</div>
+                  <canvas id="m6-port-canvas" class="w-full h-[145px] block"></canvas>
+                </div>
+                <div class="col-span-5 bg-[#090d16] border border-gray-800 rounded p-1.5 overflow-x-auto">
+                  <div class="text-[9px] text-gray-400 uppercase mb-1">Matriz de Correlación Mensual (Verde &lt; 0.15 = Descorrelación Real)</div>
+                  <div id="m6-port-corr-table"></div>
+                </div>
+              </div>
             </div>
           </div>
           <!-- Cuerpo dividido: Tabla de Mejores Cromosomas (6.2) | Matriz Walk-Forward & Curva IS vs OOS (6.3) -->
@@ -9070,24 +9130,37 @@ return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal, wins, l
         `);
       }
 
-      window.sv5LastMTFResults = results;
-      try { localStorage.setItem('sv5_mtf_champions_v1', JSON.stringify(results)); } catch (e) {}
+// Deduplicar automáticamente por (Activo + TF): conservar el dataset más completo (>= 2000 velas si existe)
+      const dedupMap = new Map();
+      for (const r of results) {
+        const key = `${r.asset}_${r.tf}`;
+        const prev = dedupMap.get(key);
+        if (!prev) {
+          dedupMap.set(key, r);
+        } else {
+          const rBig = r.candlesCount >= 2000;
+          const pBig = prev.candlesCount >= 2000;
+          if ((rBig && !pBig) || (rBig === pBig && r.candlesCount > prev.candlesCount)) {
+            dedupMap.set(key, r);
+          }
+        }
+      }
+      const cleanResults = Array.from(dedupMap.values())
+        .filter(r => r.candlesCount >= 2000 || results.length <= 5)
+        .sort((a, b) => a.stepSec - b.stepSec || a.asset.localeCompare(b.asset));
 
-      const passed = results.filter(r => r.verdictCode === 'pass');
+      // Pre-seleccionar automáticamente los APTOS (con muestra real >= 2000 velas)
+      cleanResults.forEach(r => { r.selected = (r.verdictCode === 'pass'); });
+
+      window.sv5LastMTFResults = cleanResults;
+      try { localStorage.setItem('sv5_mtf_champions_v1', JSON.stringify(cleanResults)); } catch (e) {}
+
+      renderModule6MTFTable();
+
+      const passed = cleanResults.filter(r => r.verdictCode === 'pass');
       const elapsedSec = ((performance.now() - tStartAll) / 1000).toFixed(2);
       if (statusEl) {
-        statusEl.innerText = `✓ Escaneo completado (${results.length} datasets en ${elapsedSec}s) · ${passed.length} APTOS para Portafolio MTF`;
-      }
-      if (summaryEl) {
-        if (passed.length > 0) {
-          const n = passed.length;
-          const propSplit = (0.50 / n).toFixed(3);
-          const instSplit = (1.00 / n).toFixed(2);
-          const tfsList = passed.map(p => `${p.asset} ${p.tf}`).join(' + ');
-          summaryEl.innerHTML = `<span class="text-emerald-400 font-bold">PORTAFOLIO CANDIDATO (${n} TFs):</span> <span class="text-white">${tfsList}</span> <span class="text-gray-500">|</span> Fondeo 0.50% ÷ ${n} = <b class="text-emerald-300">${propSplit}% c/u</b> <span class="text-gray-500">|</span> Inst. 1.00% ÷ ${n} = <b class="text-sky-300">${instSplit}% c/u</b>`;
-        } else {
-          summaryEl.innerHTML = `<span class="text-amber-300 font-bold">Sin temporalidades con veredicto APTO estricto todavía.</span> Revisa la columna OOS / Kelly para ajustar filtros o cargar nuevos pares.`;
-        }
+        statusEl.innerText = `✓ Escaneo completado (${results.length} leídos → ${cleanResults.length} únicos en ${elapsedSec}s) · ${passed.length} APTOS`;
       }
     } catch (err) {
       console.error('Error en Escáner Multi-TF:', err);
@@ -9097,6 +9170,543 @@ return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal, wins, l
       _m6HourArr = prevHourArr;
       _m6AtrOkArr = prevAtrOkArr;
       if (btn) btn.disabled = false;
+    }
+  }
+
+  function renderModule6MTFTable() {
+    const tbody = document.getElementById('m6-mtf-tbody');
+    if (!tbody) return;
+    const list = window.sv5LastMTFResults || [];
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="py-3 text-center text-gray-500">Sin resultados cargados. Pulsa 🌐 Escanear Multi-TF.</td></tr>';
+      updateM6PortfolioSelectionInfo();
+      return;
+    }
+
+    tbody.innerHTML = list.map((item, rowIdx) => {
+      const vCls = item.verdictCode === 'pass'
+        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40'
+        : (item.verdictCode === 'warn' ? 'bg-amber-500/15 text-amber-300 border-amber-500/40' : 'bg-rose-500/15 text-rose-400 border-rose-500/40');
+      const kCls = item.kellyPct >= 5 ? 'text-emerald-400' : (item.kellyPct > 0 ? 'text-amber-300' : 'text-rose-400');
+      const checkedAttr = item.selected ? 'checked' : '';
+      return `
+        <tr class="border-b border-gray-800/70 hover:bg-[#1a2030] transition ${item.selected ? 'bg-purple-500/5' : ''}">
+          <td class="py-1.5 px-2 text-center">
+            <input type="checkbox" ${checkedAttr} onchange="toggleM6MTFSelection(${rowIdx}, this.checked)" class="accent-purple-500 cursor-pointer">
+          </td>
+          <td class="py-1.5 px-2">
+            <div class="font-bold text-white">${item.asset} <span class="px-1 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px]">${item.tf}</span></div>
+            <div class="text-[9px] text-gray-500">${item.candlesCount.toLocaleString()} velas</div>
+          </td>
+          <td class="py-1.5 px-2 font-bold text-amber-300">
+            EMA ${item.fast}/${item.slow} <span class="px-1 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 text-[9px]">${item.filterLabel}</span>
+          </td>
+          <td class="py-1.5 px-2 text-gray-300">${item.tp} / ${item.sl} / ${item.ts}</td>
+          <td class="py-1.5 px-2 text-right font-bold ${item.retIS >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${item.retIS >= 0 ? '+' : ''}${item.retIS.toFixed(1)}%</td>
+          <td class="py-1.5 px-2 text-right font-bold ${item.retOOS >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${item.retOOS >= 0 ? '+' : ''}${item.retOOS.toFixed(1)}%</td>
+          <td class="py-1.5 px-2 text-right font-bold ${item.retFull >= 0 ? 'text-emerald-300' : 'text-rose-400'}">${item.retFull >= 0 ? '+' : ''}${item.retFull.toFixed(1)}%</td>
+          <td class="py-1.5 px-2 text-right text-gray-200">${item.pf.toFixed(2)} <span class="text-gray-500">/</span> <span class="${item.maxDD <= 12 ? 'text-emerald-300' : 'text-amber-300'}">${item.maxDD.toFixed(1)}%</span></td>
+          <td class="py-1.5 px-2 text-right font-bold ${kCls}">${item.kellyPct > -50 ? item.kellyPct.toFixed(2) + '%' : 'N/A'} <div class="text-[9px] text-gray-500">${item.trades} ops · ${item.winRate.toFixed(0)}%</div></td>
+          <td class="py-1.5 px-2 text-center"><span class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${vCls}">${item.verdict}</span></td>
+          <td class="py-1.5 px-2 text-right">
+            <button type="button" onclick="applyM6MultiTFCandidate(${rowIdx})" class="px-2 py-0.5 rounded bg-sky-600/80 hover:bg-sky-500 text-white text-[10px] font-bold transition" title="Inyecta este genoma en M3 (StratScript IDE)">Inyectar</button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    updateM6PortfolioSelectionInfo();
+  }
+
+  function toggleM6MTFSelection(idx, checked) {
+    const list = window.sv5LastMTFResults || [];
+    if (list[idx]) list[idx].selected = !!checked;
+    updateM6PortfolioSelectionInfo();
+  }
+
+  function selectM6PortfolioPreset(mode) {
+    const list = window.sv5LastMTFResults || [];
+    if (!list.length) return;
+    if (mode === 'eurusd') {
+      list.forEach(r => { r.selected = (r.asset === 'EURUSD' && r.verdictCode === 'pass'); });
+    } else if (mode === 'multipar') {
+      list.forEach(r => { r.selected = (r.verdictCode === 'pass'); });
+    } else if (mode === 'top4') {
+      const sortedPass = list.filter(r => r.verdictCode === 'pass').sort((a, b) => (b.pf / Math.max(3, b.maxDD)) - (a.pf / Math.max(3, a.maxDD)));
+      const pickedKeys = new Set(sortedPass.slice(0, 4).map(r => `${r.asset}_${r.tf}`));
+      list.forEach(r => { r.selected = pickedKeys.has(`${r.asset}_${r.tf}`); });
+    } else if (mode === 'none') {
+      list.forEach(r => { r.selected = false; });
+    }
+    renderModule6MTFTable();
+  }
+
+  function loadCachedM6MTFResults() {
+    try {
+      const raw = localStorage.getItem('sv5_mtf_champions_v1');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) {
+        window.sv5LastMTFResults = parsed;
+        const panel = document.getElementById('m6-mtf-panel');
+        if (panel) panel.classList.remove('hidden');
+        renderModule6MTFTable();
+        const statusEl = document.getElementById('m6-mtf-status');
+        if (statusEl) statusEl.innerText = `✓ Caché restaurada (${parsed.length} datasets únicos listos para simular)`;
+      }
+    } catch (e) {}
+  }
+
+  function updateM6PortfolioSelectionInfo() {
+    const summaryEl = document.getElementById('m6-mtf-summary');
+    if (!summaryEl) return;
+    const list = window.sv5LastMTFResults || [];
+    const sel = list.filter(r => r.selected);
+    const globalRisk = parseFloat(document.getElementById('m6-port-risk')?.value) || 0.50;
+    if (!sel.length) {
+      summaryEl.innerHTML = `<span class="text-amber-300 font-bold">0 bots seleccionados.</span> Marca al menos 2 filas (o usa los presets rápidos) para simular el Portafolio Combinado.`;
+      return;
+    }
+    const perBot = globalRisk / sel.length;
+    const tags = sel.map(s => `${s.asset} ${s.tf}`).join(' + ');
+    summaryEl.innerHTML = `<span class="text-emerald-400 font-bold">SELECCIONADOS (${sel.length} bots):</span> <span class="text-white">${tags}</span> <span class="text-gray-500">|</span> Presupuesto <b>${globalRisk.toFixed(2)}%</b> ÷ ${sel.length} = <b class="text-amber-300">${perBot.toFixed(3)}% por bot</b>`;
+  }
+
+  function extractMTFCronologicalTrades(item, bars) {
+    const len = bars.length;
+    const closeArr = new Float64Array(len);
+    const highArr = new Float64Array(len);
+    const lowArr = new Float64Array(len);
+    const timeArr = new Float64Array(len);
+    const hourArr = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      closeArr[i] = bars[i].close;
+      highArr[i] = bars[i].high;
+      lowArr[i] = bars[i].low;
+      const t = bars[i].time || 0;
+      timeArr[i] = t;
+      hourArr[i] = Math.floor((((t % 86400) + 86400) % 86400) / 3600);
+    }
+
+    const atr14Arr = calcFastATRArray(highArr, lowArr, closeArr, 14);
+    const atrMa50Arr = calcFastSMAArray(atr14Arr, 50);
+    const fEMA = calcFastEMAArray(closeArr, item.fast);
+    const sEMA = calcFastEMAArray(closeArr, item.slow);
+    const trendEMA = calcFastEMAArray(closeArr, 200);
+    const rsiArr = calcFastRSIArray(closeArr, 14);
+
+    const refPrice = closeArr[len - 1] || 1;
+    const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
+    const slDist = Math.max(pipUnit * 10, item.sl * pipUnit);
+    const tpDist = item.tp > 0 ? item.tp * pipUnit : 0;
+    const tsDist = item.ts > 0 ? item.ts * pipUnit : 0;
+    const spreadCost = pipUnit * 1.2;
+    const cooldownBars = 6;
+
+    let pos = null;
+    let lastExitBar = -999;
+    const trades = [];
+    const botKey = `${item.asset}_${item.tf}`;
+    const label = `${item.asset} ${item.tf}`;
+
+    for (let i = 205; i < len; i++) {
+      if (pos) {
+        let exitP = null;
+        if (pos.dir === 1) {
+          if (pos.sl > 0 && lowArr[i] <= pos.sl) exitP = pos.sl;
+          else if (pos.tp > 0 && highArr[i] >= pos.tp) exitP = pos.tp;
+          else if (tsDist > 0) {
+            const gain = highArr[i] - pos.entry;
+            if (gain >= tsDist) {
+              const beSL = pos.entry + pipUnit * 2;
+              if (beSL > pos.sl) pos.sl = beSL;
+              const trailSL = highArr[i] - tsDist;
+              if (trailSL > pos.sl) pos.sl = trailSL;
+            }
+          }
+        } else {
+          if (pos.sl > 0 && highArr[i] >= pos.sl) exitP = pos.sl;
+          else if (pos.tp > 0 && lowArr[i] <= pos.tp) exitP = pos.tp;
+          else if (tsDist > 0) {
+            const gain = pos.entry - lowArr[i];
+            if (gain >= tsDist) {
+              const beSL = pos.entry - pipUnit * 2;
+              if (pos.sl === 0 || beSL < pos.sl) pos.sl = beSL;
+              const trailSL = lowArr[i] + tsDist;
+              if (pos.sl === 0 || trailSL < pos.sl) pos.sl = trailSL;
+            }
+          }
+        }
+        if (exitP !== null) {
+          const rawDiff = pos.dir === 1 ? (exitP - pos.entry - spreadCost) : (pos.entry - exitP - spreadCost);
+          const rMult = rawDiff / slDist;
+          trades.push({
+            botKey,
+            label,
+            entryTime: pos.entryTime,
+            exitTime: timeArr[i],
+            rMult,
+            dir: pos.dir
+          });
+          pos = null;
+          lastExitBar = i;
+        }
+      } else if (i - lastExitBar >= cooldownBars) {
+        const sessOk = (item.filterMode === 1 || item.filterMode === 3) ? (hourArr[i] >= 7 && hourArr[i] <= 20) : true;
+        const atrOk = (item.filterMode === 2 || item.filterMode === 3) ? (atr14Arr[i] > atrMa50Arr[i] * 0.90) : true;
+        if (!sessOk || !atrOk) continue;
+
+        const trendUp = closeArr[i] >= trendEMA[i];
+        const trendDn = closeArr[i] <= trendEMA[i];
+        const crossUp = fEMA[i - 1] <= sEMA[i - 1] && fEMA[i] > sEMA[i] && rsiArr[i] < 68 && rsiArr[i] > 45 && trendUp;
+        const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32 && rsiArr[i] < 55 && trendDn;
+        if (crossUp || crossDn) {
+          const entry = closeArr[i];
+          pos = crossUp
+            ? { dir: 1, entry, entryTime: timeArr[i], sl: entry - slDist, tp: tpDist > 0 ? entry + tpDist : 0 }
+            : { dir: -1, entry, entryTime: timeArr[i], sl: entry + slDist, tp: tpDist > 0 ? entry - tpDist : 0 };
+        }
+      }
+    }
+    return trades;
+  }
+
+  window.sv5LastPortfolioSim = null;
+
+  async function runModule6PortfolioSimulator() {
+    const list = window.sv5LastMTFResults || [];
+    const selected = list.filter(r => r.selected);
+    const outBox = document.getElementById('m6-port-results');
+    const statusEl = document.getElementById('m6-mtf-status');
+    const btn = document.getElementById('btn-m6-port-sim');
+    if (!outBox) return;
+
+    if (selected.length < 1) {
+      if (statusEl) statusEl.innerText = '⚠️ Selecciona al menos 1 bot en la tabla 6.4 para simular.';
+      return;
+    }
+
+    const globalRiskPct = parseFloat(document.getElementById('m6-port-risk')?.value) || 0.50;
+    const initCap = parseFloat(document.getElementById('initial-capital-select')?.value) || 10000;
+    const nBots = selected.length;
+    const perBotRiskPct = globalRiskPct / nBots;
+    const perBotDec = perBotRiskPct / 100;
+
+    if (btn) btn.disabled = true;
+    outBox.classList.remove('hidden');
+    if (statusEl) statusEl.innerText = `⏳ Extrayendo operaciones reales de ${nBots} bots (2021-2026)...`;
+    await new Promise(r => setTimeout(r, 20));
+
+    try {
+      const allTrades = [];
+      const botTradeMap = {};
+      const botLabels = [];
+
+      for (let i = 0; i < selected.length; i++) {
+        const item = selected[i];
+        const ds = await getDatasetFromDB(item.datasetId);
+        const bars = (ds && Array.isArray(ds.candles)) ? ds.candles : [];
+        if (bars.length < 250) continue;
+        const trs = extractMTFCronologicalTrades(item, bars);
+        const bKey = `${item.asset}_${item.tf}`;
+        botTradeMap[bKey] = trs;
+        botLabels.push({ key: bKey, label: `${item.asset} ${item.tf}`, item });
+        for (let k = 0; k < trs.length; k++) allTrades.push(trs[k]);
+      }
+
+      if (!allTrades.length) {
+        if (statusEl) statusEl.innerText = '⚠️ Sin operaciones cerradas en los bots seleccionados.';
+        return;
+      }
+
+      // 1) Máxima concurrencia simultánea real
+      const events = [];
+      for (const tr of allTrades) {
+        events.push({ t: tr.entryTime, d: 1 });
+        events.push({ t: tr.exitTime, d: -1 });
+      }
+      events.sort((a, b) => a.t - b.t || a.d - b.d);
+      let activeNow = 0, maxConcurrent = 0;
+      for (const ev of events) {
+        activeNow += ev.d;
+        if (activeNow > maxConcurrent) maxConcurrent = activeNow;
+      }
+
+      // 2) Simulación cronológica unificada del Portafolio Combinado
+      allTrades.sort((a, b) => a.exitTime - b.exitTime);
+      let eq = initCap, peak = initCap, maxDD = 0;
+      let wins = 0, losses = 0, grossP = 0, grossL = 0;
+      const combPoints = [{ t: allTrades[0].entryTime || allTrades[0].exitTime, eq: initCap }];
+
+      // Seguimiento diario (Prop Firm Daily DD) y mensual (Sharpe + Correlación)
+      let currentDay = -1, dayStartEq = initCap, dayPnlUsd = 0, worstDayPct = 0;
+      const portMonthPnl = {};
+      const botMonthR = {};
+      const allMonthsSet = new Set();
+      botLabels.forEach(b => { botMonthR[b.key] = {}; });
+
+      for (const tr of allTrades) {
+        const dayId = Math.floor(tr.exitTime / 86400);
+        if (dayId !== currentDay) {
+          currentDay = dayId;
+          dayStartEq = eq;
+          dayPnlUsd = 0;
+        }
+        const riskUsd = Math.max(1, eq * perBotDec);
+        const pnlUsd = riskUsd * tr.rMult;
+        eq += pnlUsd;
+        dayPnlUsd += pnlUsd;
+        if (dayStartEq > 0) {
+          const dayPct = (dayPnlUsd / dayStartEq) * 100;
+          if (dayPct < worstDayPct) worstDayPct = dayPct;
+        }
+
+        if (pnlUsd > 0) { wins++; grossP += pnlUsd; }
+        else if (pnlUsd < 0) { losses++; grossL += Math.abs(pnlUsd); }
+
+        if (eq > peak) peak = eq;
+        const dd = peak > 0 ? ((peak - eq) / peak) * 100 : 0;
+        if (dd > maxDD) maxDD = dd;
+
+        combPoints.push({ t: tr.exitTime, eq });
+
+        const dObj = new Date(tr.exitTime * 1000);
+        const mKey = `${dObj.getUTCFullYear()}-${String(dObj.getUTCMonth() + 1).padStart(2, '0')}`;
+        allMonthsSet.add(mKey);
+        portMonthPnl[mKey] = (portMonthPnl[mKey] || 0) + (pnlUsd / Math.max(1, initCap)) * 100;
+        botMonthR[tr.botKey][mKey] = (botMonthR[tr.botKey][mKey] || 0) + (tr.rMult * perBotRiskPct);
+      }
+
+      const retPct = ((eq - initCap) / initCap) * 100;
+      const pf = grossL > 0 ? (grossP / grossL) : (grossP > 0 ? 3.5 : 0);
+      const totalTrades = wins + losses;
+      const wrDec = totalTrades > 0 ? (wins / totalTrades) : 0;
+      const avgWin = wins > 0 ? (grossP / wins) : 0;
+      const avgLoss = losses > 0 ? (grossL / losses) : 0;
+      const payoffR = avgLoss > 0 ? (avgWin / avgLoss) : 0;
+      const kellyPct = payoffR > 0 ? ((wrDec - ((1 - wrDec) / payoffR)) * 100) : 0;
+
+      // Sharpe anualizado sobre retornos mensuales y Calmar
+      const allMonths = Array.from(allMonthsSet).sort();
+      const mVals = allMonths.map(m => portMonthPnl[m] || 0);
+      const meanM = mVals.length ? mVals.reduce((a, b) => a + b, 0) / mVals.length : 0;
+      const varM = mVals.length > 1 ? mVals.reduce((a, v) => a + Math.pow(v - meanM, 2), 0) / (mVals.length - 1) : 0;
+      const stdM = Math.sqrt(varM);
+      const sharpe = stdM > 0 ? (meanM / stdM) * Math.sqrt(12) : 0;
+      const spanYears = Math.max(0.5, (allTrades[allTrades.length - 1].exitTime - allTrades[0].exitTime) / (86400 * 365.25));
+      const cagrApprox = retPct / spanYears;
+      const calmar = maxDD > 0 ? (cagrApprox / maxDD) : 0;
+
+      // 3) Curvas individuales (al mismo riesgo dividido para ver contribución real en gráfica)
+      const indivCurves = botLabels.map(b => {
+        const trs = (botTradeMap[b.key] || []).slice().sort((x, y) => x.exitTime - y.exitTime);
+        let bEq = initCap;
+        const pts = [{ t: combPoints[0].t, eq: initCap }];
+        for (const tr of trs) {
+          bEq += Math.max(1, bEq * perBotDec) * tr.rMult;
+          pts.push({ t: tr.exitTime, eq: bEq });
+        }
+        return { key: b.key, label: b.label, pts, finalEq: bEq };
+      });
+
+      // 4) Matriz de Correlación Mensual (Pearson)
+      const pearson = (arrA, arrB) => {
+        const n = arrA.length;
+        if (n < 3) return 0;
+        const ma = arrA.reduce((s, v) => s + v, 0) / n;
+        const mb = arrB.reduce((s, v) => s + v, 0) / n;
+        let num = 0, da = 0, db = 0;
+        for (let i = 0; i < n; i++) {
+          const xa = arrA[i] - ma, xb = arrB[i] - mb;
+          num += xa * xb; da += xa * xa; db += xb * xb;
+        }
+        const den = Math.sqrt(da * db);
+        return den > 0 ? (num / den) : 0;
+      };
+
+      let corrSum = 0, corrPairs = 0;
+      const corrMatrix = botLabels.map((bA, i) => botLabels.map((bB, j) => {
+        if (i === j) return 1.0;
+        const vecA = allMonths.map(m => botMonthR[bA.key][m] || 0);
+        const vecB = allMonths.map(m => botMonthR[bB.key][m] || 0);
+        const r = pearson(vecA, vecB);
+        if (j > i) { corrSum += r; corrPairs++; }
+        return r;
+      }));
+      const avgCorr = corrPairs > 0 ? (corrSum / corrPairs) : 0;
+
+      // Pintar KPIs del Portafolio
+      const setP = (id, txt, cls) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerText = txt;
+        if (cls) el.className = cls;
+      };
+      setP('m6-p-final', `$${Math.round(eq).toLocaleString()} (${retPct >= 0 ? '+' : ''}${retPct.toFixed(1)}%)`, `font-bold ${retPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`);
+      setP('m6-p-dd', `-${maxDD.toFixed(2)}%`, `font-bold ${maxDD <= 8 ? 'text-emerald-400' : (maxDD <= 14 ? 'text-amber-300' : 'text-rose-400')}`);
+      setP('m6-p-daydd', `${worstDayPct.toFixed(2)}%`, `font-bold ${Math.abs(worstDayPct) < 3.5 ? 'text-emerald-400' : (Math.abs(worstDayPct) < 4.8 ? 'text-amber-300' : 'text-rose-400')}`);
+      setP('m6-p-conc', `${maxConcurrent} / ${nBots} bots`, 'font-bold text-sky-300');
+      setP('m6-p-ratios', `PF ${pf.toFixed(2)} · Sh ${sharpe.toFixed(2)} · Cal ${calmar.toFixed(2)}`, 'font-bold text-indigo-300');
+      setP('m6-p-kelly', `${kellyPct.toFixed(2)}% (${totalTrades} ops)`, `font-bold ${kellyPct > 3 ? 'text-emerald-400' : 'text-amber-300'}`);
+      const corrCls = avgCorr < 0.20 ? 'text-emerald-400' : (avgCorr < 0.45 ? 'text-sky-300' : 'text-amber-300');
+      const corrLbl = avgCorr < 0.20 ? 'DESCORRELADO' : (avgCorr < 0.45 ? 'DIVERSIFICADO' : 'MODERADA');
+      setP('m6-p-corr', `${avgCorr.toFixed(2)} (${corrLbl})`, `font-bold ${corrCls}`);
+
+      // Pintar Matriz de Correlación HTML
+      const corrBox = document.getElementById('m6-port-corr-table');
+      if (corrBox) {
+        if (botLabels.length <= 1) {
+          corrBox.innerHTML = '<div class="text-[10px] text-gray-500 p-2">Selecciona ≥ 2 bots para calcular la matriz de correlación entre temporalidades/pares.</div>';
+        } else {
+          let tbl = '<table class="w-full text-[9px] border-collapse"><thead><tr class="border-b border-gray-800 text-gray-400"><th class="p-1 text-left">Bot</th>';
+          botLabels.forEach(b => { tbl += `<th class="p-1 text-center">${b.label.replace(' ', '<br>')}</th>`; });
+          tbl += '</tr></thead><tbody>';
+          botLabels.forEach((bA, i) => {
+            tbl += `<tr class="border-b border-gray-800/50"><td class="p-1 font-bold text-gray-300 whitespace-nowrap">${bA.label}</td>`;
+            botLabels.forEach((bB, j) => {
+              const v = corrMatrix[i][j];
+              let bg = 'bg-gray-800/40 text-gray-500';
+              if (i !== j) {
+                if (v < 0.15) bg = 'bg-emerald-500/20 text-emerald-300 font-bold';
+                else if (v < 0.40) bg = 'bg-sky-500/15 text-sky-300';
+                else if (v < 0.65) bg = 'bg-amber-500/20 text-amber-300';
+                else bg = 'bg-rose-500/25 text-rose-300 font-bold';
+              }
+              tbl += `<td class="p-1 text-center ${bg}">${v.toFixed(2)}</td>`;
+            });
+            tbl += '</tr>';
+          });
+          tbl += '</tbody></table>';
+          corrBox.innerHTML = tbl;
+        }
+      }
+
+      // Dibujar Curva Combinada vs Individuales
+      drawM6PortfolioCanvas(combPoints, indivCurves, initCap);
+
+      // Guardar simulación en memoria lista para Certificar (Fase 3)
+      window.sv5LastPortfolioSim = {
+        timestamp: new Date().toISOString(),
+        initCap,
+        globalRiskPct,
+        perBotRiskPct,
+        metrics: {
+          finalEq: eq, retPct, maxDD, worstDayPct, maxConcurrent,
+          pf, sharpe, calmar, kellyPct, totalTrades, winRate: wrDec * 100, avgCorr
+        },
+        bots: selected.map((s, idx) => ({
+          magicNumber: 5101 + idx,
+          datasetId: s.datasetId,
+          asset: s.asset,
+          tf: s.tf,
+          stepSec: s.stepSec,
+          fast: s.fast,
+          slow: s.slow,
+          tp: s.tp,
+          sl: s.sl,
+          ts: s.ts,
+          filterMode: s.filterMode,
+          filterLabel: s.filterLabel,
+          riskPctAssigned: perBotRiskPct,
+          kellyPct: s.kellyPct,
+          pf: s.pf,
+          maxDD: s.maxDD
+        }))
+      };
+
+      if (statusEl) {
+        statusEl.innerText = `✓ Portafolio (${nBots} bots · ${globalRiskPct}% ÷ ${nBots} = ${perBotRiskPct.toFixed(3)}% c/u): +${retPct.toFixed(1)}% | DD -${maxDD.toFixed(2)}% | Peor Día ${worstDayPct.toFixed(2)}%`;
+      }
+    } catch (err) {
+      console.error('Error en Simulador de Portafolio MTF:', err);
+      if (statusEl) statusEl.innerText = 'Error al simular portafolio (revisa consola).';
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function drawM6PortfolioCanvas(combPoints, indivCurves, initCap) {
+    const canvas = document.getElementById('m6-port-canvas');
+    if (!canvas || combPoints.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width = Math.max(420, canvas.clientWidth || 520);
+    const H = canvas.height = 145;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, W, H);
+
+    const minT = combPoints[0].t;
+    const maxT = Math.max(minT + 1, combPoints[combPoints.length - 1].t);
+    let minEq = initCap * 0.96, maxEq = initCap * 1.04;
+    combPoints.forEach(p => { if (p.eq < minEq) minEq = p.eq; if (p.eq > maxEq) maxEq = p.eq; });
+    indivCurves.forEach(c => c.pts.forEach(p => { if (p.eq < minEq) minEq = p.eq; if (p.eq > maxEq) maxEq = p.eq; }));
+
+    const padL = 48, padR = 12, padT = 12, padB = 18;
+    const xOf = t => padL + ((t - minT) / (maxT - minT)) * (W - padL - padR);
+    const yOf = v => padT + (1 - ((v - minEq) / Math.max(1, maxEq - minEq))) * (H - padT - padB);
+
+    // Línea base capital inicial
+    ctx.strokeStyle = 'rgba(148,163,184,0.25)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padL, yOf(initCap));
+    ctx.lineTo(W - padR, yOf(initCap));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Curvas individuales tenues
+    const palette = ['#38bdf8', '#a78bfa', '#fbbf24', '#fb7185', '#2dd4bf', '#f97316', '#818cf8', '#c084fc'];
+    indivCurves.forEach((c, idx) => {
+      if (c.pts.length < 2) return;
+      ctx.strokeStyle = palette[idx % palette.length];
+      ctx.globalAlpha = 0.42;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      c.pts.forEach((p, i) => {
+        const x = xOf(p.t), y = yOf(p.eq);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    });
+
+    // Curva Combinada del Portafolio (esmeralda brillante)
+    ctx.globalAlpha = 1.0;
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    combPoints.forEach((p, i) => {
+      const x = xOf(p.t), y = yOf(p.eq);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Etiquetas eje Y
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9px monospace';
+    ctx.fillText(`$${Math.round(maxEq).toLocaleString()}`, 4, padT + 6);
+    ctx.fillText(`$${Math.round(initCap).toLocaleString()}`, 4, yOf(initCap) + 3);
+    ctx.fillText(`$${Math.round(minEq).toLocaleString()}`, 4, H - padB);
+    ctx.fillStyle = '#10b981';
+    ctx.fillText('● PORTAFOLIO COMBINADO', padL + 6, padT + 8);
+  }
+
+  function certifyAndSaveM6Portfolio() {
+    const sim = window.sv5LastPortfolioSim;
+    const statusEl = document.getElementById('m6-mtf-status');
+    if (!sim || !sim.bots || !sim.bots.length) {
+      if (statusEl) statusEl.innerText = '⚠️ Primero ejecuta "Simular Portafolio" antes de certificar.';
+      return;
+    }
+    window.sv5CertifiedPortfolio = sim;
+    try {
+      localStorage.setItem('sv5_mtf_certified_portfolio_v1', JSON.stringify(sim));
+    } catch (e) {}
+    const certBadge = document.getElementById('m6-port-cert-badge');
+    if (certBadge) {
+      certBadge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold';
+      certBadge.innerText = `✓ CERTIFICADO (${sim.bots.length} BOTS · ${sim.globalRiskPct}% GLOBAL) — LISTO PARA MACHO ALFA & MQL5`;
+    }
+    if (statusEl) {
+      statusEl.innerText = `💾 Portafolio Certificado guardado (${sim.bots.length} bots) en localStorage -> sv5_mtf_certified_portfolio_v1`;
     }
   }
 
@@ -9124,7 +9734,6 @@ return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal, wins, l
       try { localStorage.setItem('sv5_module3_code', newCode); } catch (e) {}
     }
 
-    // Intentar sincronizar selector de dataset si está disponible en barra superior
     const dsSel = document.getElementById('saved-datasets-select') || document.getElementById('dataset-selector');
     if (dsSel && item.datasetId) {
       const opt = Array.from(dsSel.options).find(o => o.value === item.datasetId);
