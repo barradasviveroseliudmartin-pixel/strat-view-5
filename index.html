@@ -10224,11 +10224,16 @@ function compileAndRunStrategy(silent = false) {
 
             const refPrice = close[len - 1] || 1;
             const pipUnit = refPrice < 5 ? 0.0001 : refPrice < 500 ? 0.01 : 1.0;
-            const TakeProfit = parseFloat(document.getElementById('inp-tp').value) || 0;
-            const StopLoss = parseFloat(document.getElementById('inp-sl').value) || 0;
-            const TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
-            const Lots = parseFloat(document.getElementById('inp-lots').value) || 1.0;
-            const riskMode = document.getElementById('inp-risk-mode').value;
+const TakeProfit = parseFloat(document.getElementById('inp-tp').value) || 0;
+        const StopLoss = parseFloat(document.getElementById('inp-sl').value) || 0;
+        const TrailingStop = parseFloat(document.getElementById('inp-ts').value) || 0;
+        const Lots = parseFloat(document.getElementById('inp-lots').value) || 1.0;
+        const riskMode = document.getElementById('inp-risk-mode').value;
+        try {
+            localStorage.setItem('sv5_module3_params', JSON.stringify({
+                tp: TakeProfit, sl: StopLoss, ts: TrailingStop, lots: Lots, riskMode
+            }));
+        } catch (e) {}
             const Slippage = 2, _Symbol = document.getElementById('symbolSelect').value;
             const input = (name, defVal) => defVal;
 
@@ -10653,8 +10658,44 @@ resizeAllCharts();
 
     window.addEventListener('resize', resizeAllCharts);
 
-    const editorEl = document.getElementById('stratscript-editor');
+const editorEl = document.getElementById('stratscript-editor');
     editorEl.value = localStorage.getItem('sv5_module3_code') || STRATEGY_PRESETS.stratscript_ema_rsi;
+    (function restoreModule3Params() {
+        const paramMap = [
+            ['inp-tp', 'tp'],
+            ['inp-sl', 'sl'],
+            ['inp-ts', 'ts'],
+            ['inp-lots', 'lots'],
+            ['inp-risk-mode', 'riskMode']
+        ];
+        try {
+            const rawParams = localStorage.getItem('sv5_module3_params');
+            if (rawParams) {
+                const p = JSON.parse(rawParams);
+                paramMap.forEach(([id, key]) => {
+                    const el = document.getElementById(id);
+                    if (el && p[key] !== undefined && p[key] !== null && p[key] !== '') {
+                        el.value = p[key];
+                    }
+                });
+            }
+        } catch (e) {}
+        const persistParams = () => {
+            try {
+                localStorage.setItem('sv5_module3_params', JSON.stringify({
+                    tp: parseFloat(document.getElementById('inp-tp')?.value) || 0,
+                    sl: parseFloat(document.getElementById('inp-sl')?.value) || 0,
+                    ts: parseFloat(document.getElementById('inp-ts')?.value) || 0,
+                    lots: parseFloat(document.getElementById('inp-lots')?.value) || 1.0,
+                    riskMode: document.getElementById('inp-risk-mode')?.value || ''
+                }));
+            } catch (e) {}
+        };
+        paramMap.forEach(([id]) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', persistParams);
+        });
+    })();
     updateIdeLineNumbers();
     validateSyntaxRealtime();
 
