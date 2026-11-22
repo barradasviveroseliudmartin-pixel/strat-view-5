@@ -596,8 +596,14 @@
               </label>
               <label class="flex items-center gap-1 text-gray-300">
                 <span class="text-purple-400 font-bold">Riesgo:</span>
-                <select id="inp-risk-mode" onchange="compileAndRunStrategy()" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200">
-                  <option value="pct">% Cuenta (1.5%)</option>
+<select id="inp-risk-mode" onchange="compileAndRunStrategy()" class="bg-[#090d16] border border-gray-700 rounded px-1.5 py-0.5 text-gray-200">
+                  <option value="pct_0.25">% Cuenta (0.25% Prop)</option>
+                  <option value="pct_0.5">% Cuenta (0.5% Fondeo)</option>
+                  <option value="pct_0.75">% Cuenta (0.75%)</option>
+                  <option value="pct_1.0">% Cuenta (1.0% Inst.)</option>
+                  <option value="pct_1.2">% Cuenta (1.2%)</option>
+                  <option value="pct" selected>% Cuenta (1.5%)</option>
+                  <option value="pct_2.0">% Cuenta (2.0%)</option>
                   <option value="fixed">Capital Fijo (Lote)</option>
                 </select>
               </label>
@@ -8676,7 +8682,9 @@ const _m6SessOk = (_m6ActiveFilterMode === 1 || _m6ActiveFilterMode === 3) ? (_m
       const crossDn = fEMA[i - 1] >= sEMA[i - 1] && fEMA[i] < sEMA[i] && rsiArr[i] > 32 && rsiArr[i] < 55 && trendDn;
       if (crossUp || crossDn) {
         const entry = closeArr[i];
-const riskUsd = Math.max(25, bal * 0.015);
+const _rm = document.getElementById('inp-risk-mode')?.value || 'pct';
+            const _rp = _rm === 'pct' ? 0.015 : (_rm.startsWith('pct_') ? (parseFloat(_rm.slice(4)) / 100 || 0.01) : 0.015);
+            const riskUsd = Math.max(10, bal * _rp);
         const size = riskUsd / slDist;
         pos = crossUp
           ? { dir: 1, entry, size, sl: entry - slDist, tp: tpDist > 0 ? entry + tpDist : 0 }
@@ -10400,7 +10408,8 @@ if (pos.dir === 'LONG') {
                         const tpDist = TakeProfit > 0 ? TakeProfit * pipUnit : 0;
                         const trailDist = TrailingStop > 0 ? TrailingStop * pipUnit : 0;
                         let unitSize = (Lots * (initialCapital / 100)) / (refPrice || 1);
-                        if (riskMode === 'pct' && slDist > 0) unitSize = (balance * 0.012) / slDist;
+const riskPct = riskMode === 'pct' ? 0.015 : (riskMode && riskMode.startsWith('pct_') ? (parseFloat(riskMode.slice(4)) / 100 || 0.01) : 0);
+            if (riskPct > 0 && slDist > 0) unitSize = (balance * riskPct) / slDist;
 
                         if (sig.dir === 'LONG') {
                             countLongs++;
