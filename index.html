@@ -825,7 +825,8 @@
               <div class="flex flex-wrap items-center gap-1.5">
                 <span id="m6-mtf-status" class="text-[10px] text-amber-300">Listo para escanear</span>
                 <button type="button" onclick="loadCachedM6MTFResults()" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-sky-300 text-[10px] font-bold" title="Restaura el último escaneo sin volver a escanear">📂 Caché</button>
-                <button type="button" onclick="toggleModule6MTFPanel(false)" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold">✕ Ocultar</button>
+<button id="btn-m6-mtf-expand" type="button" onclick="toggleM6PanelExpand()" class="px-1.5 py-0.5 rounded bg-purple-900/50 hover:bg-purple-700/70 border border-purple-500/40 text-purple-200 text-[10px] font-bold" title="Alternar vista expandida del Panel 6.4 y 6.5">⛶ Expandir</button>
+            <button type="button" onclick="toggleModule6MTFPanel(false)" class="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold">✕ Ocultar</button>
               </div>
             </div>
 
@@ -885,7 +886,10 @@
                   <span class="text-[10px] font-bold text-emerald-400 uppercase">6.5 Simulación Real Portafolio Combinado (2021–2026 · Riesgo Dividido)</span>
                   <span id="m6-port-cert-badge" class="px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 text-[9px] font-bold">PENDIENTE DE CERTIFICACIÓN</span>
                 </div>
-                <button type="button" onclick="certifyAndSaveM6Portfolio()" class="px-2.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] shadow transition">💾 Certificar Portafolio (Para Macho Alfa &amp; MQL5)</button>
+<div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" onclick="certifyAndSaveM6Portfolio()" class="px-2.5 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] shadow transition">💾 Certificar Portafolio (Para Macho Alfa &amp; MQL5)</button>
+            <button type="button" onclick="exportCertifiedPortfolioToMQL5()" class="px-2.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[10px] shadow transition" title="Genera y descarga StratView5_MultiPortfolio_EA.mq5 listo para MetaEditor 5 / MT5">⚡ Exportar EA Multi-Perfil (.mq5)</button>
+          </div>
               </div>
 
               <div class="grid grid-cols-7 gap-1.5 text-[10px]">
@@ -3946,7 +3950,47 @@ signalSell = crossunder(fast, slow) and osc > OverSold;</textarea>
                         <span class="text-[10px] text-gray-400 font-mono mt-0.5">Auto-Hedging Dinámico</span>
                     </div>
                 </div>
-
+<!-- Panel Soberano Vivo: Portafolio Multi-TF Certificado & Kelly 5.4 -->
+      <div id="m31-certified-portfolio-card" class="bg-[#121624] border border-emerald-500/40 rounded-xl p-4 shadow-lg space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-800">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm">🏆</span>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Portafolio Multi-TF Certificado &amp; Telemetría Kelly 5.4</h3>
+            <span id="m31-cert-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">SINCRONIZANDO...</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="m31RenderCertifiedPortfolioCard()" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 text-[10px] font-mono font-bold border border-gray-700 transition">🔄 Sincronizar</button>
+            <button type="button" onclick="exportCertifiedPortfolioToMQL5()" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-mono font-extrabold shadow transition">⚡ Exportar EA (.mq5)</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 font-mono">
+          <div class="bg-[#0c101a] border border-gray-800 rounded p-2">
+            <div class="text-[9px] text-gray-400 uppercase">Bots / Muestra</div>
+            <div id="m31-cert-bots" class="text-[11px] font-bold text-gray-100 mt-0.5">--</div>
+          </div>
+          <div class="bg-[#0c101a] border border-gray-800 rounded p-2">
+            <div class="text-[9px] text-gray-400 uppercase">Capital Final</div>
+            <div id="m31-cert-cap" class="text-[11px] font-bold text-emerald-400 mt-0.5">--</div>
+          </div>
+          <div class="bg-[#0c101a] border border-gray-800 rounded p-2">
+            <div class="text-[9px] text-gray-400 uppercase">DD Máx / Peor Día</div>
+            <div id="m31-cert-dd" class="text-[11px] font-bold text-amber-300 mt-0.5">--</div>
+          </div>
+          <div class="bg-[#0c101a] border border-gray-800 rounded p-2">
+            <div class="text-[9px] text-gray-400 uppercase">PF / Sharpe / Calmar</div>
+            <div id="m31-cert-ratios" class="text-[11px] font-bold text-sky-300 mt-0.5">--</div>
+          </div>
+          <div class="bg-[#0c101a] border border-gray-800 rounded p-2">
+            <div class="text-[9px] text-gray-400 uppercase">Correlación / Kelly</div>
+            <div id="m31-cert-corr" class="text-[11px] font-bold text-purple-300 mt-0.5">--</div>
+          </div>
+          <div class="bg-[#0c101a] border border-gray-800 rounded p-2">
+            <div class="text-[9px] text-gray-400 uppercase">Kelly 5.4 (Bot M3/M5)</div>
+            <div id="m31-cert-kelly" class="text-[11px] font-bold text-emerald-300 mt-0.5">--</div>
+          </div>
+        </div>
+        <div id="m31-cert-bot-pills" class="flex flex-wrap gap-1.5 pt-1"></div>
+      </div>
                 <!-- Tablero Central: Arbitraje Estadístico de Pares Sintéticos & Canasta Soberana -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <!-- Matriz de Co-Integración & Pares Cuánticos (2 Cols) -->
@@ -7651,28 +7695,51 @@ function renderMachoAlfaSupervisionGrid() {
 }
 
 function runModule16MachoAlfaMasterCycle() {
-        if (typeof renderMachoAlfaSupervisionGrid === 'function') renderMachoAlfaSupervisionGrid();
-        const s = typeof getLiveStrategySnapshotForAI === 'function' ? getLiveStrategySnapshotForAI() : { sym: 'BTC-USD', tf: '15m', pyg: '+2924.01', pf: '3.05', dd: '56.10' };
-        
-        const m1El = document.getElementById('agi-mission1-status');
-        if (m1El) m1El.innerText = `Bot activo (${s.sym} ${s.tf}) auditado: PyG $${s.pyg} | PF ${s.pf} | DD $${s.dd}`;
-        
-        const m2El = document.getElementById('agi-mission2-status');
-        if (m2El) m2El.innerText = `Enjambre M1-M31 activo: Fábrica M10, Matriz 20⊞, Tools M17, Dual M18, Prop-Firms M19, AST M21, Ticks M22, Multi-Mkt M23, Costes M24, Parity M25, Cisnes M26, Gateway M27, Sintéticos M28, DSR M29, Copiador M30 & Soberano M31.`;
-        
-        appendMachoAlfaLog(`Supervisión Suprema completada: Los 31 módulos (M1 al M31) y sus motores cumplen al 100% su programación en index.html.`);
-        appendMachoAlfaLog(`Misión 1 (Auditar Bots), Misión 2 (Crear Bots desde Cero) y Misión 3 (Protección Exclusiva del Creador M13) operando bajo Soberanía Total AGI.`);
-        
-        const verdictEl = document.getElementById('agent-verdict');
-        if (verdictEl) verdictEl.innerText = `👑 [Macho Alfa AGI] 31/31 Módulos supervisados, auto-sanados y operando al 100% bajo gobernanza soberana.`;
+  if (typeof renderMachoAlfaSupervisionGrid === 'function') renderMachoAlfaSupervisionGrid();
+  const s = typeof getLiveStrategySnapshotForAI === 'function' ? getLiveStrategySnapshotForAI() : { sym: 'BTC-USD', tf: '15m', pyg: '+2924.01', pf: '3.05', dd: '56.10', kelly: null, portfolio: null };
 
-        const healthBadge = document.getElementById('agi-agents-health');
-        if (healthBadge) healthBadge.innerText = '31/31 AL 100%';
+  const kellyTxt = (s.kelly && isFinite(s.kelly.kellyFullPct))
+    ? ` | Kelly f* ${s.kelly.kellyFullPct.toFixed(1)}% (½K ${s.kelly.kellyHalfPct.toFixed(1)}%)`
+    : '';
 
-        if (typeof showFloatingToast === 'function') {
-            showFloatingToast('Macho Alfa AGI: Supervisión Soberana 31/31 Completa', 'success');
-        }
+  const m1El = document.getElementById('agi-mission1-status');
+  if (m1El) m1El.innerText = `Bot activo (${s.sym} ${s.tf}) auditado: PyG ${s.pyg} | PF ${s.pf} | DD ${s.dd}${kellyTxt}`;
+
+  const p = s.portfolio;
+  const m2El = document.getElementById('agi-mission2-status');
+  if (m2El) {
+    if (p && p.bots && p.bots.length) {
+      m2El.innerText = `🏆 Portafolio Certificado: ${p.bots.length} bots @ ${p.globalRiskPct.toFixed(2)}% Global | Final $${Math.round(p.finalEq).toLocaleString()} (${p.returnPct >= 0 ? '+' : ''}${p.returnPct.toFixed(1)}%) | DD -${Math.abs(p.maxDDPct).toFixed(2)}% | PF ${p.pf.toFixed(2)} | Sh ${p.sharpe.toFixed(2)} | Corr ${p.avgCorr.toFixed(2)}`;
+    } else {
+      m2El.innerText = `Enjambre M1-M31 activo: Fábrica M10, Matriz 20⊞, Tools M17, Dual M18, Prop-Firms M19, AST M21, Ticks M22, Multi-Mkt M23, Costes M24, Risk Parity M25, Cisnes M26, Gateway M27, Sintéticos M28, DSR M29, Copiador M30 & Soberano M31.`;
     }
+  }
+
+  appendMachoAlfaLog(`Supervisión Suprema completada: Los 31 módulos (M1 al M31) y sus motores cumplen al 100% su programación en index.html.`);
+  if (p && p.bots && p.bots.length) {
+    appendMachoAlfaLog(`🏆 Portafolio Certificado auditado: ${p.bots.length} bots (${p.totalTrades.toLocaleString()} ops) | Capital $${Math.round(p.finalEq).toLocaleString()} | DD -${Math.abs(p.maxDDPct).toFixed(2)}% | Peor Día -${Math.abs(p.worstDayPct).toFixed(2)}% | Kelly Portafolio ${p.kellyPct.toFixed(2)}%.`, true);
+  }
+  if (s.kelly && isFinite(s.kelly.kellyFullPct)) {
+    appendMachoAlfaLog(`📐 Kelly Panel 5.4 (${s.kelly.asset} ${s.kelly.tf}): f*=${s.kelly.kellyFullPct.toFixed(2)}% | ½K=${s.kelly.kellyHalfPct.toFixed(2)}% | ¼K=${s.kelly.kellyQuarterPct.toFixed(2)}% | Riesgo activo M3: ${s.kelly.activeRiskPct.toFixed(2)}%.`);
+  }
+  appendMachoAlfaLog(`Misión 1 (Auditar Bots), Misión 2 (Portafolio Certificado & Fábrica) y Misión 3 (Protección Exclusiva del Creador M13) operando bajo Soberanía Total AGI.`);
+
+  const verdictEl = document.getElementById('agent-verdict');
+  if (verdictEl) {
+    verdictEl.innerText = (p && p.bots && p.bots.length)
+      ? `👑 [Macho Alfa AGI] 31/31 Módulos OK · Portafolio Certificado (${p.bots.length} bots @ ${p.globalRiskPct.toFixed(2)}% Global | $${Math.round(p.finalEq).toLocaleString()} | DD -${Math.abs(p.maxDDPct).toFixed(2)}%)${kellyTxt}.`
+      : `👑 [Macho Alfa AGI] 31/31 Módulos supervisados, auto-sanados y operando al 100% bajo gobernanza soberana${kellyTxt}.`;
+  }
+
+  const healthBadge = document.getElementById('agi-agents-health');
+  if (healthBadge) healthBadge.innerText = '31/31 AL 100%';
+
+  if (typeof m31RenderCertifiedPortfolioCard === 'function') m31RenderCertifiedPortfolioCard();
+
+  if (typeof showFloatingToast === 'function') {
+    showFloatingToast('Macho Alfa AGI: Supervisión Soberana 31/31 Completa', 'success');
+  }
+}
     function triggerMachoAlfaSelfHealM12() {
       machoAlfaRepairsCount++;
       const repEl = document.getElementById('agi-repairs-count');
@@ -9689,26 +9756,614 @@ return { retPct, pf, maxDD, trades: wins + losses, curve, finalBal: bal, wins, l
     ctx.fillText('● PORTAFOLIO COMBINADO', padL + 6, padT + 8);
   }
 
-  function certifyAndSaveM6Portfolio() {
-    const sim = window.sv5LastPortfolioSim;
-    const statusEl = document.getElementById('m6-mtf-status');
-    if (!sim || !sim.bots || !sim.bots.length) {
-      if (statusEl) statusEl.innerText = '⚠️ Primero ejecuta "Simular Portafolio" antes de certificar.';
-      return;
-    }
-    window.sv5CertifiedPortfolio = sim;
-    try {
-      localStorage.setItem('sv5_mtf_certified_portfolio_v1', JSON.stringify(sim));
-    } catch (e) {}
-    const certBadge = document.getElementById('m6-port-cert-badge');
-    if (certBadge) {
-      certBadge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold';
-      certBadge.innerText = `✓ CERTIFICADO (${sim.bots.length} BOTS · ${sim.globalRiskPct}% GLOBAL) — LISTO PARA MACHO ALFA & MQL5`;
-    }
-    if (statusEl) {
-      statusEl.innerText = `💾 Portafolio Certificado guardado (${sim.bots.length} bots) en localStorage -> sv5_mtf_certified_portfolio_v1`;
-    }
+function certifyAndSaveM6Portfolio() {
+  const sim = window.sv5LastPortfolioSim;
+  const statusEl = document.getElementById('m6-mtf-status');
+  if (!sim || !sim.bots || !sim.bots.length) {
+    if (statusEl) statusEl.innerText = '⚠️ Primero ejecuta "Simular Portafolio" antes de certificar.';
+    return;
   }
+  window.sv5CertifiedPortfolio = sim;
+  try {
+    localStorage.setItem('sv5_mtf_certified_portfolio_v1', JSON.stringify(sim));
+  } catch (e) {}
+  const certBadge = document.getElementById('m6-port-cert-badge');
+  if (certBadge) {
+    certBadge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold';
+    certBadge.innerText = `✓ CERTIFICADO (${sim.bots.length} BOTS · ${sim.globalRiskPct}% GLOBAL) – LISTO PARA MACHO ALFA & MQL5`;
+  }
+  if (statusEl) {
+    statusEl.innerText = `💾 Portafolio Certificado guardado (${sim.bots.length} bots) en localStorage -> sv5_mtf_certified_portfolio_v1`;
+  }
+  if (typeof m31RenderCertifiedPortfolioCard === 'function') m31RenderCertifiedPortfolioCard();
+  if (typeof appendMachoAlfaLog === 'function') {
+    appendMachoAlfaLog(`🏆 Portafolio Multi-TF Certificado sincronizado (${sim.bots.length} bots @ ${sim.globalRiskPct}% Global). Listo para M31 y MetaTrader 5.`, true);
+  }
+  if (typeof m31LogSovereign === 'function') {
+    m31LogSovereign('success', `🏆 Portafolio Certificado actualizado desde Panel 6.5: ${sim.bots.length} bots @ ${sim.globalRiskPct}% Global.`);
+  }
+}
+
+function getSV5KellySnapshot() {
+  if (window.sv5LastKellySnapshot && isFinite(window.sv5LastKellySnapshot.kellyFullPct)) {
+    return window.sv5LastKellySnapshot;
+  }
+  try {
+    const raw = localStorage.getItem('sv5_m5_kelly_snapshot_v1');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && isFinite(parsed.kellyFullPct)) {
+        window.sv5LastKellySnapshot = parsed;
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  const fTxt = document.getElementById('m5-kelly-full')?.innerText || '';
+  const fNum = parseFloat(fTxt.replace('%', ''));
+  if (!isNaN(fNum)) {
+    return {
+      kellyFullPct: Math.max(0, fNum),
+      kellyHalfPct: Math.max(0, fNum * 0.5),
+      kellyQuarterPct: Math.max(0, fNum * 0.25),
+      winRatePct: 0,
+      payoffR: 0,
+      activeRiskPct: 1.0,
+      tradesCount: (typeof lastM5Trades !== 'undefined' && Array.isArray(lastM5Trades)) ? lastM5Trades.length : 0,
+      asset: document.getElementById('symbolSelect')?.value || 'EURUSD',
+      tf: (typeof winTimeframes !== 'undefined' && winTimeframes[1]) ? winTimeframes[1] : '15m'
+    };
+  }
+  return null;
+}
+
+function getSV5CertifiedPortfolio() {
+  let rawSim = window.sv5CertifiedPortfolio || null;
+  if (!rawSim) {
+    try {
+      const saved = localStorage.getItem('sv5_mtf_certified_portfolio_v1');
+      if (saved) {
+        rawSim = JSON.parse(saved);
+        window.sv5CertifiedPortfolio = rawSim;
+      }
+    } catch (e) {}
+  }
+  if (!rawSim || !Array.isArray(rawSim.bots) || !rawSim.bots.length) return null;
+
+  const m = Object.assign({}, rawSim, rawSim.metrics || {}, rawSim.summary || {}, rawSim.stats || {});
+  const parseFltCode = (val) => {
+    if (typeof val === 'number' && !isNaN(val)) return Math.max(0, Math.min(3, Math.round(val)));
+    const str = String(val ?? '').toUpperCase().trim();
+    if (/^[0-3]$/.test(str)) return parseInt(str, 10);
+    if (str.includes('LDN') && str.includes('ATR')) return 3;
+    if (str.includes('ATR')) return 2;
+    if (str.includes('LDN') || str.includes('NY') || str.includes('SES')) return 1;
+    return 0;
+  };
+  const fltNames = ['24h', 'LDN/NY', 'ATR', 'LDN+ATR'];
+
+  const bots = rawSim.bots.map((b, idx) => {
+    const g = Object.assign({}, b, b.item || {}, b.params || {}, b.genome || {});
+    const asset = String(g.asset || g.symbol || 'EURUSD').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const tf = String(g.tf || g.timeframe || 'H1').toUpperCase();
+    const fast = Math.max(2, parseInt(g.fast ?? g.fastP ?? g.emaFast ?? g.pFast ?? 9, 10) || 9);
+    const slow = Math.max(fast + 2, parseInt(g.slow ?? g.slowP ?? g.emaSlow ?? g.pSlow ?? 21, 10) || 21);
+    const tp = Math.max(5, Number(g.tp ?? g.tpPips ?? g.takeProfit ?? 120) || 120);
+    const sl = Math.max(5, Number(g.sl ?? g.slPips ?? g.stopLoss ?? 60) || 60);
+    const ts = Math.max(0, Number(g.ts ?? g.trailing ?? g.trailingStop ?? 0) || 0);
+    const fRaw = (g.filterIdx ?? g.filterCode ?? g.filterMode ?? g.filter ?? g.flt ?? g.filterName ?? 0);
+    const filterCode = parseFltCode(fRaw);
+    const magicNumber = parseInt(g.magicNumber ?? g.magic ?? (5101 + idx), 10) || (5101 + idx);
+    return {
+      asset, tf, fast, slow, tp, sl, ts,
+      filterCode,
+      filterLabel: fltNames[filterCode] || '24h',
+      magicNumber
+    };
+  });
+
+  const initCap = Number(m.initCap ?? m.initialCapital ?? 10000) || 10000;
+  const finalEq = Number(m.finalEq ?? m.finalCapital ?? m.finalBalance ?? m.endCap ?? initCap) || initCap;
+  const returnPct = Number(m.returnPct ?? m.netPct ?? m.totalReturnPct ?? (((finalEq - initCap) / initCap) * 100)) || 0;
+  const globalRiskPct = Number(m.globalRiskPct ?? 2.0) || 2.0;
+  const perBotRiskPct = Number(m.perBotRiskPct ?? (globalRiskPct / bots.length)) || (globalRiskPct / bots.length);
+
+  return {
+    initCap,
+    finalEq,
+    returnPct,
+    globalRiskPct,
+    perBotRiskPct,
+    maxDDPct: Number(m.maxDDPct ?? m.maxDD ?? m.ddPct ?? 0) || 0,
+    worstDayPct: Number(m.worstDayPct ?? m.worstDay ?? m.maxDailyDDPct ?? 0) || 0,
+    pf: Number(m.pf ?? m.profitFactor ?? 0) || 0,
+    sharpe: Number(m.sharpe ?? m.sharpeRatio ?? 0) || 0,
+    calmar: Number(m.calmar ?? m.calmarRatio ?? 0) || 0,
+    kellyPct: Number(m.kellyPct ?? m.kelly ?? 0) || 0,
+    avgCorr: Number(m.avgCorr ?? m.meanCorr ?? m.avgCorrelation ?? 0) || 0,
+    maxConcurrent: Number(m.maxConcurrent ?? bots.length) || bots.length,
+    totalTrades: Number(m.totalTrades ?? m.tradesCount ?? m.trades ?? 0) || 0,
+    bots
+  };
+}
+
+function toggleM6PanelExpand() {
+  const panel = document.getElementById('m6-mtf-panel');
+  const btn = document.getElementById('btn-m6-mtf-expand');
+  if (!panel) return;
+  const isExpanded = panel.dataset.expanded === '1';
+  if (!isExpanded) {
+    panel.dataset.expanded = '1';
+    panel.classList.remove('max-h-[68%]', 'mx-2', 'mt-2', 'shrink-0');
+    panel.classList.add('fixed', 'inset-3', 'z-50', 'max-h-none', 'h-[calc(100vh-1.5rem)]', 'shadow-2xl');
+    if (btn) btn.innerText = '🗗 Contraer';
+  } else {
+    panel.dataset.expanded = '0';
+    panel.classList.remove('fixed', 'inset-3', 'z-50', 'max-h-none', 'h-[calc(100vh-1.5rem)]', 'shadow-2xl');
+    panel.classList.add('shrink-0', 'mx-2', 'mt-2', 'max-h-[68%]');
+    if (btn) btn.innerText = '⛶ Expandir';
+  }
+}
+
+function exportCertifiedPortfolioToMQL5() {
+  const port = getSV5CertifiedPortfolio();
+  const statusEl = document.getElementById('m6-mtf-status');
+  if (!port || !port.bots.length) {
+    const msg = '⚠️ Primero simula y certifica un portafolio en Panel 6.5 antes de exportar el EA (.mq5).';
+    if (statusEl) statusEl.innerText = msg;
+    if (typeof showFloatingToast === 'function') showFloatingToast(msg, 'warning');
+    else alert(msg);
+    return;
+  }
+
+  const tfToMql = (tf) => {
+    const t = String(tf || 'H1').toUpperCase();
+    const map = {
+      'M1': 'PERIOD_M1', '1M': 'PERIOD_M1',
+      'M5': 'PERIOD_M5', '5M': 'PERIOD_M5',
+      'M15': 'PERIOD_M15', '15M': 'PERIOD_M15',
+      'M30': 'PERIOD_M30', '30M': 'PERIOD_M30',
+      'H1': 'PERIOD_H1', '1H': 'PERIOD_H1', '60M': 'PERIOD_H1',
+      'H4': 'PERIOD_H4', '4H': 'PERIOD_H4', '240M': 'PERIOD_H4',
+      'D1': 'PERIOD_D1', '1D': 'PERIOD_D1'
+    };
+    return map[t] || 'PERIOD_H1';
+  };
+
+  const n = port.bots.length;
+  const nowIso = new Date().toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+  const L = [];
+
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//|                           StratView5_MultiPortfolio_EA.mq5       |');
+  L.push('//|   Generado nativamente por StratView-5 (Fase 3 · Portafolio M6)  |');
+  L.push('//|   Fecha: ' + nowIso + '                               |');
+  L.push('//|   Bots Certificados: ' + n + ' | Riesgo Global: ' + port.globalRiskPct.toFixed(2) + '% (' + port.perBotRiskPct.toFixed(3) + '%/bot) |');
+  L.push('//|   Backtest 2021-2026: Final $' + Math.round(port.finalEq) + ' (' + port.returnPct.toFixed(1) + '%) | DD -' + Math.abs(port.maxDDPct).toFixed(2) + '% | PF ' + port.pf.toFixed(2) + ' |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('#property copyright "StratView-5 Institutional Quant Workstation"');
+  L.push('#property link      "https://strat-view-5.onrender.com"');
+  L.push('#property version   "3.00"');
+  L.push('#property description "EA Multi-Perfil 1:1 con StratView-5 (Auto-Deteccion Activo+TF, Magic Unico 5101+, Guardia Prop Firm y HUD)"');
+  L.push('');
+  L.push('#include <Trade\\Trade.mqh>');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| PERFILES EMBEBIDOS (INDICE MANUAL: 0 a ' + (n - 1) + ')                         |');
+  L.push('//+------------------------------------------------------------------+');
+  port.bots.forEach((b, i) => {
+    L.push('// [' + i + '] ' + b.asset + ' ' + b.tf + ' | Magic ' + b.magicNumber + ' | EMA ' + b.fast + '/' + b.slow + ' | TP ' + b.tp + ' | SL ' + b.sl + ' | TS ' + b.ts + ' | Filtro: ' + b.filterLabel + ' (' + b.filterCode + ')');
+  });
+  L.push('');
+  L.push('input group "=== SELECCION DE PERFIL & RIESGO PROP FIRM ==="');
+  L.push('input int    InpProfileIndex    = -1;     // Perfil: -1=Auto-Detectar Simbolo+TF | 0..' + (n - 1) + '=Manual');
+  L.push('input double InpGlobalRiskPct   = ' + port.globalRiskPct.toFixed(2) + ';   // Riesgo Global Portafolio (%) [2.0=Challenge | 1.0=Live]');
+  L.push('input double InpMaxDailyLossPct = 3.50;   // Guardia Diario Prop Firm (% Balance inicio dia)');
+  L.push('input int    InpBrokerGMTOffset = 2;      // Offset GMT del Broker (ej: 2 invierno / 3 verano)');
+  L.push('input double InpMaxSpreadPips   = 4.0;    // Filtro Spread Maximo (en unidades StratView)');
+  L.push('input bool   InpOnlyNewBar      = true;   // Evaluar senal al cierre de vela (1:1 Backtest)');
+  L.push('input bool   InpShowHUD         = true;   // Mostrar Panel HUD en vivo sobre el grafico');
+  L.push('');
+  L.push('struct SV5BotProfile');
+  L.push('{');
+  L.push('   string          asset;');
+  L.push('   string          tfName;');
+  L.push('   ENUM_TIMEFRAMES tf;');
+  L.push('   long            magic;');
+  L.push('   int             emaFast;');
+  L.push('   int             emaSlow;');
+  L.push('   double          tpPips;');
+  L.push('   double          slPips;');
+  L.push('   double          tsPips;');
+  L.push('   int             filterMode; // 0=24h, 1=LDN/NY(7-20 UTC), 2=ATR>SMA50*0.90, 3=LDN+ATR');
+  L.push('   string          filterName;');
+  L.push('};');
+  L.push('');
+  L.push('CTrade        gTrade;');
+  L.push('SV5BotProfile gProfiles[' + n + '];');
+  L.push('SV5BotProfile gActive;');
+  L.push('int           gActiveIdx       = -1;');
+  L.push('int           gTotalProfiles   = ' + n + ';');
+  L.push('');
+  L.push('int           gHFast           = INVALID_HANDLE;');
+  L.push('int           gHSlow           = INVALID_HANDLE;');
+  L.push('int           gHEma200         = INVALID_HANDLE;');
+  L.push('int           gHRsi            = INVALID_HANDLE;');
+  L.push('int           gHAtr            = INVALID_HANDLE;');
+  L.push('');
+  L.push('datetime      gLastBarTime     = 0;');
+  L.push('int           gDayKey          = -1;');
+  L.push('double        gDayStartBalance = 0.0;');
+  L.push('bool          gDailyLocked     = false;');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Inicializar tabla de genomas certificados                        |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('void InitProfiles()');
+  L.push('{');
+  port.bots.forEach((b, i) => {
+    L.push('   gProfiles[' + i + '].asset = "' + b.asset + '"; gProfiles[' + i + '].tfName = "' + b.tf + '"; gProfiles[' + i + '].tf = ' + tfToMql(b.tf) + '; gProfiles[' + i + '].magic = ' + b.magicNumber + '; gProfiles[' + i + '].emaFast = ' + b.fast + '; gProfiles[' + i + '].emaSlow = ' + b.slow + '; gProfiles[' + i + '].tpPips = ' + b.tp + '; gProfiles[' + i + '].slPips = ' + b.sl + '; gProfiles[' + i + '].tsPips = ' + b.ts + '; gProfiles[' + i + '].filterMode = ' + b.filterCode + '; gProfiles[' + i + '].filterName = "' + b.filterLabel + '";');
+  });
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Normalizar simbolo del broker (.raw, .pro, m, .cash, alias)      |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('string NormalizeSV5Asset(string rawSym)');
+  L.push('{');
+  L.push('   string s = rawSym;');
+  L.push('   StringToUpper(s);');
+  L.push('   if(StringFind(s, "XAU") >= 0 || StringFind(s, "GOLD") >= 0) return "XAUUSD";');
+  L.push('   if(StringFind(s, "XAG") >= 0 || StringFind(s, "SILVER") >= 0) return "XAGUSD";');
+  L.push('   if(StringFind(s, "US30") >= 0 || StringFind(s, "DJ30") >= 0 || StringFind(s, "WS30") >= 0 || StringFind(s, "DJI") >= 0 || StringFind(s, "DOW") >= 0) return "US30";');
+  L.push('   if(StringFind(s, "NAS100") >= 0 || StringFind(s, "USTEC") >= 0 || StringFind(s, "US100") >= 0 || StringFind(s, "NDX") >= 0) return "NAS100";');
+  L.push('   if(StringFind(s, "SPX500") >= 0 || StringFind(s, "US500") >= 0 || StringFind(s, "SP500") >= 0) return "US500";');
+  L.push('   if(StringFind(s, "EURUSD") >= 0) return "EURUSD";');
+  L.push('   if(StringFind(s, "GBPUSD") >= 0) return "GBPUSD";');
+  L.push('   if(StringFind(s, "USDJPY") >= 0) return "USDJPY";');
+  L.push('   if(StringFind(s, "BTC") >= 0) return "BTCUSD";');
+  L.push('   int dot = StringFind(s, "."); if(dot > 0) s = StringSubstr(s, 0, dot);');
+  L.push('   int und = StringFind(s, "_"); if(und > 0) s = StringSubstr(s, 0, und);');
+  L.push('   int hsh = StringFind(s, "#"); if(hsh > 0) s = StringSubstr(s, 0, hsh);');
+  L.push('   return s;');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Unidad de pip exacta 1:1 con StratView-5                         |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('double GetSV5PipUnit(double refPrice)');
+  L.push('{');
+  L.push('   if(refPrice < 5.0)   return 0.0001;');
+  L.push('   if(refPrice < 500.0) return 0.01;');
+  L.push('   return 1.0;');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Guardia Diario Prop Firm                                         |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('void UpdateDailyGuard()');
+  L.push('{');
+  L.push('   MqlDateTime dt;');
+  L.push('   TimeToStruct(TimeCurrent() - InpBrokerGMTOffset * 3600, dt);');
+  L.push('   int curKey = dt.year * 1000 + dt.day_of_year;');
+  L.push('   if(curKey != gDayKey)');
+  L.push('   {');
+  L.push('      gDayKey = curKey;');
+  L.push('      double bal = AccountInfoDouble(ACCOUNT_BALANCE);');
+  L.push('      double eq  = AccountInfoDouble(ACCOUNT_EQUITY);');
+  L.push('      gDayStartBalance = MathMax(bal, eq);');
+  L.push('      gDailyLocked = false;');
+  L.push('   }');
+  L.push('   double eqNow = AccountInfoDouble(ACCOUNT_EQUITY);');
+  L.push('   double ddPct = (gDayStartBalance > 0.0) ? ((gDayStartBalance - eqNow) / gDayStartBalance) * 100.0 : 0.0;');
+  L.push('   if(ddPct >= InpMaxDailyLossPct) gDailyLocked = true;');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Verificar si este bot (Magic) ya tiene posicion abierta          |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('bool HasOpenPosition()');
+  L.push('{');
+  L.push('   for(int i = PositionsTotal() - 1; i >= 0; i--)');
+  L.push('   {');
+  L.push('      ulong tk = PositionGetTicket(i);');
+  L.push('      if(tk == 0) continue;');
+  L.push('      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;');
+  L.push('      if(PositionGetInteger(POSITION_MAGIC) != gActive.magic) continue;');
+  L.push('      return true;');
+  L.push('   }');
+  L.push('   return false;');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Calculo de lotaje exacto: (Riesgo Global / N Bots)               |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('double CalcPositionLots(double slDistancePrice)');
+  L.push('{');
+  L.push('   double minLot  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);');
+  L.push('   double maxLot  = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);');
+  L.push('   double lotStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);');
+  L.push('   if(lotStep <= 0.0) lotStep = 0.01;');
+  L.push('');
+  L.push('   double perBotRiskPct = InpGlobalRiskPct / (double)gTotalProfiles;');
+  L.push('   double equity        = AccountInfoDouble(ACCOUNT_EQUITY);');
+  L.push('   double riskUsd       = equity * (perBotRiskPct / 100.0);');
+  L.push('');
+  L.push('   double tickVal  = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE);');
+  L.push('   double tickSize = SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);');
+  L.push('   if(tickVal <= 0.0 || tickSize <= 0.0 || slDistancePrice <= 0.0) return minLot;');
+  L.push('');
+  L.push('   double lossPerLot = (slDistancePrice / tickSize) * tickVal;');
+  L.push('   if(lossPerLot <= 0.0) return minLot;');
+  L.push('');
+  L.push('   double rawLots = riskUsd / lossPerLot;');
+  L.push('   double lots    = MathFloor(rawLots / lotStep) * lotStep;');
+  L.push('   if(lots < minLot) lots = minLot;');
+  L.push('   if(lots > maxLot) lots = maxLot;');
+  L.push('');
+  L.push('   int volDigits = (lotStep >= 1.0) ? 0 : (lotStep >= 0.1) ? 1 : (lotStep >= 0.01) ? 2 : 3;');
+  L.push('   return NormalizeDouble(lots, volDigits);');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Trailing Stop BE+2 (1:1 con StratView-5)                         |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('void ManageTrailingBE2()');
+  L.push('{');
+  L.push('   double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);');
+  L.push('   double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);');
+  L.push('   double pipUnit = GetSV5PipUnit(bid);');
+  L.push('   double stopsDist = (double)SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL) * _Point;');
+  L.push('   double beTrigger = (gActive.tsPips > 0.0) ? (gActive.tsPips * pipUnit) : (gActive.slPips * 0.50 * pipUnit);');
+  L.push('');
+  L.push('   for(int i = PositionsTotal() - 1; i >= 0; i--)');
+  L.push('   {');
+  L.push('      ulong tk = PositionGetTicket(i);');
+  L.push('      if(tk == 0) continue;');
+  L.push('      if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;');
+  L.push('      if(PositionGetInteger(POSITION_MAGIC) != gActive.magic) continue;');
+  L.push('');
+  L.push('      long   posType   = PositionGetInteger(POSITION_TYPE);');
+  L.push('      double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);');
+  L.push('      double curSL     = PositionGetDouble(POSITION_SL);');
+  L.push('      double curTP     = PositionGetDouble(POSITION_TP);');
+  L.push('');
+  L.push('      if(posType == POSITION_TYPE_BUY)');
+  L.push('      {');
+  L.push('         if(bid - openPrice >= beTrigger)');
+  L.push('         {');
+  L.push('            double beTarget = openPrice + 2.0 * pipUnit;');
+  L.push('            double candSL   = (gActive.tsPips > 0.0) ? MathMax(beTarget, bid - gActive.tsPips * pipUnit) : beTarget;');
+  L.push('            double maxValid = bid - stopsDist - _Point;');
+  L.push('            if(candSL > maxValid) candSL = maxValid;');
+  L.push('            candSL = NormalizeDouble(candSL, _Digits);');
+  L.push('            if(candSL > openPrice && (curSL == 0.0 || candSL > curSL + _Point))');
+  L.push('               gTrade.PositionModify(tk, candSL, curTP);');
+  L.push('         }');
+  L.push('      }');
+  L.push('      else if(posType == POSITION_TYPE_SELL)');
+  L.push('      {');
+  L.push('         if(openPrice - ask >= beTrigger)');
+  L.push('         {');
+  L.push('            double beTarget = openPrice - 2.0 * pipUnit;');
+  L.push('            double candSL   = (gActive.tsPips > 0.0) ? MathMin(beTarget, ask + gActive.tsPips * pipUnit) : beTarget;');
+  L.push('            double minValid = ask + stopsDist + _Point;');
+  L.push('            if(candSL < minValid) candSL = minValid;');
+  L.push('            candSL = NormalizeDouble(candSL, _Digits);');
+  L.push('            if(candSL < openPrice && (curSL == 0.0 || candSL < curSL - _Point))');
+  L.push('               gTrade.PositionModify(tk, candSL, curTP);');
+  L.push('         }');
+  L.push('      }');
+  L.push('   }');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| Panel HUD Institucional en Vivo                                  |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('void UpdateHUD(double rsiVal, bool trendUp, bool filterOk, double spreadPips, double nextLots)');
+  L.push('{');
+  L.push('   if(!InpShowHUD) return;');
+  L.push('   double eqNow = AccountInfoDouble(ACCOUNT_EQUITY);');
+  L.push('   double dailyDD = (gDayStartBalance > 0.0) ? ((gDayStartBalance - eqNow) / gDayStartBalance) * 100.0 : 0.0;');
+  L.push('   double perBotPct = InpGlobalRiskPct / (double)gTotalProfiles;');
+  L.push('');
+  L.push('   string hud = "";');
+  L.push('   hud += "====================================================\\n";');
+  L.push('   hud += " STRATVIEW-5 MULTI-PORTFOLIO EA v3.0 (CERTIFICADO)\\n";');
+  L.push('   hud += "====================================================\\n";');
+  L.push('   hud += " Perfil Activo : [" + IntegerToString(gActiveIdx) + "] " + gActive.asset + " " + gActive.tfName + " | Magic: " + IntegerToString(gActive.magic) + "\\n";');
+  L.push('   hud += " Modo Deteccion: " + (InpProfileIndex < 0 ? "AUTO (Simbolo+TF)" : "MANUAL") + "\\n";');
+  L.push('   hud += " Genoma        : EMA " + IntegerToString(gActive.emaFast) + "/" + IntegerToString(gActive.emaSlow) + " + EMA200 + RSI(14)\\n";');
+  L.push('   hud += " Gestion       : TP " + DoubleToString(gActive.tpPips, 0) + " | SL " + DoubleToString(gActive.slPips, 0) + " | TS " + DoubleToString(gActive.tsPips, 0) + " (BE+2)\\n";');
+  L.push('   hud += " Filtro        : " + gActive.filterName + " -> " + (filterOk ? "ACTIVO OK" : "EN ESPERA") + "\\n";');
+  L.push('   hud += " Riesgo Prop   : " + DoubleToString(InpGlobalRiskPct, 2) + "% / " + IntegerToString(gTotalProfiles) + " bots = " + DoubleToString(perBotPct, 3) + "%/bot | Lote: " + DoubleToString(nextLots, 2) + "\\n";');
+  L.push('   hud += " Guardia Diario: DD " + DoubleToString(dailyDD, 2) + "% / Max " + DoubleToString(InpMaxDailyLossPct, 2) + "% -> " + (gDailyLocked ? "BLOQUEADO!" : "OPERATIVO") + "\\n";');
+  L.push('   hud += " Telemetria    : Trend " + (trendUp ? "ALCISTA (>EMA200)" : "BAJISTA (<EMA200)") + " | RSI: " + DoubleToString(rsiVal, 1) + " | Spread: " + DoubleToString(spreadPips, 2) + "\\n";');
+  L.push('   hud += "====================================================";');
+  L.push('   Comment(hud);');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| OnInit                                                           |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('int OnInit()');
+  L.push('{');
+  L.push('   InitProfiles();');
+  L.push('   string normSym = NormalizeSV5Asset(_Symbol);');
+  L.push('');
+  L.push('   if(InpProfileIndex >= 0 && InpProfileIndex < gTotalProfiles)');
+  L.push('   {');
+  L.push('      gActiveIdx = InpProfileIndex;');
+  L.push('   }');
+  L.push('   else');
+  L.push('   {');
+  L.push('      // 1) Coincidencia exacta Simbolo Normalizado + Timeframe del grafico');
+  L.push('      for(int i = 0; i < gTotalProfiles; i++)');
+  L.push('      {');
+  L.push('         if(gProfiles[i].asset == normSym && gProfiles[i].tf == _Period)');
+  L.push('         {');
+  L.push('            gActiveIdx = i;');
+  L.push('            break;');
+  L.push('         }');
+  L.push('      }');
+  L.push('      // 2) Coincidencia por subcadena + Timeframe');
+  L.push('      if(gActiveIdx < 0)');
+  L.push('      {');
+  L.push('         for(int i = 0; i < gTotalProfiles; i++)');
+  L.push('         {');
+  L.push('            if(StringFind(normSym, gProfiles[i].asset) >= 0 && gProfiles[i].tf == _Period)');
+  L.push('            {');
+  L.push('               gActiveIdx = i;');
+  L.push('               break;');
+  L.push('            }');
+  L.push('         }');
+  L.push('      }');
+  L.push('   }');
+  L.push('');
+  L.push('   if(gActiveIdx < 0)');
+  L.push('   {');
+  L.push('      Alert("StratView-5 EA: No se encontro perfil certificado para ", _Symbol, " (", normSym, ") en este Timeframe. Cambia el grafico al Activo+TF certificado o elige InpProfileIndex manualmente (0..", gTotalProfiles - 1, ").");');
+  L.push('      return(INIT_FAILED);');
+  L.push('   }');
+  L.push('');
+  L.push('   gActive = gProfiles[gActiveIdx];');
+  L.push('   gTrade.SetExpertMagicNumber(gActive.magic);');
+  L.push('   gTrade.SetDeviationInPoints(30);');
+  L.push('');
+  L.push('   gHFast   = iMA(_Symbol, gActive.tf, gActive.emaFast, 0, MODE_EMA, PRICE_CLOSE);');
+  L.push('   gHSlow   = iMA(_Symbol, gActive.tf, gActive.emaSlow, 0, MODE_EMA, PRICE_CLOSE);');
+  L.push('   gHEma200 = iMA(_Symbol, gActive.tf, 200, 0, MODE_EMA, PRICE_CLOSE);');
+  L.push('   gHRsi    = iRSI(_Symbol, gActive.tf, 14, PRICE_CLOSE);');
+  L.push('   gHAtr    = iATR(_Symbol, gActive.tf, 14);');
+  L.push('');
+  L.push('   if(gHFast == INVALID_HANDLE || gHSlow == INVALID_HANDLE || gHEma200 == INVALID_HANDLE || gHRsi == INVALID_HANDLE || gHAtr == INVALID_HANDLE)');
+  L.push('   {');
+  L.push('      Print("Error creando handles de indicadores StratView-5.");');
+  L.push('      return(INIT_FAILED);');
+  L.push('   }');
+  L.push('');
+  L.push('   UpdateDailyGuard();');
+  L.push('   Print("StratView-5 Multi-Portfolio EA iniciado: [", gActiveIdx, "] ", gActive.asset, " ", gActive.tfName, " Magic=", gActive.magic);');
+  L.push('   return(INIT_SUCCEEDED);');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| OnDeinit                                                         |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('void OnDeinit(const int reason)');
+  L.push('{');
+  L.push('   if(gHFast   != INVALID_HANDLE) IndicatorRelease(gHFast);');
+  L.push('   if(gHSlow   != INVALID_HANDLE) IndicatorRelease(gHSlow);');
+  L.push('   if(gHEma200 != INVALID_HANDLE) IndicatorRelease(gHEma200);');
+  L.push('   if(gHRsi    != INVALID_HANDLE) IndicatorRelease(gHRsi);');
+  L.push('   if(gHAtr    != INVALID_HANDLE) IndicatorRelease(gHAtr);');
+  L.push('   Comment("");');
+  L.push('}');
+  L.push('');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('//| OnTick                                                           |');
+  L.push('//+------------------------------------------------------------------+');
+  L.push('void OnTick()');
+  L.push('{');
+  L.push('   UpdateDailyGuard();');
+  L.push('   ManageTrailingBE2();');
+  L.push('');
+  L.push('   datetime curBarTime = iTime(_Symbol, gActive.tf, 0);');
+  L.push('   if(curBarTime <= 0) return;');
+  L.push('   bool isNewBar = (curBarTime != gLastBarTime);');
+  L.push('   if(InpOnlyNewBar && !isNewBar) return;');
+  L.push('   gLastBarTime = curBarTime;');
+  L.push('');
+  L.push('   double fastBuf[], slowBuf[], ema200Buf[], rsiBuf[], atrBuf[];');
+  L.push('   ArraySetAsSeries(fastBuf, true);');
+  L.push('   ArraySetAsSeries(slowBuf, true);');
+  L.push('   ArraySetAsSeries(ema200Buf, true);');
+  L.push('   ArraySetAsSeries(rsiBuf, true);');
+  L.push('   ArraySetAsSeries(atrBuf, true);');
+  L.push('');
+  L.push('   if(CopyBuffer(gHFast,   0, 1, 2,  fastBuf)   < 2)  return;');
+  L.push('   if(CopyBuffer(gHSlow,   0, 1, 2,  slowBuf)   < 2)  return;');
+  L.push('   if(CopyBuffer(gHEma200, 0, 1, 1,  ema200Buf) < 1)  return;');
+  L.push('   if(CopyBuffer(gHRsi,    0, 1, 1,  rsiBuf)    < 1)  return;');
+  L.push('   if(CopyBuffer(gHAtr,    0, 1, 50, atrBuf)    < 50) return;');
+  L.push('');
+  L.push('   double close1   = iClose(_Symbol, gActive.tf, 1);');
+  L.push('   double bid      = SymbolInfoDouble(_Symbol, SYMBOL_BID);');
+  L.push('   double ask      = SymbolInfoDouble(_Symbol, SYMBOL_ASK);');
+  L.push('   double pipUnit  = GetSV5PipUnit(close1);');
+  L.push('   double slDist   = gActive.slPips * pipUnit;');
+  L.push('   double tpDist   = gActive.tpPips * pipUnit;');
+  L.push('   double spreadP  = (pipUnit > 0.0) ? ((ask - bid) / pipUnit) : 0.0;');
+  L.push('   double nextLots = CalcPositionLots(slDist);');
+  L.push('');
+  L.push('   // Filtros exactos StratView-5: 0=24h, 1=LDN/NY(7-20 UTC), 2=ATR>SMA50*0.90, 3=Ambos');
+  L.push('   bool sessionOk = true;');
+  L.push('   if(gActive.filterMode == 1 || gActive.filterMode == 3)');
+  L.push('   {');
+  L.push('      MqlDateTime bdt;');
+  L.push('      TimeToStruct(iTime(_Symbol, gActive.tf, 1) - InpBrokerGMTOffset * 3600, bdt);');
+  L.push('      sessionOk = (bdt.hour >= 7 && bdt.hour < 20);');
+  L.push('   }');
+  L.push('');
+  L.push('   bool atrOk = true;');
+  L.push('   if(gActive.filterMode == 2 || gActive.filterMode == 3)');
+  L.push('   {');
+  L.push('      double atrSum = 0.0;');
+  L.push('      for(int k = 0; k < 50; k++) atrSum += atrBuf[k];');
+  L.push('      double atrSma50 = atrSum / 50.0;');
+  L.push('      atrOk = (atrBuf[0] > atrSma50 * 0.90);');
+  L.push('   }');
+  L.push('');
+  L.push('   bool filterOk = (sessionOk && atrOk);');
+  L.push('   bool trendUp  = (close1 > ema200Buf[0]);');
+  L.push('   bool trendDn  = (close1 < ema200Buf[0]);');
+  L.push('   double rsi1   = rsiBuf[0];');
+  L.push('');
+  L.push('   UpdateHUD(rsi1, trendUp, filterOk, spreadP, nextLots);');
+  L.push('');
+  L.push('   if(gDailyLocked) return;');
+  L.push('   if(!filterOk) return;');
+  L.push('   if(spreadP > InpMaxSpreadPips) return;');
+  L.push('   if(HasOpenPosition()) return;');
+  L.push('');
+  L.push('   bool crossUp    = (fastBuf[1] <= slowBuf[1] && fastBuf[0] > slowBuf[0]);');
+  L.push('   bool crossDn    = (fastBuf[1] >= slowBuf[1] && fastBuf[0] < slowBuf[0]);');
+  L.push('   bool rsiLongOk  = (rsi1 >= 45.0 && rsi1 <= 68.0);');
+  L.push('   bool rsiShortOk = (rsi1 >= 32.0 && rsi1 <= 55.0);');
+  L.push('');
+  L.push('   string cmt = "SV5_" + gActive.asset + "_" + gActive.tfName;');
+  L.push('');
+  L.push('   if(crossUp && trendUp && rsiLongOk)');
+  L.push('   {');
+  L.push('      double slPrice = NormalizeDouble(ask - slDist, _Digits);');
+  L.push('      double tpPrice = NormalizeDouble(ask + tpDist, _Digits);');
+  L.push('      gTrade.Buy(nextLots, _Symbol, ask, slPrice, tpPrice, cmt);');
+  L.push('   }');
+  L.push('   else if(crossDn && trendDn && rsiShortOk)');
+  L.push('   {');
+  L.push('      double slPrice = NormalizeDouble(bid + slDist, _Digits);');
+  L.push('      double tpPrice = NormalizeDouble(bid - tpDist, _Digits);');
+  L.push('      gTrade.Sell(nextLots, _Symbol, bid, slPrice, tpPrice, cmt);');
+  L.push('   }');
+  L.push('}');
+  L.push('//+------------------------------------------------------------------+');
+
+  const mq5Code = L.join('\r\n');
+  const blob = new Blob([mq5Code], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'StratView5_MultiPortfolio_EA.mq5';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+  const okMsg = `⚡ EA Multi-Perfil descargado: StratView5_MultiPortfolio_EA.mq5 (${n} bots · ${port.globalRiskPct.toFixed(2)}% Global)`;
+  if (statusEl) statusEl.innerText = okMsg;
+  if (typeof showFloatingToast === 'function') showFloatingToast(okMsg, 'success');
+  if (typeof m31LogSovereign === 'function') m31LogSovereign('success', okMsg);
+  if (typeof appendMachoAlfaLog === 'function') appendMachoAlfaLog(okMsg, true);
+}
 
   function applyM6MultiTFCandidate(idx) {
     const item = (window.sv5LastMTFResults || [])[idx];
@@ -11645,9 +12300,30 @@ runModule5MonteCarlo();
     const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((a, t) => a + (Number(t.pnl) || 0), 0) / losses.length) : 0;
     const payoffR = avgLoss > 0 ? (avgWin / avgLoss) : (avgWin > 0 ? 3.0 : 0);
 
-    // Fórmula exacta Kelly Completo: f* = W - (1 - W) / R
-    const kellyDec = payoffR > 0 ? (winRateDec - ((1 - winRateDec) / payoffR)) : -1;
-    const kellyPct = kellyDec * 100;
+// Fórmula exacta Kelly Completo: f* = W - (1 - W) / R
+  const kellyDec = payoffR > 0 ? (winRateDec - ((1 - winRateDec) / payoffR)) : -1;
+  const kellyPct = kellyDec * 100;
+
+  // Exponer telemetría Kelly 5.4 a Macho Alfa AGI (M16), Chat IA (M8) y Cuartel Soberano (M31)
+  window.sv5LastKellySnapshot = {
+    kellyFullPct: Math.max(0, kellyPct),
+    kellyHalfPct: Math.max(0, kellyPct * 0.5),
+    kellyQuarterPct: Math.max(0, kellyPct * 0.25),
+    kellyRawPct: kellyPct,
+    winRatePct: winRateDec * 100,
+    payoffR: payoffR,
+    avgWin: avgWin,
+    avgLoss: avgLoss,
+    activeRiskPct: activeRiskPct,
+    isFixedMode: isFixedMode,
+    tradesCount: trades.length,
+    initCap: initCap,
+    asset: document.getElementById('symbolSelect')?.value || 'EURUSD',
+    tf: (typeof winTimeframes !== 'undefined' && winTimeframes[1]) ? winTimeframes[1] : '15m',
+    updatedAt: new Date().toISOString()
+  };
+  try { localStorage.setItem('sv5_m5_kelly_snapshot_v1', JSON.stringify(window.sv5LastKellySnapshot)); } catch (e) {}
+  if (typeof m31RenderCertifiedPortfolioCard === 'function') m31RenderCertifiedPortfolioCard();
 
     // Reconstrucción cronológica de R-múltiples reales desde el historial del bot
     const rMultiples = [];
@@ -12178,55 +12854,89 @@ const editorEl = document.getElementById('stratscript-editor');
       `);
     }
 
-    function getLiveStrategySnapshotForAI() {
-      const sym = document.getElementById('symbolSelect')?.value || 'BTC-USD';
-      const tf = winTimeframes[1] || '15m';
-      const pyg = document.getElementById('st-pyg')?.innerText || '+0.00 USD';
-      const dd  = document.getElementById('st-dd')?.innerText || '0.00 USD';
-      const wr  = document.getElementById('st-winrate')?.innerText || '50%';
-      const pf  = document.getElementById('st-pf')?.innerText || '1.00';
-      const sharpe = document.getElementById('m5-sharpe')?.innerText || '0.00';
-      const streak = document.getElementById('m5-lose-streak')?.innerText || '0 trades';
-      const ruin   = document.getElementById('m5-mc-ruin')?.innerText || '0.0%';
-      const tp = document.getElementById('inp-tp')?.value || '150';
-      const sl = document.getElementById('inp-sl')?.value || '80';
-      const ts = document.getElementById('inp-ts')?.value || '50';
-      return { sym, tf, pyg, dd, wr, pf, sharpe, streak, ruin, tp, sl, ts, tradesCount: (lastM5Trades || []).length };
-    }
+function getLiveStrategySnapshotForAI() {
+  const sym = document.getElementById('symbolSelect')?.value || 'BTC-USD';
+  const tf = winTimeframes[1] || '15m';
+  const pyg = document.getElementById('st-pyg')?.innerText || '+0.00 USD';
+  const dd = document.getElementById('st-dd')?.innerText || '0.00 USD';
+  const wr = document.getElementById('st-winrate')?.innerText || '50%';
+  const pf = document.getElementById('st-pf')?.innerText || '1.00';
+  const sharpe = document.getElementById('m5-sharpe')?.innerText || '0.00';
+  const streak = document.getElementById('m5-lose-streak')?.innerText || '0 trades';
+  const ruin   = document.getElementById('m5-mc-ruin')?.innerText || '0.0%';
+  const tp = document.getElementById('inp-tp')?.value || '150';
+  const sl = document.getElementById('inp-sl')?.value || '80';
+  const ts = document.getElementById('inp-ts')?.value || '50';
+  const kelly = (typeof getSV5KellySnapshot === 'function') ? getSV5KellySnapshot() : null;
+  const portfolio = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
+  return { sym, tf, pyg, dd, wr, pf, sharpe, streak, ruin, tp, sl, ts, tradesCount: (lastM5Trades || []).length, kelly, portfolio };
+}
 
-    function generateQuantAIResponse(queryText) {
-      const s = getLiveStrategySnapshotForAI();
-      const q = queryText.toLowerCase();
+function generateQuantAIResponse(queryText) {
+  const s = getLiveStrategySnapshotForAI();
+  const q = queryText.toLowerCase();
 
-      if (q.includes('por qué') || q.includes('porque') || q.includes('fall') || q.includes('pérdida') || q.includes('perdida') || q.includes('2024') || q.includes('2022')) {
-        return `
-          <div class="font-bold text-amber-400">🔍 Diagnóstico de Fallos y Racha Perdedora (${s.sym} - ${s.tf}):</div>
-          <div>1. <b>Causa Principal (Whipsaw en Rango):</b> De las <b>${s.tradesCount} operaciones</b> evaluadas, el bot registró una racha máxima de <b>${s.streak}</b> porque los cruces de EMA entran tarde cuando el mercado entra en consolidación lateral.</div>
-          <div>2. <b>Relación SL/Volatilidad:</b> Tu Stop Loss actual (<b>${s.sl} pts</b>) es alcanzado por el ruido intradía antes de que se active el Trailing Stop (<b>${s.ts} pts</b>).</div>
-          <div class="pt-1"><button type="button" onclick="module8OneClickRewriteCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">✨ Corregir este fallo en el código ahora</button></div>
-        `;
-      }
+  if (q.includes('portafolio') || q.includes('portfolio') || q.includes('kelly') || q.includes('mql5') || q.includes('mq5') || q.includes('prop') || q.includes('fondeo') || q.includes('challenge') || q.includes('correlaci') || q.includes('certificad') || q.includes('exportar')) {
+    const p = s.portfolio;
+    const k = s.kelly;
+    const kellyLine = k
+      ? `<div>• <b>Panel 5.4 (Kelly Bot Actual):</b> f* = <b>${k.kellyFullPct.toFixed(2)}%</b> | ½ Kelly = <b>${k.kellyHalfPct.toFixed(2)}%</b> | ¼ Kelly = <b>${k.kellyQuarterPct.toFixed(2)}%</b> (Riesgo activo M3: ${k.activeRiskPct.toFixed(2)}%, Payoff ${k.payoffR.toFixed(2)}x).</div>`
+      : `<div>• <b>Panel 5.4 (Kelly):</b> Ejecuta M3/M5 para calcular Kelly del bot actual.</div>`;
 
-      if (q.includes('drawdown') || q.includes('dd') || q.includes('reduzco') || q.includes('reducir') || q.includes('riesgo')) {
-        return `
-          <div class="font-bold text-rose-400">🛡️ Plan Cuantitativo para Reducir el Drawdown (${s.dd}):</div>
-          <div>1. <b>Filtro de Tendencia Institucional:</b> Operar compras solo sobre la EMA 200 o acortar el RSI a zona <b>35–65</b> evita el 38% de las entradas falsas.</div>
-          <div>2. <b>Ajuste de Stop Loss & Trailing:</b> Reducir el SL de <b>${s.sl} ➔ 55 pts</b> y ceñir el Trailing Stop a <b>35 pts</b> corta las pérdidas rápido y protege el Run-Up verde (#10b981).</div>
-          <div>3. <b>Riesgo de Ruina Monte Carlo:</b> Actualmente es de <b>${s.ruin}</b>. Con este ajuste baja a <b>0.0%</b>.</div>
-          <div class="pt-1"><button type="button" onclick="module8OneClickRewriteCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">🛡️ Aplicar Reducción de Drawdown (1 Clic)</button></div>
-        `;
-      }
-
+    if (p && p.bots.length) {
       return `
-        <div class="font-bold text-emerald-400">📊 Auditoría Instantánea del Backtest (${s.sym} | ${s.tf}):</div>
-        <div>• <b>Rendimiento Neto:</b> ${s.pyg} | <b>Profit Factor:</b> ${s.pf}</div>
-        <div>• <b>Win Rate:</b> ${s.wr} | <b>Drawdown Máx:</b> ${s.dd}</div>
-        <div>• <b>Sharpe Ratio:</b> ${s.sharpe} | <b>Riesgo Ruina MC:</b> ${s.ruin}</div>
-        <div class="text-indigo-300">💡 <b>Recomendación IA:</b> Inyectar el filtro de volatilidad + Genoma Óptimo para elevar el Profit Factor y suavizar la Curva de Capital Bicolor.</div>
-        <div class="pt-1"><button type="button" onclick="module8OneClickRewriteCode()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">⚡ Optimizar y Reescribir Estrategia</button></div>
+        <div class="font-bold text-emerald-400">🏆 Auditoría Soberana: Portafolio Certificado &amp; Kelly</div>
+        <div>• <b>Bots Certificados:</b> ${p.bots.length} bots descorrelacionados (${p.bots.map(b => `${b.asset} ${b.tf}`).join(', ')})</div>
+        <div>• <b>Capital Final:</b> $${Math.round(p.finalEq).toLocaleString()} (${p.returnPct >= 0 ? '+' : ''}${p.returnPct.toFixed(1)}%) | <b>Ops:</b> ${p.totalTrades.toLocaleString()}</div>
+        <div>• <b>Riesgo Prop Firm:</b> Global <b>${p.globalRiskPct.toFixed(2)}%</b> (${p.perBotRiskPct.toFixed(2)}%/bot) | DD Máx <b>-${Math.abs(p.maxDDPct).toFixed(2)}%</b> | Peor Día <b>-${Math.abs(p.worstDayPct).toFixed(2)}%</b></div>
+        <div>• <b>Ratios:</b> PF <b>${p.pf.toFixed(2)}</b> | Sharpe <b>${p.sharpe.toFixed(2)}</b> | Calmar <b>${p.calmar.toFixed(2)}</b> | Corr Media <b>${p.avgCorr.toFixed(2)}</b> | Kelly Portafolio <b>${p.kellyPct.toFixed(2)}%</b></div>
+        ${kellyLine}
+        <div class="text-sky-300">💡 <b>Protocolo 2 Marchas Prop Firm:</b> 2.00% Global en Challenge (Fase 1/2) y 1.00% Global en Cuenta Fondeada Live (~mitad de DD).</div>
+        <div class="pt-1"><button type="button" onclick="exportCertifiedPortfolioToMQL5()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">⚡ Exportar EA Multi-Perfil (.mq5)</button></div>
       `;
     }
+    return `
+      <div class="font-bold text-amber-400">⚠️ Portafolio Certificado aún no guardado</div>
+      ${kellyLine}
+      <div>Ve al <b>Módulo 6 → Panel 6.4 / 6.5</b>, simula tu combinación de bots y haz clic en <b>💾 Certificar Portafolio</b> para habilitar la exportación directa a MetaTrader 5 (.mq5).</div>
+    `;
+  }
 
+  if (q.includes('por qué') || q.includes('porque') || q.includes('fall') || q.includes('pérdida') || q.includes('perdida') || q.includes('2024') || q.includes('2022')) {
+    return `
+      <div class="font-bold text-amber-400">🔍 Diagnóstico de Fallos y Racha Perdedora (${s.sym} - ${s.tf}):</div>
+      <div>1. <b>Causa Principal (Whipsaw en Rango):</b> De las <b>${s.tradesCount} operaciones</b> evaluadas, el bot registró una racha máxima de <b>${s.streak}</b> porque los cruces de EMA entran tarde cuando el mercado entra en consolidación lateral.</div>
+      <div>2. <b>Relación SL/Volatilidad:</b> Tu Stop Loss actual (<b>${s.sl} pts</b>) es alcanzado por el ruido intradía antes de que se active el Trailing Stop (<b>${s.ts} pts</b>).</div>
+      <div class="pt-1"><button type="button" onclick="module8OneClickRewriteCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">✨ Corregir este fallo en el código ahora</button></div>
+    `;
+  }
+
+  if (q.includes('drawdown') || q.includes('dd') || q.includes('reduzco') || q.includes('reducir') || q.includes('riesgo')) {
+    return `
+      <div class="font-bold text-rose-400">🛡️ Plan Cuantitativo para Reducir el Drawdown (${s.dd}):</div>
+      <div>1. <b>Filtro de Tendencia Institucional:</b> Operar compras solo sobre la EMA 200 o acortar el RSI a zona <b>35-65</b> evita el 38% de las entradas falsas.</div>
+      <div>2. <b>Ajuste de Stop Loss &amp; Trailing:</b> Reducir el SL de <b>${s.sl} → 55 pts</b> y ceñir el Trailing Stop a <b>35 pts</b> corta las pérdidas rápido y protege el Run-Up verde (#10b981).</div>
+      <div>3. <b>Riesgo de Ruina Monte Carlo:</b> Actualmente es de <b>${s.ruin}</b>. Con este ajuste baja a <b>0.0%</b>.</div>
+      <div class="pt-1"><button type="button" onclick="module8OneClickRewriteCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">🛡️ Aplicar Reducción de Drawdown (1 Clic)</button></div>
+    `;
+  }
+
+  const extraKelly = s.kelly ? `<div>• <b>Kelly 5.4:</b> f* ${s.kelly.kellyFullPct.toFixed(1)}% | ½K ${s.kelly.kellyHalfPct.toFixed(1)}% | ¼K ${s.kelly.kellyQuarterPct.toFixed(1)}%</div>` : '';
+  const extraPort = (s.portfolio && s.portfolio.bots.length)
+    ? `<div class="text-emerald-300">• <b>Portafolio Certificado:</b> ${s.portfolio.bots.length} bots @ ${s.portfolio.globalRiskPct.toFixed(2)}% Global | $${Math.round(s.portfolio.finalEq).toLocaleString()} | DD -${Math.abs(s.portfolio.maxDDPct).toFixed(2)}% | PF ${s.portfolio.pf.toFixed(2)}</div>`
+    : '';
+
+  return `
+    <div class="font-bold text-emerald-400">📊 Auditoría Instantánea del Backtest (${s.sym} | ${s.tf}):</div>
+    <div>• <b>Rendimiento Neto:</b> ${s.pyg} | <b>Profit Factor:</b> ${s.pf}</div>
+    <div>• <b>Win Rate:</b> ${s.wr} | <b>Drawdown Máx:</b> ${s.dd}</div>
+    <div>• <b>Sharpe Ratio:</b> ${s.sharpe} | <b>Riesgo Ruina MC:</b> ${s.ruin}</div>
+    ${extraKelly}
+    ${extraPort}
+    <div class="text-indigo-300">💡 <b>Recomendación IA:</b> Inyectar el filtro de volatilidad + Genoma Óptimo para elevar el Profit Factor y suavizar la Curva de Capital Bicolor.</div>
+    <div class="pt-1"><button type="button" onclick="module8OneClickRewriteCode()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">⚡ Optimizar y Reescribir Estrategia</button></div>
+  `;
+}
     function askModule8QuickQuestion(type) {
       const map = {
         why_fail: "¿Por qué el bot tuvo rachas perdedoras o falló en ciertos tramos?",
@@ -14252,16 +14962,20 @@ window.m31SovereignState = {
 };
 
 function initModule31SovereignNexus() {
-    m31RenderArbitragePairs();
-    m31UpdateSovereignStats();
-    
-    if (!window.m31SovereignState.initialized) {
-        window.m31SovereignState.initialized = true;
-        m31LogSovereign('crown', '👑 Cuartel Soberano AGI Nexus iniciado. 31/31 Módulos sincronizados y bajo mando unificado.');
-        m31LogSovereign('info', '🛰️ Orquestación Johansen & Dickey-Fuller aumentada: 4 pares sintéticos cointegrados en seguimiento.');
-    }
-}
+  m31RenderArbitragePairs();
+  m31UpdateSovereignStats();
+  if (typeof m31RenderCertifiedPortfolioCard === 'function') m31RenderCertifiedPortfolioCard();
 
+  if (!window.m31SovereignState.initialized) {
+    window.m31SovereignState.initialized = true;
+    m31LogSovereign('crown', '👑 Cuartel Soberano AGI Nexus iniciado. 31/31 Módulos sincronizados y bajo mando unificado.');
+    m31LogSovereign('info', '🧬 Orquestación Johansen & Dickey-Fuller aumentada: 4 pares sintéticos cointegrados en seguimiento.');
+    const cert = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
+    if (cert && cert.bots.length) {
+      m31LogSovereign('success', `🏆 Portafolio Certificado enlazado: ${cert.bots.length} bots @ ${cert.globalRiskPct.toFixed(2)}% Global | Capital $${Math.round(cert.finalEq).toLocaleString()} | DD -${Math.abs(cert.maxDDPct).toFixed(2)}% | PF ${cert.pf.toFixed(2)} | Sharpe ${cert.sharpe.toFixed(2)}.`);
+    }
+  }
+}
 function m31RenderArbitragePairs() {
     const tbody = document.getElementById('m31-arbitrage-pairs-body');
     if (!tbody) return;
@@ -14354,27 +15068,122 @@ function m31AutoRebalanceCluster() {
 }
 
 function m31GenerateExecutiveReport() {
-    const report = {
-        plataforma: "StratView-5 Institutional Quant Workstation",
-        arquitectura: "31 Módulos Unificados (M1 a M31)",
-        gobernanza: "Macho Alfa AGI (Módulo 16 & Módulo 31)",
-        alphaGlobal: window.m31SovereignState.sovereignAlpha + "%",
-        sharpeDSR: window.m31SovereignState.sovereignDsr,
-        aumTotalCluster: document.getElementById('m31-stat-total-aum')?.textContent || "$485,860",
-        whiteRealityCheck: "PASSED (p < 0.001)",
-        stressTestingCisneNegro: "Certificación Grado A+",
-        auditorWallSt: "Deflated Sharpe Ratio (DSR) Verificado",
-        fechaAuditoria: new Date().toISOString()
-    };
+  const cert = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
+  const kelly = (typeof getSV5KellySnapshot === 'function') ? getSV5KellySnapshot() : null;
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
-    const dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `StratView_Executive_WallSt_Dossier_${new Date().toISOString().slice(0,10)}.json`);
-    dlAnchorElem.click();
+  const report = {
+    plataforma: "StratView-5 Institutional Quant Workstation",
+    arquitectura: "31 Módulos Unificados (M1 a M31)",
+    gobernanza: "Macho Alfa AGI (Módulo 16 & Módulo 31)",
+    alphaGlobal: window.m31SovereignState.sovereignAlpha + "%",
+    sharpeDSR: window.m31SovereignState.sovereignDsr,
+    aumTotalCluster: document.getElementById('m31-stat-total-aum')?.textContent || "$485,860",
+    whiteRealityCheck: "PASSED (p < 0.001)",
+    stressTestingCisneNegro: "Certificación Grado A+",
+    auditorWallSt: "Deflated Sharpe Ratio (DSR) Verificado",
+    kellyPanel54: kelly ? {
+      kellyFullPct: Number(kelly.kellyFullPct.toFixed(2)),
+      kellyHalfPct: Number(kelly.kellyHalfPct.toFixed(2)),
+      kellyQuarterPct: Number(kelly.kellyQuarterPct.toFixed(2)),
+      winRatePct: Number(kelly.winRatePct.toFixed(2)),
+      payoffR: Number(kelly.payoffR.toFixed(2)),
+      activeRiskPct: Number(kelly.activeRiskPct.toFixed(2)),
+      tradesCount: kelly.tradesCount,
+      activoEvaluado: `${kelly.asset} ${kelly.tf}`
+    } : "Sin cálculo Kelly 5.4 reciente",
+    portafolioCertificado: cert ? {
+      estado: "CERTIFICADO",
+      botsActivos: cert.bots.length,
+      riesgoGlobalPct: cert.globalRiskPct,
+      riesgoPorBotPct: Number(cert.perBotRiskPct.toFixed(3)),
+      capitalInicial: cert.initCap,
+      capitalFinal: Number(cert.finalEq.toFixed(2)),
+      retornoPct: Number(cert.returnPct.toFixed(2)),
+      ddMaxCombPct: Number(cert.maxDDPct.toFixed(2)),
+      peorDiaPropPct: Number(cert.worstDayPct.toFixed(2)),
+      profitFactor: Number(cert.pf.toFixed(2)),
+      sharpe: Number(cert.sharpe.toFixed(2)),
+      calmar: Number(cert.calmar.toFixed(2)),
+      kellyPortafolioPct: Number(cert.kellyPct.toFixed(2)),
+      correlacionMedia: Number(cert.avgCorr.toFixed(2)),
+      maxSimultaneos: cert.maxConcurrent,
+      operacionesReales: cert.totalTrades,
+      bots: cert.bots.map(b => ({
+        magicNumber: b.magicNumber,
+        asset: b.asset,
+        tf: b.tf,
+        emaFast: b.fast,
+        emaSlow: b.slow,
+        tp: b.tp,
+        sl: b.sl,
+        ts: b.ts,
+        filtro: b.filterLabel
+      }))
+    } : "Pendiente de certificación en Panel 6.5",
+    fechaAuditoria: new Date().toISOString()
+  };
 
-    m31LogSovereign('success', '📑 Dossier Ejecutivo Institucional descargado en formato JSON auditado.');
-    if (typeof showFloatingToast === 'function') showFloatingToast('Dossier Ejecutivo Wall St. descargado', 'info');
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
+  const dlAnchorElem = document.createElement('a');
+  dlAnchorElem.setAttribute("href", dataStr);
+  dlAnchorElem.setAttribute("download", `StratView_Executive_WallSt_Dossier_${new Date().toISOString().slice(0,10)}.json`);
+  dlAnchorElem.click();
+
+  m31LogSovereign('success', '📄 Dossier Ejecutivo Institucional descargado en formato JSON auditado (incluye Portafolio Certificado + Kelly 5.4).');
+  if (typeof showFloatingToast === 'function') showFloatingToast('Dossier Ejecutivo Wall St. descargado', 'info');
+}
+
+function m31RenderCertifiedPortfolioCard() {
+  const badgeEl = document.getElementById('m31-cert-badge');
+  const botsEl  = document.getElementById('m31-cert-bots');
+  const capEl   = document.getElementById('m31-cert-cap');
+  const ddEl    = document.getElementById('m31-cert-dd');
+  const ratEl   = document.getElementById('m31-cert-ratios');
+  const corrEl  = document.getElementById('m31-cert-corr');
+  const kellyEl = document.getElementById('m31-cert-kelly');
+  const pillsEl = document.getElementById('m31-cert-bot-pills');
+  if (!badgeEl) return;
+
+  const cert = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
+  const kelly = (typeof getSV5KellySnapshot === 'function') ? getSV5KellySnapshot() : null;
+
+  if (kellyEl) {
+    if (kelly && isFinite(kelly.kellyFullPct)) {
+      kellyEl.innerHTML = `<span class="text-emerald-400">f* ${kelly.kellyFullPct.toFixed(1)}%</span> <span class="text-gray-500">|</span> ½K ${kelly.kellyHalfPct.toFixed(1)}% <span class="text-gray-500">|</span> ¼K ${kelly.kellyQuarterPct.toFixed(1)}%`;
+    } else {
+      kellyEl.textContent = 'Ejecuta M3/M5 para Kelly';
+    }
+  }
+
+  if (!cert || !cert.bots.length) {
+    badgeEl.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700';
+    badgeEl.textContent = 'PENDIENTE DE CERTIFICACIÓN (PANEL 6.5)';
+    if (botsEl) botsEl.textContent = '--';
+    if (capEl) capEl.textContent = '--';
+    if (ddEl) ddEl.textContent = '--';
+    if (ratEl) ratEl.textContent = '--';
+    if (corrEl) corrEl.textContent = '--';
+    if (pillsEl) pillsEl.innerHTML = '<span class="text-[10px] text-gray-500 font-mono">Certifica un portafolio en Módulo 6 (Panel 6.5) para activarlo en el Cuartel Soberano y Macho Alfa AGI.</span>';
+    return;
+  }
+
+  badgeEl.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+  badgeEl.textContent = `✓ CERTIFICADO · ${cert.bots.length} BOTS · ${cert.globalRiskPct.toFixed(2)}% GLOBAL (${cert.perBotRiskPct.toFixed(2)}%/bot)`;
+
+  if (botsEl) botsEl.textContent = `${cert.bots.length} Bots · ${cert.totalTrades.toLocaleString()} ops`;
+  if (capEl) capEl.innerHTML = `<span class="text-emerald-400">$${Math.round(cert.finalEq).toLocaleString()}</span> <span class="text-gray-400 text-[10px]">(${cert.returnPct >= 0 ? '+' : ''}${cert.returnPct.toFixed(1)}%)</span>`;
+  if (ddEl) ddEl.innerHTML = `<span class="text-amber-300">-${Math.abs(cert.maxDDPct).toFixed(2)}%</span> <span class="text-gray-500">/</span> <span class="text-sky-300">Día -${Math.abs(cert.worstDayPct).toFixed(2)}%</span>`;
+  if (ratEl) ratEl.textContent = `PF ${cert.pf.toFixed(2)} · Sh ${cert.sharpe.toFixed(2)} · Cal ${cert.calmar.toFixed(2)}`;
+  if (corrEl) corrEl.textContent = `Corr ${cert.avgCorr.toFixed(2)} · Sim ${cert.maxConcurrent}/${cert.bots.length} · K ${cert.kellyPct.toFixed(1)}%`;
+
+  if (pillsEl) {
+    pillsEl.innerHTML = cert.bots.map(b => `
+      <span class="px-1.5 py-0.5 rounded bg-[#0c101a] border border-purple-500/30 text-[10px] font-mono text-gray-200">
+        <span class="text-emerald-400 font-bold">#${b.magicNumber}</span> ${b.asset} <span class="text-purple-300">${b.tf}</span>
+        <span class="text-gray-400">(${b.fast}/${b.slow} · ${b.filterLabel})</span>
+      </span>
+    `).join('');
+  }
 }
 
 function m31TriggerGlobalEmergencyLock() {
