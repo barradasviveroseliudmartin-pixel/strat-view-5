@@ -1773,7 +1773,7 @@ signalSell = crossunder(fast, slow) and osc > OverSold;</textarea>
           <span class="text-yellow-300">NIVEL SUPREMO AGI</span>
         </div>
         <div id="agi-master-logs" class="flex-1 bg-[#090d16] border border-gray-800/80 rounded p-2 overflow-y-auto space-y-1 text-[10px] text-gray-200">
-          <p class="text-yellow-400 font-bold">> Gobernador Supremo Macho Alfa AGI: Supervisión de 23/23 Módulos ACTIVA.</p>
+<p class="text-yellow-400 font-bold">> Gobernador Supremo Macho Alfa AGI: Supervisión de 31/31 Módulos ACTIVA.</p>
           <p class="text-amber-300">> M21 (AST Parser ∞ Líneas): Operativo bajo control AGI.</p>
           <p class="text-rose-300">> M22 (Replay Tick-a-Tick 99.9%): Auditando mechas y spread ECN.</p>
           <p class="text-cyan-300">> M23 (Terminal Multi-Mercados & Margen): Apalancamiento sincronizado 1:1 a 1:500.</p>
@@ -6390,8 +6390,8 @@ function m23AutoUpgradeMachoAlfaTo23() {
   // 1. Modificar títulos y textos estáticos si existen en el DOM
   document.querySelectorAll('*').forEach(el => {
     if (el.children.length === 0 && el.innerText) {
-      if (el.innerText.includes('GOBERNADOR SUPREMO M1-M20') || el.innerText.includes('GOBERNADOR SUPREMO M1-M22')) {
-        el.innerText = '👑 SÚPER AGENTE LÍDER: MACHO ALFA AGI (GOBERNADOR SUPREMO M1-M23)';
+if (el.innerText.includes('GOBERNADOR SUPREMO M1-M20') || el.innerText.includes('GOBERNADOR SUPREMO M1-M22') || el.innerText.includes('GOBERNADOR SUPREMO M1-M23')) {
+        el.innerText = '👑 SÚPER AGENTE LÍDER: MACHO ALFA AGI (GOBERNADOR SUPREMO M1-M31)';
       }
       if (el.innerText === '20/20 AL 100%' || el.innerText === '22/22 AL 100%') {
         el.innerText = '23/23 AL 100%';
@@ -6427,7 +6427,7 @@ function m23AutoUpgradeMachoAlfaTo23() {
   const agiLog = document.querySelector('#subview-machoalfa pre') || document.querySelector('#subview-machoalfa .font-mono');
   if (agiLog) {
     const time = new Date().toLocaleTimeString();
-    agiLog.innerHTML += `\n[${time}] 👑 Macho Alfa AGI: Supervisión expandida a 23/23 Módulos (M21 AST, M22 Ticks, M23 Margen). Dominio Supremo Total.`;
+agiLog.innerHTML += `\n[${time}] 👑 Macho Alfa AGI: Supervisión expandida a 31/31 Módulos (M1-M31 + Cuartel Soberano AGI Nexus). Dominio Supremo Total.`;
   }
 }
 // ============================================================================
@@ -7686,12 +7686,12 @@ function renderMachoAlfaSupervisionGrid() {
     </div>
   `).join('');
 
-  const healthEl = document.getElementById('agi-agents-health');
-  if (healthEl) healthEl.innerText = "23/23 AL 100%";
+const healthEl = document.getElementById('agi-agents-health');
+  if (healthEl) healthEl.innerText = "31/31 AL 100%";
   const headerSpan = document.querySelector('#subview-machoalfa span.text-yellow-400 span:last-child');
-  if (headerSpan) headerSpan.innerText = "👑 SÚPER AGENTE LÍDER: MACHO ALFA AGI (GOBERNADOR SUPREMO M1-M23):";
+  if (headerSpan) headerSpan.innerText = "👑 SÚPER AGENTE LÍDER: MACHO ALFA AGI (GOBERNADOR SUPREMO M1-M31):";
 
-  // Actualizar también Cyber-Shield (M13) y Directorio Cian (M15) a 23/23 Módulos
+  // Actualizar también Cyber-Shield (M13) y Directorio Cian (M15) a 31/31 Módulos
 }
 
 function runModule16MachoAlfaMasterCycle() {
@@ -12841,33 +12841,72 @@ const editorEl = document.getElementById('stratscript-editor');
       box.scrollTop = box.scrollHeight;
     }
 
-    function clearModule8Chat() {
-      const box = document.getElementById('m8-chat-messages');
-      if (!box) return;
-      box.innerHTML = '';
-      const sym = document.getElementById('symbolSelect')?.value || 'BTC-USD';
-      const tf  = winTimeframes[1] || '15m';
-      appendModule8Bubble('ai', `
-        <div class="font-bold text-indigo-400">🤖 Hola. Soy tu Analista Cuantitativo IA (Módulo 8).</div>
-        <div>Estoy leyendo en tiempo real tu estrategia sobre <b>${sym} (${tf})</b>, tu Curva Bicolor (M4), Monte Carlo (M5) y el Optimizador Genético (M6).</div>
-        <div class="text-gray-400 text-[10px]">Haz clic en cualquiera de los botones de arriba o escríbeme cualquier pregunta sobre tu bot.</div>
-      `);
+function resolveSV5AssetAndTf(rawAsset, rawTf) {
+  const tfMap = { '1m': 'M1', '5m': 'M5', '15m': 'M15', '30m': 'M30', '1h': 'H1', '60m': 'H1', '4h': 'H4', '240m': 'H4', '1d': 'D1', '1w': 'W1' };
+  const normTf = (v) => {
+    const k = String(v || '').trim().toLowerCase();
+    return tfMap[k] || (v ? String(v).trim().toUpperCase() : 'M15');
+  };
+  let sym = String(rawAsset || 'BTC-USD').trim();
+  let tf = normTf(rawTf || '15m');
+  if (/^mt5_id_/i.test(sym)) {
+    const sel = document.getElementById('symbolSelect');
+    const opt = sel ? (Array.from(sel.options).find(o => o.value === sym) || sel.options[sel.selectedIndex]) : null;
+    const label = (opt && opt.text) ? opt.text.trim() : '';
+    if (label && !/^mt5_id_/i.test(label)) {
+      const cleaned = label
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/\[[^\]]*\]/g, ' ')
+        .replace(/\.csv/gi, ' ')
+        .replace(/[^A-Za-z0-9._\-\/\s]/g, ' ')
+        .replace(/[_\-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const tfMatch = cleaned.match(/\b(M1|M5|M15|M30|H1|H4|D1|W1|1m|5m|15m|30m|1h|4h|1d)\b/i);
+      if (tfMatch) tf = normTf(tfMatch[1]);
+      const skip = /^(mt5|csv|local|file|archivo|dataset|hist|historico|datos|velas|bars|real|tick|ticks|m1|m5|m15|m30|h1|h4|d1|w1|1m|5m|15m|30m|1h|4h|1d)$/i;
+      const tokens = cleaned.split(' ').filter(t => t && !skip.test(t) && !/^\d+$/.test(t));
+      sym = (tokens[0] || cleaned || 'MT5').toUpperCase();
+    } else {
+      sym = 'MT5';
     }
+  }
+  return { sym, tf };
+}
+
+function clearModule8Chat() {
+  const box = document.getElementById('m8-chat-messages');
+  if (!box) return;
+  box.innerHTML = '';
+  const { sym, tf } = resolveSV5AssetAndTf(document.getElementById('symbolSelect')?.value || 'BTC-USD', winTimeframes[1] || '15m');
+  appendModule8Bubble('ai', `
+    <div class="font-bold text-indigo-400">🤖 Hola. Soy tu Analista Cuantitativo IA (Módulo 8).</div>
+    <div>Estoy leyendo en tiempo real tu estrategia sobre <b>${sym} (${tf})</b>, tu Curva Bicolor (M4), Monte Carlo (M5) y el Optimizador Genético (M6).</div>
+    <div class="text-gray-400 text-[10px]">Haz clic en cualquiera de los botones de arriba o escríbeme cualquier pregunta sobre tu bot.</div>
+  `);
+}
 
 function getLiveStrategySnapshotForAI() {
-  const sym = document.getElementById('symbolSelect')?.value || 'BTC-USD';
-  const tf = winTimeframes[1] || '15m';
+  const resolved = resolveSV5AssetAndTf(document.getElementById('symbolSelect')?.value || 'BTC-USD', winTimeframes[1] || '15m');
+  const sym = resolved.sym;
+  const tf = resolved.tf;
   const pyg = document.getElementById('st-pyg')?.innerText || '+0.00 USD';
   const dd = document.getElementById('st-dd')?.innerText || '0.00 USD';
   const wr = document.getElementById('st-winrate')?.innerText || '50%';
   const pf = document.getElementById('st-pf')?.innerText || '1.00';
   const sharpe = document.getElementById('m5-sharpe')?.innerText || '0.00';
   const streak = document.getElementById('m5-lose-streak')?.innerText || '0 trades';
-  const ruin   = document.getElementById('m5-mc-ruin')?.innerText || '0.0%';
+  const ruin  = document.getElementById('m5-mc-ruin')?.innerText || '0.0%';
   const tp = document.getElementById('inp-tp')?.value || '150';
   const sl = document.getElementById('inp-sl')?.value || '80';
   const ts = document.getElementById('inp-ts')?.value || '50';
-  const kelly = (typeof getSV5KellySnapshot === 'function') ? getSV5KellySnapshot() : null;
+  const kellyRaw = (typeof getSV5KellySnapshot === 'function') ? getSV5KellySnapshot() : null;
+  const kelly = kellyRaw
+    ? (() => {
+        const kr = resolveSV5AssetAndTf(kellyRaw.asset, kellyRaw.tf);
+        return { ...kellyRaw, asset: kr.sym, tf: kr.tf };
+      })()
+    : null;
   const portfolio = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
   return { sym, tf, pyg, dd, wr, pf, sharpe, streak, ruin, tp, sl, ts, tradesCount: (lastM5Trades || []).length, kelly, portfolio };
 }
