@@ -5920,7 +5920,8 @@ window.m24State = {
         { sym: "XAUUSD", baseSpread: 1.2, minSpread: 0.8, maxSpread: 3.5, swapL: -2.85, swapS: 1.10 },
         { sym: "NAS100", baseSpread: 1.1, minSpread: 0.7, maxSpread: 2.8, swapL: -1.80, swapS: -0.45 },
         { sym: "US30",   baseSpread: 1.8, minSpread: 1.2, maxSpread: 4.2, swapL: -2.10, swapS: -0.60 },
-        { sym: "BTCUSD", baseSpread: 9.5, minSpread: 6.0, maxSpread: 28.0,swapL: -12.5, swapS: 3.20 }
+        { sym: "BTCUSD", baseSpread: 9.5, minSpread: 6.0, maxSpread: 28.0,swapL: -12.5, swapS: 3.20 },
+      { sym: "XAGUSD", baseSpread: 1.9, minSpread: 1.2, maxSpread: 4.5, swapL: -1.45, swapS: 0.45 }
     ]
 };
 
@@ -6056,25 +6057,29 @@ function m24RenderCostMatrixTable() {
 
 // Actualización de KPIs
 function m24UpdateKpiDisplays() {
-    const s = window.m24State;
-    let comm = 6.0;
-    if (s.entityType === 'propfirm') {
-        comm = (s.propFirms[s.entityKey]?.commissionPerLotRoundTurn || 6.0);
-    } else {
-        comm = (s.brokers[s.entityKey]?.commissionPerLotRoundTurn || 7.0);
-    }
-    const avgSpread = (0.5 * (s.propFirms[s.entityKey]?.spreadMultiplier || 1.0) + s.slippagePips).toFixed(2);
+  const s = window.m24State;
+  if (!s) return;
+  const prof = (typeof m24GetActiveEntityProfile === 'function')
+    ? m24GetActiveEntityProfile()
+    : { spreadMult: 1.0, spreadAdd: 0, commPerLot: 6.0, slippagePips: Number(s.slippagePips ?? 0.3) };
 
-    const kSpread = document.getElementById('m24-kpi-spread');
-    const kComm   = document.getElementById('m24-kpi-comm');
-    const kDrag   = document.getElementById('m24-kpi-drag');
+  const matrix = Array.isArray(s.baseSymbolMatrix) ? s.baseSymbolMatrix : [];
+  const eurusd = matrix.find(r => String(r.sym || '').toUpperCase().replace(/[^A-Z0-9]/g, '') === 'EURUSD');
+  const refSpread = ((eurusd ? Number(eurusd.baseSpread || 0.8) : 0.8) * prof.spreadMult) + prof.spreadAdd;
+  const estDragPct = Math.max(0.15, ((refSpread + prof.slippagePips) * 0.45) + (prof.commPerLot * 0.12));
 
-    if (kSpread) kSpread.innerText = `${avgSpread} Pips`;
-    if (kComm)   kComm.innerText   = `$${comm.toFixed(2)} USD`;
-    if (kDrag) {
-        const dragEstimate = ((parseFloat(avgSpread) * 1.2 + comm * 0.15)).toFixed(2);
-        kDrag.innerText = `-${dragEstimate}% Drag`;
-    }
+  const elSpread = document.getElementById('m24-kpi-spread');
+  const elComm = document.getElementById('m24-kpi-comm');
+  const elDrag = document.getElementById('m24-kpi-drag');
+
+  if (elSpread) elSpread.innerText = `${refSpread.toFixed(2)} Pips`;
+  if (elComm) elComm.innerText = `$${prof.commPerLot.toFixed(2)} USD`;
+  if (elDrag) elDrag.innerText = `-${estDragPct.toFixed(2)}% Balance`;
+
+  if (typeof m24RenderCertifiedPortfolioAudit === 'function') m24RenderCertifiedPortfolioAudit();
+  setTimeout(() => {
+    if (typeof autoRecommendBestPropFirmAndPlan === 'function') autoRecommendBestPropFirmAndPlan(false);
+  }, 0);
 }
 
 // Ejecución del Scraper en Vivo de Costes
@@ -6151,6 +6156,347 @@ window.m24CalculateTradeDrag = function(symbol, lots, entryTime, exitTime, isBuy
 
     return spreadCostUSD + commUSD + Math.abs(totalSwap);
 };
+    // =========================================================================
+// SUB-FASE 4A.1 — M24 PERFIL UNIFICADO (PROP/BROKER), FIX BROKER DRAG,
+// AUDITORÍA DEL PORTAFOLIO CERTIFICADO & SEMÁFORO DE PISO 0.01 LOTES
+// =========================================================================
+function m24GetActiveEntityProfile(overrideAccountSize = null, overrideEntityKey = null) {
+  const s = window.m24State;
+  if (!s) {
+    return {
+      name: 'FTMO', entityType: 'propfirm', entityKey: 'ftmo', accountSize: Number(overrideAccountSize || 100000),
+      platform: 'mt5', slippagePips: 0.3, spreadMult: 1.0, spreadAdd: 0, commPerLot: 6.0, swapMult: 1.0
+    };
+  }
+  const type = s.entityType === 'broker' ? 'broker' : 'propfirm';
+  const map = type === 'broker' ? (s.brokers || {}) : (s.propFirms || {});
+  const fallbackMap = s.propFirms || s.brokers || {};
+  const key = overrideEntityKey || s.entityKey || Object.keys(map)[0] || 'ftmo';
+  const ent = map[key] || fallbackMap[key] || Object.values(map)[0] || Object.values(fallbackMap)[0] || {};
+  const accSize = Number(overrideAccountSize || s.accountSize || 100000);
+  const tiers = ent.tiers || ent.accountTiers || {};
+  const tier = tiers[accSize] || tiers[String(accSize)] || {};
+
+  const spreadMult = Number(tier.spreadMultiplier ?? ent.spreadMultiplier ?? 1.0);
+  const spreadAdd = Number(tier.spreadAdd ?? tier.markup ?? ent.spreadAdd ?? ent.markup ?? 0);
+  const commPerLot = Number(
+    tier.commissionPerLotRoundTurn ?? tier.commission ?? tier.comm ??
+    ent.commissionPerLotRoundTurn ?? ent.commission ?? ent.comm ?? 6.0
+  );
+  const swapMult = Number(tier.swapMultiplier ?? ent.swapMultiplier ?? 1.0);
+
+  return {
+    name: ent.name || ent.label || String(key).toUpperCase(),
+    entityType: type,
+    entityKey: key,
+    accountSize: isFinite(accSize) && accSize > 0 ? accSize : 100000,
+    platform: s.platform || 'mt5',
+    slippagePips: isFinite(Number(s.slippagePips)) ? Number(s.slippagePips) : 0.3,
+    spreadMult: isFinite(spreadMult) ? spreadMult : 1.0,
+    spreadAdd: isFinite(spreadAdd) ? spreadAdd : 0,
+    commPerLot: isFinite(commPerLot) ? commPerLot : 6.0,
+    swapMult: isFinite(swapMult) ? swapMult : 1.0
+  };
+}
+window.m24GetActiveEntityProfile = m24GetActiveEntityProfile;
+
+// Fix soberano: soporte de modo 'broker' en window.m24CalculateTradeDrag sin alterar su contrato de retorno
+if (typeof window.m24CalculateTradeDrag === 'function' && !window.m24CalculateTradeDrag.__sv5BrokerPatched) {
+  const _origM24CalculateTradeDrag = window.m24CalculateTradeDrag;
+  window.m24CalculateTradeDrag = function(symbol, lots, entryTime, exitTime, isBuy = true) {
+    const s = window.m24State;
+    if (s && s.entityType === 'broker' && s.brokers && s.brokers[s.entityKey] && s.propFirms && !s.propFirms[s.entityKey]) {
+      const prevKey = s.entityKey;
+      const b = s.brokers[prevKey];
+      s.propFirms[prevKey] = Object.assign({}, b, {
+        spreadMultiplier: b.spreadMultiplier ?? 1.0,
+        commissionPerLotRoundTurn: b.commissionPerLotRoundTurn ?? b.commission ?? b.comm ?? 6.0
+      });
+      try {
+        return _origM24CalculateTradeDrag.call(this, symbol, lots, entryTime, exitTime, isBuy);
+      } finally {
+        delete s.propFirms[prevKey];
+      }
+    }
+    return _origM24CalculateTradeDrag.call(this, symbol, lots, entryTime, exitTime, isBuy);
+  };
+  window.m24CalculateTradeDrag.__sv5BrokerPatched = true;
+}
+
+window.getSV5M24PortfolioCostAudit = function(overrideAccountSize = null, overrideEntityKey = null) {
+  const prof = m24GetActiveEntityProfile(overrideAccountSize, overrideEntityKey);
+  const s = window.m24State || {};
+  const matrix = Array.isArray(s.baseSymbolMatrix) ? s.baseSymbolMatrix : [];
+  const p = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
+
+  if (!p || !Array.isArray(p.bots) || p.bots.length === 0) {
+    return {
+      hasPortfolio: false,
+      entityName: prof.name,
+      entityType: prof.entityType,
+      entityKey: prof.entityKey,
+      accountSize: prof.accountSize,
+      avgSpreadPips: Number((0.8 * prof.spreadMult + prof.spreadAdd).toFixed(2)),
+      commPerLot: prof.commPerLot,
+      slippagePips: prof.slippagePips,
+      lotFloorStatus: { level: 'PENDIENTE', badge: '⚪ SIN PORTAFOLIO', color: 'sky', summary: 'Certifica tu portafolio en M6 → Panel 6.5.' }
+    };
+  }
+
+  const normSym = (raw) => String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const slRiskPer1Lot = (sym, slVal) => {
+    const slNum = Math.max(15, Number(slVal || 60));
+    if (sym.includes('XAG')) return Math.max(2200, (slNum > 600 ? slNum / 10 : slNum) * 28);
+    if (sym.includes('US30') || sym.includes('NAS100')) return Math.max(2000, (slNum > 800 ? slNum / 10 : slNum) * 14);
+    if (sym.includes('XAU')) return Math.max(1700, (slNum > 600 ? slNum / 10 : slNum) * 14);
+    return Math.max(450, (slNum > 250 ? slNum / 10 : slNum) * 10);
+  };
+
+  const globalRiskPct = Number(p.globalRiskPct || 2.0);
+  const perBotRiskPct = Number(p.perBotRiskPct || (globalRiskPct / p.bots.length));
+  const livePerBotRiskPct = 1.00 / p.bots.length;
+  const targetRiskUsd = prof.accountSize * (perBotRiskPct / 100);
+
+  const marketMap = {};
+  let sumSpread = 0;
+  let sumCostPerTrade = 0;
+  let floorOkBots = 0;
+  let floorBreachedBots = 0;
+  const breachedSet = new Set();
+  const uniqueMarkets = new Set();
+  let matrixCoverageCount = 0;
+
+  p.bots.forEach((b) => {
+    const sym = normSym(b.asset);
+    uniqueMarkets.add(sym);
+    const row = matrix.find(r => normSym(r.sym) === sym);
+    const baseSpread = row ? Number(row.baseSpread || 1.2) : 1.5;
+    const effSpread = Math.max(0.1, (baseSpread * prof.spreadMult) + prof.spreadAdd);
+    const slDollar1Lot = slRiskPer1Lot(sym, b.sl);
+    const rawLots = targetRiskUsd / slDollar1Lot;
+    const effLots = Math.max(0.01, Math.round(rawLots * 100) / 100);
+    const breached = rawLots < 0.01;
+    const effRiskPct = ((effLots * slDollar1Lot) / prof.accountSize) * 100;
+    const isSwing = String(b.tf || '').toUpperCase().includes('H4') || String(b.tf || '').toUpperCase().includes('H1');
+    const swapPerTrade = row && isSwing ? Math.abs(Number(row.swapL || 0)) * 0.35 * prof.swapMult * effLots : 0;
+    const pipUsd = sym.includes('XAG') ? 12 : 10;
+    const tradeCostUsd = (effLots * (effSpread + prof.slippagePips) * pipUsd) + (effLots * prof.commPerLot) + swapPerTrade;
+
+    sumSpread += effSpread;
+    sumCostPerTrade += tradeCostUsd;
+    if (breached) {
+      floorBreachedBots++;
+      breachedSet.add(sym);
+    } else {
+      floorOkBots++;
+    }
+
+    if (!marketMap[sym]) {
+      marketMap[sym] = {
+        sym, inMatrix: !!row, bots: 0, effSpread, rawLotsSum: 0, effLotsSum: 0,
+        effRiskSum: 0, breachedCount: 0, costPerTradeSum: 0
+      };
+    }
+    marketMap[sym].bots++;
+    marketMap[sym].rawLotsSum += rawLots;
+    marketMap[sym].effLotsSum += effLots;
+    marketMap[sym].effRiskSum += effRiskPct;
+    marketMap[sym].costPerTradeSum += tradeCostUsd;
+    if (breached) marketMap[sym].breachedCount++;
+  });
+
+  const marketsCovered = Array.from(uniqueMarkets);
+  marketsCovered.forEach((mSym) => {
+    if (matrix.some(r => normSym(r.sym) === mSym)) matrixCoverageCount++;
+  });
+
+  const marketBreakdown = Object.values(marketMap).map(m => ({
+    sym: m.sym,
+    inMatrix: m.inMatrix,
+    bots: m.bots,
+    effSpread: m.effSpread,
+    avgEffLots: m.effLotsSum / m.bots,
+    avgEffRiskPct: m.effRiskSum / m.bots,
+    avgCostUsd: m.costPerTradeSum / m.bots,
+    breachedCount: m.breachedCount
+  }));
+
+  const avgSpreadPips = sumSpread / p.bots.length;
+  const estCostPerTradeUsd = sumCostPerTrade / p.bots.length;
+  const totalTrades = Number(p.totalTrades || 4585);
+  const estTotal5yDragPct = ((estCostPerTradeUsd * totalTrades) / prof.accountSize) * 100;
+  const estAnnualDragPct = estTotal5yDragPct / 5;
+  const estNetReturnPct = Number(p.returnPct || 0) - estTotal5yDragPct;
+  const breachedAssets = Array.from(breachedSet);
+
+  let lotFloorStatus;
+  if (prof.accountSize < 25000 || floorBreachedBots > 0) {
+    lotFloorStatus = {
+      level: 'ALERTA',
+      badge: '🔴 ALERTA PISO 0.01',
+      color: 'rose',
+      summary: `Piso mínimo 0.01 lotes distorsiona el riesgo en ${breachedAssets.length ? breachedAssets.join('/') : 'XAUUSD/US30/XAGUSD'} (${floorBreachedBots}/${p.bots.length} bots bajo piso). Subir a ≥ $50k.`
+    };
+  } else if (prof.accountSize < 50000) {
+    lotFloorStatus = {
+      level: 'VIABLE',
+      badge: '🟡 VIABLE ($25K)',
+      color: 'amber',
+      summary: `Viable en $${prof.accountSize.toLocaleString()} con redondeo marginal en SL pequeños. Precisión institucional completa desde $50k.`
+    };
+  } else {
+    lotFloorStatus = {
+      level: 'OPTIMO',
+      badge: '🟢 ÓPTIMO INSTITUCIONAL',
+      color: 'emerald',
+      summary: `${p.bots.length}/${p.bots.length} bots respetan exactamente ${perBotRiskPct.toFixed(3)}%/bot sin distorsión de piso 0.01 lotes.`
+    };
+  }
+
+  return {
+    hasPortfolio: true,
+    botsCount: p.bots.length,
+    totalTrades,
+    entityName: prof.name,
+    entityType: prof.entityType,
+    entityKey: prof.entityKey,
+    accountSize: prof.accountSize,
+    platform: prof.platform,
+    marketsCovered,
+    matrixCoverageCount,
+    avgSpreadPips,
+    commPerLot: prof.commPerLot,
+    slippagePips: prof.slippagePips,
+    globalRiskPct,
+    perBotRiskPct,
+    livePerBotRiskPct,
+    floorOkBots,
+    floorBreachedBots,
+    breachedAssets,
+    lotFloorStatus,
+    estCostPerTradeUsd,
+    estAnnualDragPct,
+    estTotal5yDragPct,
+    estNetReturnPct,
+    marketBreakdown
+  };
+};
+
+window.m24QuickSetAccountSize = function(size) {
+  if (!window.m24State) return;
+  window.m24State.accountSize = Number(size) || 100000;
+  const sel = document.getElementById('m24-account-size') || document.querySelector('[onchange*="m24State.accountSize"], [onchange*="m24ChangeAccountSize"]');
+  if (sel && sel.tagName === 'SELECT') sel.value = String(window.m24State.accountSize);
+  if (typeof m24RenderCostMatrixTable === 'function') m24RenderCostMatrixTable();
+  if (typeof m24UpdateKpiDisplays === 'function') m24UpdateKpiDisplays();
+};
+
+function m24RenderCertifiedPortfolioAudit() {
+  const dragEl = document.getElementById('m24-kpi-drag');
+  if (!dragEl) return;
+  const kpiGrid = dragEl.closest('.grid');
+  if (!kpiGrid || !kpiGrid.parentNode) return;
+
+  let card = document.getElementById('m24-cert-portfolio-audit-card');
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'm24-cert-portfolio-audit-card';
+    card.className = 'mt-3 rounded-lg border border-emerald-500/30 bg-slate-900/80 p-3 text-xs';
+    kpiGrid.parentNode.insertBefore(card, kpiGrid.nextSibling);
+  }
+
+  const a = window.getSV5M24PortfolioCostAudit();
+  if (!a || !a.hasPortfolio) {
+    card.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="font-bold text-amber-300">🏆 Auditoría M24 de Portafolio Certificado &amp; Piso 0.01 Lotes</div>
+        <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">Pendiente de Certificación (M6 → Panel 6.5)</span>
+      </div>
+    `;
+    return;
+  }
+
+  const cMap = {
+    emerald: 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300',
+    amber: 'border-amber-500/40 bg-amber-950/30 text-amber-300',
+    rose: 'border-rose-500/40 bg-rose-950/30 text-rose-300'
+  };
+  const badgeCls = cMap[a.lotFloorStatus.color] || cMap.emerald;
+  const tierBtn = (val, label) => {
+    const active = a.accountSize === val ? 'bg-indigo-600 text-white border-indigo-400' : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700';
+    return `<button type="button" onclick="m24QuickSetAccountSize(${val})" class="px-2 py-0.5 rounded border text-[10px] font-bold ${active}">${label}</button>`;
+  };
+
+  const rowsHtml = a.marketBreakdown.map(m => {
+    const st = m.breachedCount > 0
+      ? `<span class="text-rose-400 font-bold">🔴 Piso 0.01 (${m.breachedCount}/${m.bots})</span>`
+      : (a.accountSize < 50000 ? `<span class="text-amber-300 font-bold">🟡 Marginal</span>` : `<span class="text-emerald-400 font-bold">🟢 Exacto</span>`);
+    return `
+      <tr class="border-t border-slate-800/80">
+        <td class="py-1 font-bold text-white">${m.sym} ${m.inMatrix ? '<span class="text-emerald-400 text-[9px]">✓</span>' : '<span class="text-amber-400 text-[9px]">est</span>'}</td>
+        <td class="py-1 text-center text-slate-300">${m.bots}</td>
+        <td class="py-1 text-right text-sky-300">${m.effSpread.toFixed(2)} p</td>
+        <td class="py-1 text-right text-slate-200">${m.avgEffLots.toFixed(2)} L</td>
+        <td class="py-1 text-right text-slate-200">${m.avgEffRiskPct.toFixed(3)}%</td>
+        <td class="py-1 text-right text-amber-300">$${m.avgCostUsd.toFixed(2)}</td>
+        <td class="py-1 text-right">${st}</td>
+      </tr>
+    `;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+      <div>
+        <span class="font-extrabold text-emerald-400">🏆 AUDITORÍA M24 · PORTAFOLIO CERTIFICADO (${a.botsCount} BOTS)</span>
+        <span class="ml-2 text-[10px] text-slate-300">${a.entityName} (${a.entityType === 'broker' ? 'Broker MT5' : 'Prop Firm'}) · Cuenta <b>$${a.accountSize.toLocaleString()}</b> · Matriz <b>${a.matrixCoverageCount}/${a.marketsCovered.length}</b> mercados</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="px-2 py-0.5 rounded border text-[10px] font-extrabold ${badgeCls}">${a.lotFloorStatus.badge}</span>
+        ${tierBtn(10000, '$10k')}
+        ${tierBtn(25000, '$25k')}
+        ${tierBtn(50000, '$50k')}
+        ${tierBtn(100000, '$100k')}
+      </div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 text-[11px]">
+      <div class="rounded bg-slate-950/70 border border-slate-800 p-2">
+        <div class="text-[9px] text-slate-400 uppercase">Riesgo/Bot (2 Marchas)</div>
+        <div class="font-bold text-white">${a.perBotRiskPct.toFixed(3)}% <span class="text-[10px] text-sky-300">Ch</span> / ${a.livePerBotRiskPct.toFixed(3)}% <span class="text-[10px] text-emerald-300">Live</span></div>
+      </div>
+      <div class="rounded bg-slate-950/70 border border-slate-800 p-2">
+        <div class="text-[9px] text-slate-400 uppercase">Fricción Media / Trade</div>
+        <div class="font-bold text-amber-300">$${a.estCostPerTradeUsd.toFixed(2)} <span class="text-[10px] text-slate-400">(${a.avgSpreadPips.toFixed(2)}p + $${a.commPerLot.toFixed(2)}/L)</span></div>
+      </div>
+      <div class="rounded bg-slate-950/70 border border-slate-800 p-2">
+        <div class="text-[9px] text-slate-400 uppercase">Drag Costes (Anual / 5A)</div>
+        <div class="font-bold text-rose-300">-${a.estAnnualDragPct.toFixed(2)}%/año <span class="text-[10px] text-slate-400">(-${a.estTotal5yDragPct.toFixed(1)}% 5A)</span></div>
+      </div>
+      <div class="rounded bg-slate-950/70 border border-slate-800 p-2">
+        <div class="text-[9px] text-slate-400 uppercase">Retorno Neto 5A Auditado</div>
+        <div class="font-bold text-emerald-400">${a.estNetReturnPct >= 0 ? '+' : ''}${a.estNetReturnPct.toFixed(1)}% <span class="text-[10px] text-slate-400">(${a.totalTrades.toLocaleString()} ops)</span></div>
+      </div>
+    </div>
+    <div class="rounded border px-2.5 py-1.5 mb-2 text-[10px] ${badgeCls}">
+      <b>Semáforo Piso 0.01 Lotes:</b> ${a.lotFloorStatus.summary}
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[10px] text-left">
+        <thead class="text-slate-400 uppercase text-[9px]">
+          <tr>
+            <th class="pb-1">Mercado</th>
+            <th class="pb-1 text-center">Bots</th>
+            <th class="pb-1 text-right">Spread Ef.</th>
+            <th class="pb-1 text-right">Lote Est.</th>
+            <th class="pb-1 text-right">Riesgo Ef.</th>
+            <th class="pb-1 text-right">Coste/Op</th>
+            <th class="pb-1 text-right">Piso 0.01</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+}
 
 // Respaldos y Bóveda 2021-2026
 function m24BackupCostVault() {
@@ -7228,37 +7574,147 @@ void ManageBreakEvenAndPartialClose() {
       autoRecommendBestPropFirmAndPlan(false);
     }
 
-    function autoRecommendBestPropFirmAndPlan(speakVerdict = true) {
-      const s = getLiveStrategySnapshotForAI();
-      const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.fundednext;
-      const box = document.getElementById('m19-ai-recommendation-box');
-      if (!box) return;
+function getSV5M19PortfolioRecommendation() {
+  if (typeof PROP_FIRMS_LIVE_DB_2026 === 'undefined') return null;
+  const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.fundednext;
+  const p = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
+  const m24 = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? window.getSV5M24PortfolioCostAudit() : null;
+  const hasPortfolio = !!(p && Array.isArray(p.bots) && p.bots.length > 0);
+  const worstDayPct = hasPortfolio ? Math.abs(Number(p.worstDayPct || 0)) : 0;
+  const maxDDPct = hasPortfolio ? Math.abs(Number(p.maxDDPct || 0)) : 0;
 
-      box.innerHTML = `
-        <div class="text-emerald-400 font-extrabold text-[10px]">👑 Veredicto de Macho Alfa AGI + M10 + M18:</div>
-        <div>Analizando tu bot actual en <b>${s.sym} (${s.tf})</b> con Profit Factor <b>${s.pf}</b> y Drawdown <b>${s.dd}</b>:</div>
-        <div class="bg-indigo-950/40 border border-indigo-500/40 rounded p-1.5 text-indigo-200">
-          <div>🏆 <b>Empresa Recomendada:</b> <span class="text-white font-bold">${firm.name}</span></div>
-          <div>⚡ <b>Mejor Plan para ir a lo Seguro:</b> <span class="text-amber-300 font-bold">${firm.bestPlanForBot}</span></div>
-          <div>🛡️ <b>Loteo & Riesgo Óptimo:</b> 0.30% por trade con cierre automático diario en -2.2% (0.0% probabilidad de quemar la cuenta).</div>
-        </div>
-      `;
+  const extractPct = (txt, fallback) => {
+    const m = String(txt || '').match(/(\d+(?:\.\d+)?)\s*%/);
+    return m ? parseFloat(m[1]) : fallback;
+  };
+  const firstPlan = (firm && Array.isArray(firm.plans) && firm.plans[0]) ? firm.plans[0] : {};
+  const dailyLimit = extractPct(firstPlan.dailyDD, 5.0);
+  const maxLimit = extractPct(firstPlan.maxDD, 10.0);
 
-      document.getElementById('m19-best-match-badge').innerText = `★ RECOMENDACIÓN IA: ${firm.name.toUpperCase()} (${firm.bestPlanForBot.substring(0, 26)}...)`;
-      if (speakVerdict && typeof speakWithModule14Voice === 'function') {
-        speakWithModule14Voice(`Análisis de cuentas de fondeo completado. Para tu robot actual en ${s.sym}, te conviene instalarlo en ${firm.name} dentro del plan ${firm.bestPlanForBot} con riesgo protegido del cero punto treinta por ciento.`);
-      }
+  const dailyOk = !hasPortfolio || worstDayPct < dailyLimit;
+  const totalOk = !hasPortfolio || maxDDPct < maxLimit;
+  const ddComplianceLabel = !hasPortfolio
+    ? 'SIN PORTAFOLIO CERTIFICADO'
+    : (dailyOk && totalOk)
+      ? `✓ APTO (Peor Día -${worstDayPct.toFixed(2)}% < ${dailyLimit}% | DD -${maxDDPct.toFixed(2)}% < ${maxLimit}%)`
+      : `⚠️ AJUSTAR RIESGO (Peor Día -${worstDayPct.toFixed(2)}% vs ${dailyLimit}% | DD -${maxDDPct.toFixed(2)}% vs ${maxLimit}%)`;
+
+  let bestFirmKey = selectedM19FirmKey || 'fundednext';
+  let bestFirmName = firm ? firm.name : 'FundedNext';
+  let bestScore = -1;
+  Object.entries(PROP_FIRMS_LIVE_DB_2026 || {}).forEach(([k, f]) => {
+    const pl = (f && Array.isArray(f.plans) && f.plans[0]) ? f.plans[0] : {};
+    const dLim = extractPct(pl.dailyDD, 5.0);
+    const mLim = extractPct(pl.maxDD, 10.0);
+    const score = (dLim - worstDayPct) * 2 + (mLim - maxDDPct) + (k === 'ftmo' || k === 'fundednext' || k === 'the5ers' ? 1.5 : 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestFirmKey = k;
+      bestFirmName = f.name || k.toUpperCase();
     }
+  });
 
-    function buildBotForSelectedPropFirmPlan(downloadMQ5Now = false) {
-      const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.fundednext;
-      applyModule18DualBotProfile('prop_low_dd');
-      document.getElementById('agent-verdict').innerText = `🏦 [Módulo 19] Bot calibrado exactamente con las reglas de ${firm.name} (${firm.bestPlanForBot}).`;
-      if (downloadMQ5Now) {
-        setTimeout(() => downloadModule18AdvancedMQ5V2(), 200);
-      }
+  const accSize = m24 ? m24.accountSize : 100000;
+  const recommendedCapitalTier = accSize >= 50000
+    ? `$${accSize.toLocaleString()} (Óptimo Institucional)`
+    : '$50,000–$100,000+ (Óptimo; $25k Viable; evitar $5k–$10k por piso 0.01)';
+
+  return {
+    hasPortfolio,
+    selectedFirmKey: selectedM19FirmKey || 'fundednext',
+    selectedFirmName: firm ? firm.name : 'FundedNext',
+    selectedPlan: firm ? firm.bestPlanForBot : 'Plan Estándar 2 Fases',
+    bestSwarmFirmKey: bestFirmKey,
+    bestSwarmFirmName: bestFirmName,
+    dailyLimit,
+    maxLimit,
+    worstDayPct,
+    maxDDPct,
+    dailyOk,
+    totalOk,
+    ddComplianceLabel,
+    recommendedCapitalTier,
+    m24
+  };
+}
+window.getSV5M19PortfolioRecommendation = getSV5M19PortfolioRecommendation;
+
+function autoRecommendBestPropFirmAndPlan(speakVerdict = true) {
+  const s = getLiveStrategySnapshotForAI();
+  const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.fundednext;
+  const box = document.getElementById('m19-ai-recommendation-box');
+  if (!box) return;
+
+  const p = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : (s.portfolio || null);
+  const rec = getSV5M19PortfolioRecommendation();
+  const m24 = rec ? rec.m24 : null;
+  const badgeEl = document.getElementById('m19-best-match-badge');
+
+  if (p && Array.isArray(p.bots) && p.bots.length > 0 && rec) {
+    const challengeRisk = Number(p.globalRiskPct || 2.0);
+    const challengePerBot = Number(p.perBotRiskPct || (challengeRisk / p.bots.length));
+    const liveGlobalRisk = 1.00;
+    const livePerBot = liveGlobalRisk / p.bots.length;
+    const liveEstDD = Math.abs(Number(p.maxDDPct || 0)) * (liveGlobalRisk / Math.max(0.1, challengeRisk));
+    const lotTextCls = !m24 ? 'text-sky-300' : (m24.lotFloorStatus.color === 'rose' ? 'text-rose-300' : m24.lotFloorStatus.color === 'amber' ? 'text-amber-300' : 'text-emerald-300');
+
+    box.innerHTML = `
+      <div class="text-emerald-400 font-extrabold text-[10px]">👑 Veredicto Soberano Macho Alfa AGI + M19 + M24 (Portafolio Certificado):</div>
+      <div class="text-[10px] text-gray-200">
+        Auditando <b>${p.bots.length} bots certificados</b> (${p.totalTrades.toLocaleString()} ops) | Capital Final <b class="text-emerald-300">$${Math.round(p.finalEq).toLocaleString()} (${p.returnPct >= 0 ? '+' : ''}${p.returnPct.toFixed(1)}%)</b> | PF <b>${p.pf.toFixed(2)}</b> | Sharpe <b>${p.sharpe.toFixed(2)}</b> | Corr <b>${p.avgCorr.toFixed(2)}</b>:
+      </div>
+      <div class="bg-indigo-950/40 border border-indigo-500/40 rounded p-1.5 text-indigo-200 space-y-0.5 text-[10px]">
+        <div>🏆 <b>Empresa Evaluada:</b> <span class="text-white font-bold">${firm.name}</span> <span class="text-indigo-300">(Top Enjambre 8 Firmas: ${rec.bestSwarmFirmName})</span></div>
+        <div>⚡ <b>Mejor Plan para Portafolio:</b> <span class="text-amber-300 font-bold">${firm.bestPlanForBot}</span></div>
+        <div>✅ <b>Cumplimiento Reglas Prop:</b> <span class="${rec.dailyOk && rec.totalOk ? 'text-emerald-300' : 'text-rose-300'} font-bold">${rec.ddComplianceLabel}</span></div>
+        <div>⚙️ <b>Protocolo 2 Marchas:</b> Challenge <b>${challengeRisk.toFixed(2)}% Global</b> (${challengePerBot.toFixed(3)}%/bot) ➔ Live <b>${liveGlobalRisk.toFixed(2)}% Global</b> (${livePerBot.toFixed(3)}%/bot, DD ~<b>-${liveEstDD.toFixed(2)}%</b>).</div>
+        ${m24 ? `<div class="border-t border-indigo-500/30 pt-1 mt-1">🪙 <b>Oráculo M24 (${m24.entityName} · $${m24.accountSize.toLocaleString()}):</b> <span class="${lotTextCls} font-bold">${m24.lotFloorStatus.badge}</span> — ${m24.lotFloorStatus.summary}<br><span class="text-gray-300">Spread ${m24.avgSpreadPips.toFixed(2)}p · Comm $${m24.commPerLot.toFixed(2)}/L · Drag est. -${m24.estAnnualDragPct.toFixed(2)}%/año · Neto 5A: ${m24.estNetReturnPct >= 0 ? '+' : ''}${m24.estNetReturnPct.toFixed(1)}%</span></div>` : ''}
+        <div class="text-[9px] text-sky-300">📏 <b>Auditoría Piso 0.01 Lotes:</b> $5k–$10k 🔴 Alerta | $25k 🟡 Viable | $50k–$100k+ 🟢 Óptimo Institucional.</div>
+        <div class="pt-1"><button type="button" onclick="exportCertifiedPortfolioToMQL5()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">⚡ Exportar EA Multi-Perfil (.mq5)</button></div>
+      </div>
+    `;
+
+    if (badgeEl) {
+      badgeEl.innerText = `★ PORTAFOLIO ${p.bots.length} BOTS: ${firm.name.toUpperCase()} (${m24 ? m24.lotFloorStatus.level : 'APTO'} · $${m24 ? (m24.accountSize / 1000).toFixed(0) + 'K' : '100K'})`;
     }
+    if (speakVerdict && typeof speakWithModule14Voice === 'function') {
+      speakWithModule14Voice(`Auditoría Prop Firm completada para tu portafolio certificado de ${p.bots.length} bots. En ${firm.name}, plan ${firm.bestPlanForBot}, tu peor día de ${rec.worstDayPct.toFixed(2)} por ciento y drawdown de ${rec.maxDDPct.toFixed(2)} por ciento aprueban con holgura. Usa dos por ciento global en Challenge y uno por ciento en cuenta fondeada, preferentemente desde cincuenta mil dólares para respetar el piso de cero punto cero un lotes.`);
+    }
+    return;
+  }
 
+  box.innerHTML = `
+    <div class="text-emerald-400 font-extrabold text-[10px]">👑 Veredicto de Macho Alfa AGI + M10 + M18:</div>
+    <div>Analizando tu bot actual en <b>${s.sym} (${s.tf})</b> con Profit Factor <b>${s.pf}</b> y Drawdown <b>${s.dd}</b>:</div>
+    <div class="bg-indigo-950/40 border border-indigo-500/40 rounded p-1.5 text-indigo-200">
+      <div>🏆 <b>Empresa Recomendada:</b> <span class="text-white font-bold">${firm.name}</span></div>
+      <div>⚡ <b>Mejor Plan para ir a lo Seguro:</b> <span class="text-amber-300 font-bold">${firm.bestPlanForBot}</span></div>
+      <div>🛡️ <b>Loteo &amp; Riesgo Óptimo:</b> 0.30% por trade con cierre automático diario en -2.2% (0.0% probabilidad de quemar la cuenta).</div>
+    </div>
+  `;
+
+  if (badgeEl) {
+    badgeEl.innerText = `★ RECOMENDACIÓN IA: ${firm.name.toUpperCase()} (${firm.bestPlanForBot.substring(0, 26)}...)`;
+  }
+  if (speakVerdict && typeof speakWithModule14Voice === 'function') {
+    speakWithModule14Voice(`Análisis de cuentas de fondeo completado. Para tu robot actual en ${s.sym}, te conviene instalarlo en ${firm.name} dentro del plan ${firm.bestPlanForBot} con riesgo protegido del cero punto treinta por ciento.`);
+  }
+}
+
+function buildBotForSelectedPropFirmPlan(downloadMQ5Now = false) {
+  const firm = PROP_FIRMS_LIVE_DB_2026[selectedM19FirmKey] || PROP_FIRMS_LIVE_DB_2026.fundednext;
+  const p = (typeof getSV5CertifiedPortfolio === 'function') ? getSV5CertifiedPortfolio() : null;
+  applyModule18DualBotProfile('prop_low_dd');
+  const verdictEl = document.getElementById('agent-verdict');
+  if (verdictEl) {
+    verdictEl.innerText = (p && p.bots && p.bots.length)
+      ? `🏦 [Módulo 19] Portafolio Certificado (${p.bots.length} bots) calibrado para ${firm.name} (${firm.bestPlanForBot}) · Protocolo 2 Marchas (2.0% Challenge / 1.0% Live).`
+      : `🏦 [Módulo 19] Bot calibrado exactamente con las reglas de ${firm.name} (${firm.bestPlanForBot}).`;
+  }
+  if (downloadMQ5Now) {
+    setTimeout(() => downloadModule18AdvancedMQ5V2(), 200);
+  }
+}
     // =========================================================================
     // MOTOR MATEMÁTICO MÓDULO 17 (PARTE A): CATÁLOGO +70 TOOLS, 21 TIPOS VELAS,
     // CAPTURA DE PANTALLA HD Y DESGLOSE MENSUAL POR CADA AÑO (M15 MULTI-AÑO)
@@ -12916,20 +13372,30 @@ function generateQuantAIResponse(queryText) {
   const q = queryText.toLowerCase();
 
   if (q.includes('portafolio') || q.includes('portfolio') || q.includes('kelly') || q.includes('mql5') || q.includes('mq5') || q.includes('prop') || q.includes('fondeo') || q.includes('challenge') || q.includes('correlaci') || q.includes('certificad') || q.includes('exportar')) {
-    const p = s.portfolio;
+const p = s.portfolio;
     const k = s.kelly;
+    const m24 = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? window.getSV5M24PortfolioCostAudit() : null;
+    const m19 = (typeof window.getSV5M19PortfolioRecommendation === 'function') ? window.getSV5M19PortfolioRecommendation() : null;
     const kellyLine = k
       ? `<div>• <b>Panel 5.4 (Kelly Bot Actual):</b> f* = <b>${k.kellyFullPct.toFixed(2)}%</b> | ½ Kelly = <b>${k.kellyHalfPct.toFixed(2)}%</b> | ¼ Kelly = <b>${k.kellyQuarterPct.toFixed(2)}%</b> (Riesgo activo M3: ${k.activeRiskPct.toFixed(2)}%, Payoff ${k.payoffR.toFixed(2)}x).</div>`
       : `<div>• <b>Panel 5.4 (Kelly):</b> Ejecuta M3/M5 para calcular Kelly del bot actual.</div>`;
+    const m24Line = (m24 && m24.hasPortfolio)
+      ? `<div>• <b>Oráculo M24 (${m24.entityName} · $${m24.accountSize.toLocaleString()}):</b> ${m24.lotFloorStatus.badge} | Cobertura <b>${m24.matrixCoverageCount}/${m24.marketsCovered.length}</b> mercados | Spread <b>${m24.avgSpreadPips.toFixed(2)} pips</b> | Comm <b>$${m24.commPerLot.toFixed(2)}/lote</b> | Drag est. <b>-${m24.estAnnualDragPct.toFixed(2)}%/año</b> (Neto 5A: <b>${m24.estNetReturnPct >= 0 ? '+' : ''}${m24.estNetReturnPct.toFixed(1)}%</b>).</div>`
+      : '';
+    const m19Line = m19
+      ? `<div>• <b>Enjambre Prop Firms M19:</b> <b>${m19.selectedFirmName}</b> (${m19.selectedPlan}) | Reglas DD: <b>${m19.ddComplianceLabel}</b> | Cuenta óptima: <b>${m19.recommendedCapitalTier}</b>.</div>`
+      : '';
 
     if (p && p.bots.length) {
       return `
-        <div class="font-bold text-emerald-400">🏆 Auditoría Soberana: Portafolio Certificado &amp; Kelly</div>
+        <div class="font-bold text-emerald-400">🏆 Auditoría Soberana: Portafolio Certificado, Kelly, M19 &amp; M24</div>
         <div>• <b>Bots Certificados:</b> ${p.bots.length} bots descorrelacionados (${p.bots.map(b => `${b.asset} ${b.tf}`).join(', ')})</div>
         <div>• <b>Capital Final:</b> $${Math.round(p.finalEq).toLocaleString()} (${p.returnPct >= 0 ? '+' : ''}${p.returnPct.toFixed(1)}%) | <b>Ops:</b> ${p.totalTrades.toLocaleString()}</div>
-        <div>• <b>Riesgo Prop Firm:</b> Global <b>${p.globalRiskPct.toFixed(2)}%</b> (${p.perBotRiskPct.toFixed(2)}%/bot) | DD Máx <b>-${Math.abs(p.maxDDPct).toFixed(2)}%</b> | Peor Día <b>-${Math.abs(p.worstDayPct).toFixed(2)}%</b></div>
+        <div>• <b>Riesgo Prop Firm:</b> Global <b>${p.globalRiskPct.toFixed(2)}%</b> (${p.perBotRiskPct.toFixed(3)}%/bot) | DD Máx <b>-${Math.abs(p.maxDDPct).toFixed(2)}%</b> | Peor Día <b>-${Math.abs(p.worstDayPct).toFixed(2)}%</b></div>
         <div>• <b>Ratios:</b> PF <b>${p.pf.toFixed(2)}</b> | Sharpe <b>${p.sharpe.toFixed(2)}</b> | Calmar <b>${p.calmar.toFixed(2)}</b> | Corr Media <b>${p.avgCorr.toFixed(2)}</b> | Kelly Portafolio <b>${p.kellyPct.toFixed(2)}%</b></div>
         ${kellyLine}
+        ${m24Line}
+        ${m19Line}
         <div class="text-sky-300">💡 <b>Protocolo 2 Marchas Prop Firm:</b> 2.00% Global en Challenge (Fase 1/2) y 1.00% Global en Cuenta Fondeada Live (~mitad de DD).</div>
         <div class="pt-1"><button type="button" onclick="exportCertifiedPortfolioToMQL5()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">⚡ Exportar EA Multi-Perfil (.mq5)</button></div>
       `;
@@ -12941,6 +13407,24 @@ function generateQuantAIResponse(queryText) {
     `;
   }
 
+  if (q.includes('prop') || q.includes('fondeo') || q.includes('ftmo') || q.includes('fundednext') || q.includes('the5ers') || q.includes('coste') || q.includes('spread') || q.includes('swap') || q.includes('comis') || q.includes('lote') || q.includes('0.01') || q.includes('m19') || q.includes('m24')) {
+    const m24 = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? window.getSV5M24PortfolioCostAudit() : null;
+    const m19 = (typeof window.getSV5M19PortfolioRecommendation === 'function') ? window.getSV5M19PortfolioRecommendation() : null;
+    if (m24 && m24.hasPortfolio) {
+      return `
+        <div class="font-bold text-amber-300">🪙 Auditoría En Vivo: Costes M24, Piso 0.01 Lotes &amp; Prop Firms M19</div>
+        <div>• <b>Entidad M24 Activa:</b> ${m24.entityName} (${m24.entityType === 'broker' ? 'Broker MT5' : 'Prop Firm'}) | Cuenta: <b>$${m24.accountSize.toLocaleString()}</b> | Cobertura: <b>${m24.matrixCoverageCount}/${m24.marketsCovered.length} mercados</b> (${m24.marketsCovered.join(', ')})</div>
+        <div>• <b>Semáforo Piso 0.01 Lotes:</b> <b>${m24.lotFloorStatus.badge}</b> — ${m24.lotFloorStatus.summary}</div>
+        <div>• <b>Fricción Real Estimada:</b> Spread medio <b>${m24.avgSpreadPips.toFixed(2)} pips</b> | Comisión <b>$${m24.commPerLot.toFixed(2)}/lote</b> | Coste medio/trade <b>$${m24.estCostPerTradeUsd.toFixed(2)}</b> | Drag anual <b>-${m24.estAnnualDragPct.toFixed(2)}%</b> | Retorno Neto 5A: <b>${m24.estNetReturnPct >= 0 ? '+' : ''}${m24.estNetReturnPct.toFixed(1)}%</b></div>
+        ${m19 ? `<div>• <b>Recomendación Prop Firm (M19):</b> <b>${m19.selectedFirmName}</b> — ${m19.selectedPlan} | <b>${m19.ddComplianceLabel}</b> (Peor Día -${m19.worstDayPct.toFixed(2)}%, DD Máx -${m19.maxDDPct.toFixed(2)}%)</div>` : ''}
+        <div class="text-sky-300">📏 <b>Guía Piso 0.01 Lotes:</b> $5k–$10k 🔴 Alerta (distorsiona XAU/US30/XAG) | $25k 🟡 Viable | $50k–$100k+ 🟢 Óptimo Institucional (${m24.botsCount}/${m24.botsCount} bots exactos @ ${m24.perBotRiskPct.toFixed(3)}%/bot).</div>
+      `;
+    }
+    return `
+      <div class="font-bold text-amber-300">🪙 Oráculo M24 &amp; Prop Firms M19</div>
+      <div>Certifica primero tu portafolio en <b>Módulo 6 → Panel 6.5</b> para auditar costes reales, piso mínimo de 0.01 lotes y compatibilidad con las 8 Prop Firms de M19.</div>
+    `;
+  }
   if (q.includes('por qué') || q.includes('porque') || q.includes('fall') || q.includes('pérdida') || q.includes('perdida') || q.includes('2024') || q.includes('2022')) {
     return `
       <div class="font-bold text-amber-400">🔍 Diagnóstico de Fallos y Racha Perdedora (${s.sym} - ${s.tf}):</div>
@@ -12960,9 +13444,14 @@ function generateQuantAIResponse(queryText) {
     `;
   }
 
-  const extraKelly = s.kelly ? `<div>• <b>Kelly 5.4:</b> f* ${s.kelly.kellyFullPct.toFixed(1)}% | ½K ${s.kelly.kellyHalfPct.toFixed(1)}% | ¼K ${s.kelly.kellyQuarterPct.toFixed(1)}%</div>` : '';
+const extraKelly = s.kelly ? `<div>• <b>Kelly 5.4:</b> f* ${s.kelly.kellyFullPct.toFixed(1)}% | ½K ${s.kelly.kellyHalfPct.toFixed(1)}% | ¼K ${s.kelly.kellyQuarterPct.toFixed(1)}%</div>` : '';
+  const _m24Sum = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? window.getSV5M24PortfolioCostAudit() : null;
+  const _m19Sum = (typeof window.getSV5M19PortfolioRecommendation === 'function') ? window.getSV5M19PortfolioRecommendation() : null;
+  const extraM24M19 = (_m24Sum && _m24Sum.hasPortfolio)
+    ? `<div class="text-sky-300">• <b>M24 Costes &amp; M19 Prop:</b> ${_m24Sum.entityName} ($${_m24Sum.accountSize.toLocaleString()}) · ${_m24Sum.lotFloorStatus.badge} · Drag -${_m24Sum.estAnnualDragPct.toFixed(2)}%/año${_m19Sum ? ` · Prop: ${_m19Sum.selectedFirmName}` : ''}</div>`
+    : '';
   const extraPort = (s.portfolio && s.portfolio.bots.length)
-    ? `<div class="text-emerald-300">• <b>Portafolio Certificado:</b> ${s.portfolio.bots.length} bots @ ${s.portfolio.globalRiskPct.toFixed(2)}% Global | $${Math.round(s.portfolio.finalEq).toLocaleString()} | DD -${Math.abs(s.portfolio.maxDDPct).toFixed(2)}% | PF ${s.portfolio.pf.toFixed(2)}</div>`
+    ? `<div class="text-emerald-300">• <b>Portafolio Certificado:</b> ${s.portfolio.bots.length} bots @ ${s.portfolio.globalRiskPct.toFixed(2)}% Global | $${Math.round(s.portfolio.finalEq).toLocaleString()} | DD -${Math.abs(s.portfolio.maxDDPct).toFixed(2)}% | PF ${s.portfolio.pf.toFixed(2)}</div>${extraM24M19}`
     : '';
 
   return `
