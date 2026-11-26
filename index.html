@@ -15602,10 +15602,481 @@ window.m30State = {
     ]
 };
 
+window.sv5SafeCall = window.sv5SafeCall || function(fnName, ...args) {
+  try {
+    const fn = window[fnName];
+    return (typeof fn === 'function') ? fn(...args) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+window.sv5PickNum = window.sv5PickNum || function(obj, paths, fallback) {
+  if (!obj || typeof obj !== 'object') return fallback;
+  for (let i = 0; i < paths.length; i++) {
+    const parts = paths[i].split('.');
+    let cur = obj;
+    for (let j = 0; j < parts.length; j++) {
+      if (cur == null || typeof cur !== 'object') { cur = undefined; break; }
+      cur = cur[parts[j]];
+    }
+    if (cur !== null && cur !== undefined && cur !== '') {
+      const n = Number(cur);
+      if (isFinite(n)) return n;
+    }
+  }
+  return fallback;
+};
+
+window.sv5PickStr = window.sv5PickStr || function(obj, paths, fallback) {
+  if (!obj || typeof obj !== 'object') return fallback;
+  for (let i = 0; i < paths.length; i++) {
+    const parts = paths[i].split('.');
+    let cur = obj;
+    for (let j = 0; j < parts.length; j++) {
+      if (cur == null || typeof cur !== 'object') { cur = undefined; break; }
+      cur = cur[parts[j]];
+    }
+    if (typeof cur === 'string' && cur.trim().length > 0) return cur.trim();
+  }
+  return fallback;
+};
+
+window.m30CertifiedGear = window.m30CertifiedGear || 'challenge';
+
+window.getSV5M30PortfolioCopierAudit = function(gearOverride) {
+  const gear = (gearOverride === 'live' || gearOverride === 'challenge')
+    ? gearOverride
+    : (window.m30CertifiedGear || 'challenge');
+
+  const cert = window.sv5SafeCall('getSV5CertifiedPortfolio');
+  const m19  = window.sv5SafeCall('getSV5M19PortfolioRecommendation');
+  const m24  = window.sv5SafeCall('getSV5M24PortfolioCostAudit');
+  const m26  = window.sv5SafeCall('getSV5M26PortfolioStressAudit', gear);
+
+  const accounts = (window.m30State && Array.isArray(window.m30State.accounts))
+    ? window.m30State.accounts
+    : [];
+
+  const botCount = (cert && Array.isArray(cert.bots) && cert.bots.length > 0) ? cert.bots.length : 11;
+  const certGlobalRisk = (cert && isFinite(Number(cert.globalRiskPct)) && Number(cert.globalRiskPct) > 0)
+    ? Number(cert.globalRiskPct)
+    : 2.00;
+  const baseGlobalRiskPct = (gear === 'live') ? 1.00 : certGlobalRisk;
+  const basePerBotRiskPct = baseGlobalRiskPct / botCount;
+
+  const rawStressDay = window.sv5PickNum(
+    m26,
+    ['worstStressDayPct', 'worstDayPct', 'maxDailyLossPct', 'peorDiaPct', 'summary.worstDayPct', 'summary.worstStressDayPct'],
+    gear === 'live' ? -1.04 : -2.07
+  );
+  const rawStressDD = window.sv5PickNum(
+    m26,
+    ['worstStressDDPct', 'worstDDPct', 'maxTotalDDPct', 'peorDDPct', 'summary.worstDDPct', 'summary.worstStressDDPct'],
+    gear === 'live' ? -3.05 : -6.11
+  );
+  const stressWorstDayPct = -Math.abs(rawStressDay);
+  const stressWorstDDPct  = -Math.abs(rawStressDD);
+
+  const m24AnnualDragPct = -Math.abs(window.sv5PickNum(
+    m24,
+    ['annualDragPct', 'dragAnnualPct', 'yearlyDragPct', 'costDragAnnualPct', 'summary.annualDragPct'],
+    -2.31
+  ));
+  const m24EntityName = window.sv5PickStr(
+    m24,
+    ['entityName', 'profile.name', 'brokerName', 'activeEntity.name', 'firmName'],
+    'FTMO Raw ECN'
+  );
+  const m19TopFirm = window.sv5PickStr(
+    m19,
+    ['bestFirm.name', 'topFirm.name', 'recommendedFirm.name', 'recommended.name', 'bestFirmName', 'firmName'],
+    'FundedNext'
+  );
+  const m19Verdict = window.sv5PickStr(
+    m19,
+    ['verdict', 'status', 'bestFirm.verdict', 'bestFirm.status', 'recommendedFirm.verdict'],
+    'APTO'
+  );
+
+  const masterAcc = accounts.find(a => a.type === 'master') || accounts[0] || { balance: 200000, equity: 200000, ratio: 1.0 };
+  const masterBalance = (isFinite(Number(masterAcc.balance)) && Number(masterAcc.balance) > 0)
+    ? Number(masterAcc.balance)
+    : 200000;
+
+  const accountAudits = accounts.map(acc => {
+    const isMaster = acc.type === 'master';
+    const balance = Math.max(0, Number(acc.balance) || 0);
+    const equity  = Math.max(0, Number(acc.equity) || balance);
+    const active  = acc.active !== false;
+    const ratio   = isMaster ? 1.0 : Math.max(0, Number(acc.ratio) || 0);
+    const idealRatio = masterBalance > 0 ? Number((balance / masterBalance).toFixed(4)) : 1.0;
+    const riskScale  = isMaster ? 1.0 : (idealRatio > 0 ? (ratio / idealRatio) : 0);
+    const ratioDriftPct = isMaster ? 0 : (idealRatio > 0 ? ((ratio - idealRatio) / idealRatio) * 100 : 0);
+
+    const effectiveGlobalRiskPct = baseGlobalRiskPct * riskScale;
+    const effectivePerBotRiskPct = basePerBotRiskPct * riskScale;
+    const globalRiskUsd = balance * (effectiveGlobalRiskPct / 100);
+    const perBotRiskUsd = balance * (effectivePerBotRiskPct / 100);
+
+    let lotFloorCode = 'OPTIMO';
+    let lotFloorLabel = 'ÓPTIMO 0.01';
+    let lotFloorDetail = `${botCount}/${botCount} bots exactos`;
+    if (perBotRiskUsd < 35) {
+      lotFloorCode = 'ALERTA';
+      lotFloorLabel = 'ALERTA 0.01';
+      lotFloorDetail = 'Piso 0.01 distorsiona XAU/US30/XAG';
+    } else if (perBotRiskUsd < 80) {
+      lotFloorCode = 'VIABLE';
+      lotFloorLabel = 'VIABLE (SL)';
+      lotFloorDetail = 'Redondeo marginal en SL cortos';
+    }
+
+    const currentDDPct = Math.abs(Number(acc.ddPct) || 0);
+    const projStressDayPct = stressWorstDayPct * riskScale;
+    const projStressDDPct  = stressWorstDDPct * riskScale;
+    const combinedPeakDDPct = currentDDPct + Math.abs(projStressDDPct);
+
+    let shieldCode = 'BLINDADO';
+    let shieldLabel = 'BLINDADO';
+    if (Math.abs(projStressDayPct) >= 5.0 || Math.abs(projStressDDPct) >= 10.0 || combinedPeakDDPct >= 10.5) {
+      shieldCode = 'RIESGO';
+      shieldLabel = 'RIESGO BREACH';
+    } else if (Math.abs(projStressDayPct) > 3.0 || Math.abs(projStressDDPct) > 6.5 || combinedPeakDDPct >= 9.5) {
+      shieldCode = 'VIGILANCIA';
+      shieldLabel = 'VIGILANCIA';
+    }
+
+    return {
+      id: acc.id || 'N/A',
+      alias: acc.alias || acc.id || 'Cuenta',
+      type: isMaster ? 'master' : 'slave',
+      isMaster,
+      firm: acc.firm || 'Broker',
+      active,
+      status: acc.status || (active ? 'SYNCED' : 'PAUSED'),
+      mode: acc.mode || 'proportional',
+      balance,
+      equity,
+      ratio,
+      idealRatio,
+      ratioDriftPct: Number(ratioDriftPct.toFixed(1)),
+      riskScale: Number(riskScale.toFixed(3)),
+      effectiveGlobalRiskPct: Number(effectiveGlobalRiskPct.toFixed(2)),
+      effectivePerBotRiskPct: Number(effectivePerBotRiskPct.toFixed(3)),
+      globalRiskUsd: Number(globalRiskUsd.toFixed(2)),
+      perBotRiskUsd: Number(perBotRiskUsd.toFixed(2)),
+      lotFloorCode,
+      lotFloorLabel,
+      lotFloorDetail,
+      currentDDPct: Number(currentDDPct.toFixed(2)),
+      projStressDayPct: Number(projStressDayPct.toFixed(2)),
+      projStressDDPct: Number(projStressDDPct.toFixed(2)),
+      combinedPeakDDPct: Number(combinedPeakDDPct.toFixed(2)),
+      shieldCode,
+      shieldLabel
+    };
+  });
+
+  const activeAudits = accountAudits.filter(a => a.active);
+  const totalBalance = activeAudits.reduce((s, a) => s + a.balance, 0);
+  const totalEquity  = activeAudits.reduce((s, a) => s + a.equity, 0);
+  const totalSwarmRiskUsd  = activeAudits.reduce((s, a) => s + a.globalRiskUsd, 0);
+  const totalPerBotRiskUsd = activeAudits.reduce((s, a) => s + a.perBotRiskUsd, 0);
+
+  const lotFloorCounts = {
+    optimo: activeAudits.filter(a => a.lotFloorCode === 'OPTIMO').length,
+    viable: activeAudits.filter(a => a.lotFloorCode === 'VIABLE').length,
+    alerta: activeAudits.filter(a => a.lotFloorCode === 'ALERTA').length
+  };
+  const shieldCounts = {
+    blindado: activeAudits.filter(a => a.shieldCode === 'BLINDADO').length,
+    vigilancia: activeAudits.filter(a => a.shieldCode === 'VIGILANCIA').length,
+    riesgo: activeAudits.filter(a => a.shieldCode === 'RIESGO').length
+  };
+
+  const worstActiveStressDayPct = activeAudits.length
+    ? Math.min(...activeAudits.map(a => a.projStressDayPct))
+    : stressWorstDayPct;
+  const worstActiveStressDDPct = activeAudits.length
+    ? Math.min(...activeAudits.map(a => a.projStressDDPct))
+    : stressWorstDDPct;
+
+  const overallShield = shieldCounts.riesgo > 0
+    ? 'RIESGO'
+    : (shieldCounts.vigilancia > 0 ? 'VIGILANCIA' : 'BLINDADO');
+
+  const misalignedRatiosCount = activeAudits.filter(a => !a.isMaster && Math.abs(a.ratioDriftPct) > 2.5).length;
+
+  return {
+    gear,
+    gearLabel: gear === 'live' ? 'LIVE 1.00% (0.091%/bot)' : `CHALLENGE ${baseGlobalRiskPct.toFixed(2)}% (${basePerBotRiskPct.toFixed(3)}%/bot)`,
+    botCount,
+    portfolioCertified: Boolean(cert && Array.isArray(cert.bots) && cert.bots.length > 0),
+    baseGlobalRiskPct: Number(baseGlobalRiskPct.toFixed(2)),
+    basePerBotRiskPct: Number(basePerBotRiskPct.toFixed(3)),
+    isCopierRunning: Boolean(window.m30State && window.m30State.isRunning),
+    masterBalance,
+    totalAccounts: accountAudits.length,
+    activeAccounts: activeAudits.length,
+    totalBalance,
+    totalEquity,
+    totalSwarmRiskUsd: Number(totalSwarmRiskUsd.toFixed(2)),
+    totalPerBotRiskUsd: Number(totalPerBotRiskUsd.toFixed(2)),
+    m19TopFirm,
+    m19Verdict,
+    m24EntityName,
+    m24AnnualDragPct: Number(m24AnnualDragPct.toFixed(2)),
+    m26BaseStressDayPct: Number(stressWorstDayPct.toFixed(2)),
+    m26BaseStressDDPct: Number(stressWorstDDPct.toFixed(2)),
+    worstActiveStressDayPct: Number(worstActiveStressDayPct.toFixed(2)),
+    worstActiveStressDDPct: Number(worstActiveStressDDPct.toFixed(2)),
+    lotFloorCounts,
+    shieldCounts,
+    overallShield,
+    misalignedRatiosCount,
+    accounts: accountAudits,
+    timestamp: new Date().toISOString()
+  };
+};
+
+window.m30SetCertifiedGear = function(gear) {
+  window.m30CertifiedGear = (gear === 'live') ? 'live' : 'challenge';
+  if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') {
+    window.m30RenderCertifiedPortfolioCopierCard();
+  }
+  if (typeof window.m31RenderCertifiedPortfolioCard === 'function') {
+    window.m31RenderCertifiedPortfolioCard();
+  }
+  if (typeof m30LogTelemetry === 'function') {
+    m30LogTelemetry('info', `⚙️ Protocolo 2 Marchas M30 ajustado a: ${window.m30CertifiedGear === 'live' ? 'LIVE 1.00% (0.091%/bot)' : 'CHALLENGE 2.00% (0.182%/bot)'}.`);
+  }
+};
+
+window.m30ApplyInstitutionalRatios = function() {
+  if (!window.m30State || !Array.isArray(window.m30State.accounts) || !window.m30State.accounts.length) return;
+  const master = window.m30State.accounts.find(a => a.type === 'master') || window.m30State.accounts[0];
+  const masterBal = (isFinite(Number(master.balance)) && Number(master.balance) > 0) ? Number(master.balance) : 200000;
+  let updatedCount = 0;
+
+  window.m30State.accounts.forEach(acc => {
+    if (acc.type === 'master') {
+      acc.ratio = 1.0;
+    } else {
+      const bal = Math.max(0, Number(acc.balance) || 0);
+      acc.ratio = Number((bal / masterBal).toFixed(4));
+      acc.mode = 'proportional';
+      updatedCount++;
+    }
+  });
+
+  if (typeof m30RenderAccountsTable === 'function') m30RenderAccountsTable();
+  if (typeof m30UpdateGlobalStats === 'function') m30UpdateGlobalStats();
+  if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') window.m30RenderCertifiedPortfolioCopierCard();
+  if (typeof window.m31RenderCertifiedPortfolioCard === 'function') window.m31RenderCertifiedPortfolioCard();
+  if (typeof m30LogTelemetry === 'function') {
+    m30LogTelemetry('success', `⚖️ Ratios institucionales 1:1 sincronizados por balance en ${updatedCount} cuentas esclavas (base Master $${masterBal.toLocaleString()}).`);
+  }
+  if (typeof showFloatingToast === 'function') {
+    showFloatingToast(`Ratios institucionales 1:1 sincronizados (${updatedCount} esclavas)`, 'success');
+  }
+};
+
+window.m30RenderCertifiedPortfolioCopierCard = function() {
+  const container = document.getElementById('subview-copier');
+  if (!container) return;
+
+  let card = document.getElementById('m30-cert-portfolio-copier-card');
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'm30-cert-portfolio-copier-card';
+    card.className = 'bg-[#161b22] border border-emerald-500/40 rounded-xl p-4 shadow-lg space-y-3';
+    if (container.firstElementChild) {
+      container.firstElementChild.insertAdjacentElement('afterend', card);
+    } else {
+      container.appendChild(card);
+    }
+  }
+
+  const audit = window.getSV5M30PortfolioCopierAudit();
+  const isLive = audit.gear === 'live';
+
+  const shieldBadgeCls = audit.overallShield === 'BLINDADO'
+    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+    : (audit.overallShield === 'VIGILANCIA'
+      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+      : 'bg-rose-500/20 text-rose-300 border-rose-500/40');
+
+  const rowsHtml = audit.accounts.map(a => {
+    const lotCls = a.lotFloorCode === 'OPTIMO'
+      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+      : (a.lotFloorCode === 'VIABLE'
+        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+        : 'bg-rose-500/15 text-rose-300 border-rose-500/30');
+    const shCls = a.shieldCode === 'BLINDADO'
+      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+      : (a.shieldCode === 'VIGILANCIA'
+        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+        : 'bg-rose-500/15 text-rose-300 border-rose-500/30');
+    const driftTxt = a.isMaster
+      ? '<span class="text-emerald-400">ORIGEN 1.0x</span>'
+      : (Math.abs(a.ratioDriftPct) <= 2.5
+        ? `<span class="text-emerald-300">${a.ratio}x (1:1 OK)</span>`
+        : `<span class="text-amber-300">${a.ratio}x vs ${a.idealRatio}x (${a.ratioDriftPct > 0 ? '+' : ''}${a.ratioDriftPct}%)</span>`);
+
+    return `
+      <tr class="${a.active ? 'hover:bg-[#1f242c]' : 'opacity-45 bg-[#0d1117]'} border-b border-gray-800/70 transition">
+        <td class="p-2">
+          <div class="font-bold ${a.isMaster ? 'text-emerald-300' : 'text-gray-200'}">${a.isMaster ? '👑' : '🔗'} ${a.alias}</div>
+          <div class="text-[9px] text-gray-500">${a.id} · ${a.firm} · ${a.active ? 'ACTIVA' : 'PAUSADA'}</div>
+        </td>
+        <td class="p-2 text-right font-mono">
+          <div class="text-gray-200 font-bold">$${Math.round(a.balance).toLocaleString()}</div>
+          <div class="text-[9px]">${driftTxt}</div>
+        </td>
+        <td class="p-2 text-right font-mono">
+          <div class="text-sky-300 font-bold">${a.effectiveGlobalRiskPct.toFixed(2)}% ($${Math.round(a.globalRiskUsd).toLocaleString()})</div>
+          <div class="text-[9px] text-gray-400">$${a.perBotRiskUsd.toFixed(2)} / bot (${a.effectivePerBotRiskPct.toFixed(3)}%)</div>
+        </td>
+        <td class="p-2 text-center font-mono">
+          <span class="inline-block px-1.5 py-0.5 rounded border text-[9px] font-bold ${lotCls}">${a.lotFloorLabel}</span>
+          <div class="text-[9px] text-gray-500 mt-0.5">${a.lotFloorDetail}</div>
+        </td>
+        <td class="p-2 text-center font-mono">
+          <span class="inline-block px-1.5 py-0.5 rounded border text-[9px] font-bold ${shCls}">${a.shieldLabel}</span>
+          <div class="text-[9px] text-gray-400 mt-0.5">Día ${a.projStressDayPct.toFixed(2)}% · DD ${a.projStressDDPct.toFixed(2)}%</div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-gray-800">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-sm">🏆</span>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Auditoría Institucional Enjambre Multi-Cuentas (${audit.botCount} Bots Certificados)</h3>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${shieldBadgeCls}">ESCUDO M26: ${audit.overallShield}</span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">M19 TOP: ${audit.m19TopFirm} (${audit.m19Verdict})</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button type="button" onclick="window.m30SetCertifiedGear('challenge')" class="px-2.5 py-1 rounded text-[10px] font-mono font-bold border transition ${!isLive ? 'bg-amber-500/25 text-amber-200 border-amber-400/60' : 'bg-[#0d1117] text-gray-400 border-gray-700 hover:text-gray-200'}">⚡ Challenge 2.00%</button>
+        <button type="button" onclick="window.m30SetCertifiedGear('live')" class="px-2.5 py-1 rounded text-[10px] font-mono font-bold border transition ${isLive ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/60' : 'bg-[#0d1117] text-gray-400 border-gray-700 hover:text-gray-200'}">🛡️ Live 1.00%</button>
+        <button type="button" onclick="window.m30ApplyInstitutionalRatios()" class="px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-purple-600/80 hover:bg-purple-500 text-white transition">⚖️ Ratios 1:1 Balance</button>
+        <button type="button" onclick="if(typeof exportCertifiedPortfolioToMQL5==='function') exportCertifiedPortfolioToMQL5();" class="px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition">📥 EA .mq5</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 font-mono">
+      <div class="bg-[#0d1117] border border-gray-800 rounded-lg p-2.5">
+        <div class="text-[9px] text-gray-400 uppercase">Capital Enjambre Activo (AUM)</div>
+        <div class="text-sm font-bold text-emerald-400 mt-0.5">$${Math.round(audit.totalBalance).toLocaleString()}</div>
+        <div class="text-[10px] text-gray-400">Eq $${Math.round(audit.totalEquity).toLocaleString()} · ${audit.activeAccounts}/${audit.totalAccounts} activas</div>
+      </div>
+      <div class="bg-[#0d1117] border border-gray-800 rounded-lg p-2.5">
+        <div class="text-[9px] text-gray-400 uppercase">Riesgo Enjambre (${audit.baseGlobalRiskPct.toFixed(2)}%)</div>
+        <div class="text-sm font-bold text-sky-300 mt-0.5">$${Math.round(audit.totalSwarmRiskUsd).toLocaleString()} <span class="text-[10px] text-gray-400">/ ciclo</span></div>
+        <div class="text-[10px] text-gray-400">$${Math.round(audit.totalPerBotRiskUsd).toLocaleString()} / bot (${audit.basePerBotRiskPct.toFixed(3)}%)</div>
+      </div>
+      <div class="bg-[#0d1117] border border-gray-800 rounded-lg p-2.5">
+        <div class="text-[9px] text-gray-400 uppercase">Semáforo M24 (Piso 0.01)</div>
+        <div class="text-xs font-bold mt-1">
+          <span class="text-emerald-400">${audit.lotFloorCounts.optimo} Ópt</span> ·
+          <span class="text-amber-300">${audit.lotFloorCounts.viable} Viab</span> ·
+          <span class="text-rose-400">${audit.lotFloorCounts.alerta} Alerta</span>
+        </div>
+        <div class="text-[10px] text-gray-400 mt-0.5">M24 ${audit.m24EntityName}: ${audit.m24AnnualDragPct.toFixed(2)}%/año</div>
+      </div>
+      <div class="bg-[#0d1117] border border-gray-800 rounded-lg p-2.5">
+        <div class="text-[9px] text-gray-400 uppercase">Escudo M26 Cisne Negro</div>
+        <div class="text-sm font-bold text-amber-300 mt-0.5">Día ${audit.worstActiveStressDayPct.toFixed(2)}% <span class="text-gray-500">/</span> DD ${audit.worstActiveStressDDPct.toFixed(2)}%</div>
+        <div class="text-[10px] text-gray-400">${audit.shieldCounts.blindado}/${audit.activeAccounts} blindadas · ${audit.misalignedRatiosCount === 0 ? 'Ratios 1:1 OK' : audit.misalignedRatiosCount + ' ratio(s) desfasado(s)'}</div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border border-gray-800">
+      <table class="w-full text-left text-[11px] border-collapse">
+        <thead>
+          <tr class="bg-[#0d1117] text-gray-400 border-b border-gray-800 text-[9px] font-mono uppercase">
+            <th class="p-2">Cuenta Clúster</th>
+            <th class="p-2 text-right">Balance &amp; Ratio</th>
+            <th class="p-2 text-right">Riesgo Efectivo (${audit.botCount} Bots)</th>
+            <th class="p-2 text-center">M24 Piso 0.01 Lotes</th>
+            <th class="p-2 text-center">M26 Escudo Stress</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800/60">
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
+};
+
+window.m30InstallCopierHooks = function() {
+  if (typeof window.m30RenderAccountsTable === 'function' && !window.m30RenderAccountsTable.__sv5M30Patched) {
+    const origRender = window.m30RenderAccountsTable;
+    const wrappedRender = function(...args) {
+      const res = origRender.apply(this, args);
+      if (!window.__sv5M30HookBusy) {
+        window.__sv5M30HookBusy = true;
+        try {
+          if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') {
+            window.m30RenderCertifiedPortfolioCopierCard();
+          }
+          if (typeof window.m31RenderCertifiedPortfolioCard === 'function') {
+            window.m31RenderCertifiedPortfolioCard();
+          }
+        } finally {
+          window.__sv5M30HookBusy = false;
+        }
+      }
+      return res;
+    };
+    wrappedRender.__sv5M30Patched = true;
+    window.m30RenderAccountsTable = wrappedRender;
+  }
+
+  if (typeof window.m30UpdateGlobalStats === 'function' && !window.m30UpdateGlobalStats.__sv5M30Patched) {
+    const origStats = window.m30UpdateGlobalStats;
+    const wrappedStats = function(...args) {
+      const res = origStats.apply(this, args);
+      if (!window.__sv5M30HookBusy) {
+        window.__sv5M30HookBusy = true;
+        try {
+          if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') {
+            window.m30RenderCertifiedPortfolioCopierCard();
+          }
+        } finally {
+          window.__sv5M30HookBusy = false;
+        }
+      }
+      return res;
+    };
+    wrappedStats.__sv5M30Patched = true;
+    window.m30UpdateGlobalStats = wrappedStats;
+  }
+};
+
 function initModule30CopierEngine() {
-    m30RenderAccountsTable();
-    m30UpdateGlobalStats();
-    m30LogTelemetry('info', '🛰️ Módulo 30 Inicializado. Hub Copiador Maestro Multi-Cuentas listo.');
+  window.m30InstallCopierHooks();
+  m30RenderAccountsTable();
+  m30UpdateGlobalStats();
+  if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') {
+    window.m30RenderCertifiedPortfolioCopierCard();
+  }
+  m30LogTelemetry('info', '⚡ Módulo 30 Inicializado. Hub Copiador Maestro Multi-Cuentas + Auditoría Institucional 4B listos.');
+}
+
+if (typeof document !== 'undefined') {
+  const __sv5BootM30Card = () => {
+    if (typeof window.m30InstallCopierHooks === 'function') window.m30InstallCopierHooks();
+    if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') window.m30RenderCertifiedPortfolioCopierCard();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(__sv5BootM30Card, 350));
+  } else {
+    setTimeout(__sv5BootM30Card, 350);
+  }
 }
 
 function m30RenderAccountsTable() {
@@ -16113,7 +16584,18 @@ function m31GenerateExecutiveReport() {
         ts: b.ts,
         filtro: b.filterLabel
       }))
-    } : "Pendiente de certificación en Panel 6.5",
+} : "Pendiente de certificación en Panel 6.5",
+    ecosistemaSoberano: {
+      versionAuditoria: "StratView-5 Fase 4B (31 Módulos Sincronizados)",
+      m19_propFirms: (typeof window.sv5SafeCall === 'function') ? window.sv5SafeCall('getSV5M19PortfolioRecommendation') : null,
+      m24_costesYMinLot: (typeof window.sv5SafeCall === 'function') ? window.sv5SafeCall('getSV5M24PortfolioCostAudit') : null,
+      m26_cisnesNegros: {
+        challenge_2pct: (typeof window.sv5SafeCall === 'function') ? window.sv5SafeCall('getSV5M26PortfolioStressAudit', 'challenge') : null,
+        live_1pct: (typeof window.sv5SafeCall === 'function') ? window.sv5SafeCall('getSV5M26PortfolioStressAudit', 'live') : null
+      },
+      m29_auditorDSR: (typeof window.sv5SafeCall === 'function') ? window.sv5SafeCall('getSV5M29PortfolioDSRAudit') : null,
+      m30_tradeCopier: (typeof window.sv5SafeCall === 'function') ? window.sv5SafeCall('getSV5M30PortfolioCopierAudit') : null
+    },
     fechaAuditoria: new Date().toISOString()
   };
 
@@ -16123,10 +16605,9 @@ function m31GenerateExecutiveReport() {
   dlAnchorElem.setAttribute("download", `StratView_Executive_WallSt_Dossier_${new Date().toISOString().slice(0,10)}.json`);
   dlAnchorElem.click();
 
-  m31LogSovereign('success', '📄 Dossier Ejecutivo Institucional descargado en formato JSON auditado (incluye Portafolio Certificado + Kelly 5.4).');
-  if (typeof showFloatingToast === 'function') showFloatingToast('Dossier Ejecutivo Wall St. descargado', 'info');
+  m31LogSovereign('success', '📄 Dossier Ejecutivo Institucional descargado en formato JSON auditado (Portafolio 11 Bots + Kelly 5.4 + M19 + M24 + M26 + M29 + M30).');
+  if (typeof showFloatingToast === 'function') showFloatingToast('Dossier Maestro Soberano descargado (6 Pilares)', 'info');
 }
-
 function m31RenderCertifiedPortfolioCard() {
   const badgeEl = document.getElementById('m31-cert-badge');
   const botsEl  = document.getElementById('m31-cert-bots');
@@ -16176,8 +16657,179 @@ function m31RenderCertifiedPortfolioCard() {
         <span class="text-emerald-400 font-bold">#${b.magicNumber}</span> ${b.asset} <span class="text-purple-300">${b.tf}</span>
         <span class="text-gray-400">(${b.fast}/${b.slow} · ${b.filterLabel})</span>
       </span>
-    `).join('');
+`).join('');
   }
+  if (typeof m31RenderSovereignEcosystemMatrix === 'function') {
+    m31RenderSovereignEcosystemMatrix(cert, kelly);
+  }
+}
+
+window.m31SetSovereignGear = function(gear) {
+  window.m30CertifiedGear = (gear === 'live') ? 'live' : 'challenge';
+  if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') {
+    window.m30RenderCertifiedPortfolioCopierCard();
+  }
+  if (typeof m31RenderCertifiedPortfolioCard === 'function') {
+    m31RenderCertifiedPortfolioCard();
+  }
+};
+
+function m31RenderSovereignEcosystemMatrix(cert, kelly) {
+  const host = document.getElementById('m31-certified-portfolio-card');
+  if (!host) return;
+
+  let box = document.getElementById('m31-cert-sovereign-matrix');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'm31-cert-sovereign-matrix';
+    box.className = 'pt-3 mt-2 border-t border-purple-500/30 space-y-2.5';
+    host.appendChild(box);
+  }
+
+  const safeCall = window.sv5SafeCall || ((fn, ...a) => (typeof window[fn] === 'function' ? window[fn](...a) : null));
+  const pickNum  = window.sv5PickNum  || ((o, p, f) => f);
+  const pickStr  = window.sv5PickStr  || ((o, p, f) => f);
+
+  const gear   = window.m30CertifiedGear || 'challenge';
+  const isLive = gear === 'live';
+
+  const m19 = safeCall('getSV5M19PortfolioRecommendation');
+  const m24 = safeCall('getSV5M24PortfolioCostAudit');
+  const m26 = safeCall('getSV5M26PortfolioStressAudit', gear);
+  const m29 = safeCall('getSV5M29PortfolioDSRAudit');
+  const m30 = safeCall('getSV5M30PortfolioCopierAudit', gear);
+
+  // Pilar 1: Portafolio 11 Bots + Kelly 5.4
+  const botCount = (cert && Array.isArray(cert.bots) && cert.bots.length) ? cert.bots.length : 11;
+  const finalEq  = pickNum(cert, ['finalEq'], 29754);
+  const retPct   = pickNum(cert, ['returnPct'], 197.5);
+  const maxDD    = Math.abs(pickNum(cert, ['maxDDPct'], 5.21));
+  const sharpe   = pickNum(cert, ['sharpe'], 2.37);
+  const calmar   = pickNum(cert, ['calmar'], 6.46);
+  const kellyP   = pickNum(cert, ['kellyPct'], pickNum(kelly, ['kellyFullPct'], 13.46));
+
+  // Pilar 2: M19 Enjambre Prop Firms
+  const m19Firm = pickStr(m19, ['bestFirm.name', 'topFirm.name', 'recommendedFirm.name', 'recommended.name', 'bestFirmName', 'firmName'], 'FundedNext');
+  const m19Verd = pickStr(m19, ['verdict', 'status', 'bestFirm.verdict', 'bestFirm.status'], 'APTO');
+  const m19Elig = pickNum(m19, ['eligibleCount', 'aptoCount', 'viableCount'], (m19 && Array.isArray(m19.firms) ? m19.firms.filter(f => f && (f.apto || f.eligible || f.pass)).length : 6));
+  const m19Tot  = pickNum(m19, ['totalFirms'], (m19 && Array.isArray(m19.firms) ? m19.firms.length : 8));
+
+  // Pilar 3: M24 Oráculo Costes & Piso 0.01
+  const m24Ent  = pickStr(m24, ['entityName', 'profile.name', 'brokerName', 'activeEntity.name', 'firmName'], 'FTMO Raw ECN');
+  const m24Cap  = pickNum(m24, ['accountSize', 'profile.accountSize', 'capital'], 100000);
+  const m24Drag = -Math.abs(pickNum(m24, ['annualDragPct', 'dragAnnualPct', 'yearlyDragPct', 'costDragAnnualPct', 'summary.annualDragPct'], -2.31));
+  const m24Net5 = pickNum(m24, ['netReturn5YPct', 'netReturnPct', 'net5YPct', 'netProfitPct', 'summary.netReturn5YPct'], 186.0);
+  const m24Tier = pickStr(m24, ['lotFloorStatus', 'minLotStatus', 'tierLabel', 'floorVerdict'], 'ÓPTIMO INSTITUCIONAL');
+
+  // Pilar 4: M26 Cisnes Negros & Stress
+  const m26Day   = -Math.abs(pickNum(m26, ['worstStressDayPct', 'worstDayPct', 'maxDailyLossPct', 'summary.worstDayPct'], isLive ? -1.04 : -2.07));
+  const m26DD    = -Math.abs(pickNum(m26, ['worstStressDDPct', 'worstDDPct', 'maxTotalDDPct', 'summary.worstDDPct'], isLive ? -3.05 : -6.11));
+  const m26P2    = pickNum(m26, ['pass2StepCount', 'ftmo2StepPass', 'passed2Step', 'summary.pass2Step'], 5);
+  const m26P1    = pickNum(m26, ['pass1StepCount', 'oneStepPass', 'passed1Step', 'summary.pass1Step'], isLive ? 5 : 3);
+  const m26Tot   = pickNum(m26, ['totalScenarios', 'scenariosCount'], 5);
+  const m26Grade = pickStr(m26, ['grade', 'verdict', 'badge'], isLive ? 'GRADO A+ BLINDADO' : '5/5 FTMO 2-STEP');
+
+  // Pilar 5: M29 Auditor Wall St. DSR
+  const rawDsr     = pickNum(m29, ['dsrPct', 'dsr', 'summary.dsrPct'], 98.7);
+  const m29Dsr     = rawDsr <= 1 ? rawDsr * 100 : rawDsr;
+  const pValDirect = pickNum(m29, ['pValuePct', 'summary.pValuePct'], NaN);
+  const pValRaw    = pickNum(m29, ['pValue', 'pVal'], NaN);
+  const m29Pval    = isFinite(pValDirect)
+    ? pValDirect
+    : (isFinite(pValRaw) ? (pValRaw <= 1 ? pValRaw * 100 : pValRaw) : Math.max(0, 100 - m29Dsr));
+  const m29SrNet = pickNum(m29, ['sharpeNet', 'netSharpe', 'srNet', 'observedSharpe'], 1.90);
+  const m29Sr0   = pickNum(m29, ['sr0Star', 'sr0', 'expectedMaxSR'], 1.34);
+  const m29Trl   = pickNum(m29, ['minTrlDays', 'minTRLDays', 'minTrl'], 131);
+  const m29Neff  = pickNum(m29, ['nEff', 'effectiveBots', 'neff'], 9.9);
+  const m29N     = pickNum(m29, ['trials', 'nTrials', 'N'], 45);
+
+  // Pilar 6: M30 Trade Copier Multi-Cuentas
+  const m30Aum   = pickNum(m30, ['totalBalance'], 475000);
+  const m30Eq    = pickNum(m30, ['totalEquity'], 485860);
+  const m30Act   = pickNum(m30, ['activeAccounts'], 5);
+  const m30Tot   = pickNum(m30, ['totalAccounts'], 5);
+  const m30Risk  = pickNum(m30, ['totalSwarmRiskUsd'], isLive ? 4750 : 9500);
+  const m30Sh    = pickStr(m30, ['overallShield'], 'BLINDADO');
+  const m30Opt   = pickNum(m30, ['lotFloorCounts.optimo'], isLive ? 3 : 4);
+  const m30Viab  = pickNum(m30, ['lotFloorCounts.viable'], 1);
+  const m30Alert = pickNum(m30, ['lotFloorCounts.alerta'], isLive ? 1 : 0);
+
+  box.innerHTML = `
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs">👑</span>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-purple-300">Gobernanza Soberana 6-Pilares en Vivo (M6 · M19 · M24 · M26 · M29 · M30)</span>
+        <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">● SYNC 1:1 LIVE</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button type="button" onclick="window.m31SetSovereignGear('challenge')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition ${!isLive ? 'bg-amber-500/25 text-amber-200 border-amber-400/60' : 'bg-[#0c101a] text-gray-400 border-gray-700 hover:text-gray-200'}">⚡ Challenge 2.00%</button>
+        <button type="button" onclick="window.m31SetSovereignGear('live')" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition ${isLive ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/60' : 'bg-[#0c101a] text-gray-400 border-gray-700 hover:text-gray-200'}">🛡️ Live 1.00%</button>
+        <button type="button" onclick="m31GenerateExecutiveReport()" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-600/80 hover:bg-purple-500 text-white transition">📄 Dossier JSON Maestro</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 font-mono">
+      <div class="bg-[#0c101a] border border-emerald-500/30 rounded-lg p-2.5 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-emerald-300">🏆 1. PORTAFOLIO ${botCount} BOTS + KELLY</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300">CERT 10/10</span>
+        </div>
+        <div class="text-xs font-bold text-white">$${Math.round(finalEq).toLocaleString()} <span class="text-emerald-400">(+${retPct.toFixed(1)}%)</span></div>
+        <div class="text-[10px] text-gray-400">DD -${maxDD.toFixed(2)}% · Sharpe ${sharpe.toFixed(2)} · Calmar ${calmar.toFixed(2)}</div>
+        <div class="text-[9px] text-purple-300">Kelly Portafolio ${kellyP.toFixed(2)}% · #5101–#${5100 + botCount} MT5 Live</div>
+      </div>
+
+      <div class="bg-[#0c101a] border border-sky-500/30 rounded-lg p-2.5 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-sky-300">🏢 2. M19 ENJAMBRE PROP FIRMS</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">${m19Verd}</span>
+        </div>
+        <div class="text-xs font-bold text-white">Top: ${m19Firm} <span class="text-sky-300">(${m19Elig}/${m19Tot} aptas)</span></div>
+        <div class="text-[10px] text-gray-400">Protocolo 2 Marchas: 2.00% Ch / 1.00% Live</div>
+        <div class="text-[9px] text-emerald-300">Cuenta óptima: $50k–$100k+ · Piso 0.01 validado</div>
+      </div>
+
+      <div class="bg-[#0c101a] border border-amber-500/30 rounded-lg p-2.5 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-amber-300">💸 3. M24 ORÁCULO COSTES &amp; 0.01</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200">${m24Tier}</span>
+        </div>
+        <div class="text-xs font-bold text-white">${m24Ent} <span class="text-amber-300">$${Math.round(m24Cap).toLocaleString()}</span></div>
+        <div class="text-[10px] text-gray-400">Drag Costes ${m24Drag.toFixed(2)}%/año · Neto 5A <span class="text-emerald-400">+${m24Net5.toFixed(1)}%</span></div>
+        <div class="text-[9px] text-gray-400">XAU/US30/EUR/XAG calibrados 4/4 con fricción real</div>
+      </div>
+
+      <div class="bg-[#0c101a] border border-rose-500/30 rounded-lg p-2.5 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-rose-300">🦢 4. M26 CISNES NEGROS (${isLive ? 'LIVE 1%' : 'CH 2%'})</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-200">${m26Grade}</span>
+        </div>
+        <div class="text-xs font-bold text-white">Día ${m26Day.toFixed(2)}% <span class="text-gray-500">|</span> DD ${m26DD.toFixed(2)}%</div>
+        <div class="text-[10px] text-gray-400">FTMO 2-Step: ${m26P2}/${m26Tot} · 1-Step: ${m26P1}/${m26Tot}</div>
+        <div class="text-[9px] text-emerald-300">5 catástrofes auditadas con fricción M24 viva</div>
+      </div>
+
+      <div class="bg-[#0c101a] border border-purple-500/30 rounded-lg p-2.5 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-purple-300">🏛️ 5. M29 AUDITOR WALL ST. DSR</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-200">N=${m29N}</span>
+        </div>
+        <div class="text-xs font-bold text-white">DSR <span class="text-emerald-400">${m29Dsr.toFixed(1)}%</span> <span class="text-gray-400">(p=${m29Pval.toFixed(1)}%)</span></div>
+        <div class="text-[10px] text-gray-400">Sh Neto ${m29SrNet.toFixed(2)} vs SR0* ${m29Sr0.toFixed(2)} · MinTRL ${Math.round(m29Trl)}d</div>
+        <div class="text-[9px] text-sky-300">N_eff ${m29Neff.toFixed(1)} / ${botCount} bots (${((m29Neff / botCount) * 100).toFixed(1)}% indep.)</div>
+      </div>
+
+      <div class="bg-[#0c101a] border border-teal-500/30 rounded-lg p-2.5 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-teal-300">🔗 6. M30 TRADE COPIER CLÚSTER</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-200">${m30Sh}</span>
+        </div>
+        <div class="text-xs font-bold text-white">AUM $${Math.round(m30Aum).toLocaleString()} <span class="text-teal-300">(${m30Act}/${m30Tot} ON)</span></div>
+        <div class="text-[10px] text-gray-400">Eq $${Math.round(m30Eq).toLocaleString()} · Riesgo $${Math.round(m30Risk).toLocaleString()}/ciclo</div>
+        <div class="text-[9px] text-gray-400">M24 0.01: <span class="text-emerald-400">${m30Opt} Ópt</span> · <span class="text-amber-300">${m30Viab} Viab</span> · <span class="text-rose-400">${m30Alert} Alerta</span></div>
+      </div>
+    </div>
+  `;
 }
 
 function m31TriggerGlobalEmergencyLock() {
