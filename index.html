@@ -16937,6 +16937,417 @@ function m31LogSovereign(type, msg) {
     box.prepend(row);
     if (box.children.length > 50) box.removeChild(box.lastChild);
 }
+    // ============================================================================
+// MÓDULO 3: CARPETA / GESTOR DE BOTS GUARDADOS (SV5 BOT VAULT)
+// Estilo TradingView / MetaEditor MT5 — 100% No Destructivo (0 cambios HTML)
+// ============================================================================
+(function initSV5BotVault() {
+  const STORAGE_KEY = 'sv5_m3_bot_vault_v1';
+
+  function loadVault() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { nextNum: 1, activeId: null, bots: [] };
+      const parsed = JSON.parse(raw);
+      return {
+        nextNum: Number.isInteger(parsed.nextNum) && parsed.nextNum > 0 ? parsed.nextNum : 1,
+        activeId: null,
+        bots: Array.isArray(parsed.bots) ? parsed.bots : []
+      };
+    } catch (e) {
+      return { nextNum: 1, activeId: null, bots: [] };
+    }
+  }
+
+  function saveVault(vaultObj) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        nextNum: vaultObj.nextNum,
+        bots: vaultObj.bots
+      }));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function escHtml(str) {
+    return String(str || '')
+      .split('&').join('&amp;')
+      .split('<').join('&lt;')
+      .split('>').join('&gt;')
+      .split('"').join('&quot;');
+  }
+
+  function getEditorRefs() {
+    return {
+      subview: document.getElementById('subview-ide'),
+      split: document.getElementById('ide-split-container'),
+      editor: document.getElementById('stratscript-editor'),
+      preset: document.getElementById('ide-preset-select'),
+      tp: document.getElementById('inp-tp'),
+      sl: document.getElementById('inp-sl'),
+      ts: document.getElementById('inp-ts'),
+      lots: document.getElementById('inp-lots'),
+      risk: document.getElementById('inp-risk-mode')
+    };
+  }
+
+  function readCurrentState() {
+    const r = getEditorRefs();
+    return {
+      code: r.editor ? r.editor.value : '',
+      tp: r.tp ? r.tp.value : '150',
+      sl: r.sl ? r.sl.value : '80',
+      ts: r.ts ? r.ts.value : '50',
+      lots: r.lots ? r.lots.value : '1.0',
+      risk: r.risk ? r.risk.value : 'pct'
+    };
+  }
+
+  function applyStateToEditor(bot, autoCompile) {
+    const r = getEditorRefs();
+    if (!r.editor || !bot) return;
+    r.editor.value = bot.code || '';
+    if (r.tp && bot.tp !== undefined) r.tp.value = bot.tp;
+    if (r.sl && bot.sl !== undefined) r.sl.value = bot.sl;
+    if (r.ts && bot.ts !== undefined) r.ts.value = bot.ts;
+    if (r.lots && bot.lots !== undefined) r.lots.value = bot.lots;
+    if (r.risk && bot.risk !== undefined) r.risk.value = bot.risk;
+    try {
+      if (typeof handleEditorInput === 'function') handleEditorInput();
+    } catch (e) {}
+    if (autoCompile && (bot.code || '').trim().length > 0) {
+      try {
+        if (typeof compileAndRunStrategy === 'function') compileAndRunStrategy();
+      } catch (e) {}
+    }
+  }
+
+  function setStatus(msg, tone) {
+    const el = document.getElementById('sv5-vault-status');
+    if (!el) return;
+    el.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded ' + (
+      tone === 'ok' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' :
+      tone === 'warn' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' :
+      tone === 'err' ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30' :
+      'text-gray-400'
+    );
+    el.textContent = msg;
+  }
+
+  let vault = loadVault();
+  let drawerOpen = false;
+  let autosaveTimer = null;
+
+  function getActiveBot() {
+    if (!vault.activeId) return null;
+    return vault.bots.find(b => b.id === vault.activeId) || null;
+  }
+
+  function formatLabel(bot) {
+    const base = 'Bot ' + bot.num;
+    return bot.title && bot.title.trim() ? base + ' - ' + bot.title.trim() : base;
+  }
+
+  function renderUI() {
+    const sel = document.getElementById('sv5-vault-select');
+    const countEl = document.getElementById('sv5-vault-count');
+    const drawer = document.getElementById('sv5-vault-drawer');
+    const btnDel = document.getElementById('sv5-vault-del');
+    const btnRen = document.getElementById('sv5-vault-ren');
+
+    if (countEl) countEl.textContent = String(vault.bots.length);
+
+    if (sel) {
+      let opts = '<option value="">-- Plantilla Base / Sin Bot Guardado --</option>';
+      vault.bots.forEach(bot => {
+        const selected = bot.id === vault.activeId ? ' selected' : '';
+        opts += '<option value="' + escHtml(bot.id) + '"' + selected + '>' + escHtml(formatLabel(bot)) + '</option>';
+      });
+      sel.innerHTML = opts;
+    }
+
+    const hasActive = Boolean(getActiveBot());
+    if (btnDel) {
+      btnDel.disabled = !hasActive;
+      btnDel.style.opacity = hasActive ? '1' : '0.45';
+    }
+    if (btnRen) {
+      btnRen.disabled = !hasActive;
+      btnRen.style.opacity = hasActive ? '1' : '0.45';
+    }
+
+    if (drawer) {
+      drawer.classList.toggle('hidden', !drawerOpen);
+      if (drawerOpen) {
+        if (vault.bots.length === 0) {
+          drawer.innerHTML = '<div class="text-[11px] text-gray-400 italic py-1">Aún no tienes bots guardados. Pulsa <b>+ Nuevo Bot</b> para crear Bot 1 (hoja limpia) o <b>Guardar</b> para respaldar el actual.</div>';
+        } else {
+          drawer.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-1.5">' +
+            vault.bots.map(bot => {
+              const active = bot.id === vault.activeId;
+              const borderCls = active ? 'border-emerald-500/70 bg-emerald-950/25' : 'border-gray-700 bg-[#090d16]';
+              const dateStr = bot.updatedAt ? new Date(bot.updatedAt).toLocaleString() : '';
+              return (
+                '<div class="rounded border ' + borderCls + ' p-1.5 flex flex-col justify-between gap-1 font-mono">' +
+                  '<div class="flex items-center justify-between gap-1">' +
+                    '<span class="text-[11px] font-bold ' + (active ? 'text-emerald-300' : 'text-sky-300') + ' truncate">' + escHtml(formatLabel(bot)) + '</span>' +
+                    (active ? '<span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">ACTIVO</span>' : '') +
+                  '</div>' +
+                  '<div class="text-[9px] text-gray-400">TP:' + escHtml(bot.tp) + ' | SL:' + escHtml(bot.sl) + ' | TS:' + escHtml(bot.ts) + ' | ' + escHtml(dateStr) + '</div>' +
+                  '<div class="flex items-center gap-1 pt-0.5">' +
+                    '<button type="button" onclick="window.SV5BotVault.openBot(\'' + escHtml(bot.id) + '\')" class="flex-1 bg-sky-700 hover:bg-sky-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Abrir</button>' +
+                    '<button type="button" onclick="window.SV5BotVault.deleteBot(\'' + escHtml(bot.id) + '\')" class="bg-rose-800/80 hover:bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Eliminar</button>' +
+                  '</div>' +
+                '</div>'
+              );
+            }).join('') +
+          '</div>';
+        }
+      }
+    }
+  }
+
+  function persistActiveQuietly() {
+    const active = getActiveBot();
+    if (!active) return;
+    const st = readCurrentState();
+    active.code = st.code;
+    active.tp = st.tp;
+    active.sl = st.sl;
+    active.ts = st.ts;
+    active.lots = st.lots;
+    active.risk = st.risk;
+    active.updatedAt = Date.now();
+    saveVault(vault);
+  }
+
+  function createNewBot() {
+    persistActiveQuietly();
+    const num = vault.nextNum;
+    const labelPrompt = window.prompt(
+      'Crear Bot ' + num + ' (hoja nueva sin borrar ningún bot guardado).\nEscribe un nombre opcional (ej. LogReg EMA) o déjalo vacío para llamarlo "Bot ' + num + '":',
+      ''
+    );
+    if (labelPrompt === null) return;
+
+    const cleanTitle = labelPrompt.trim();
+    const st = readCurrentState();
+    const newBot = {
+      id: 'sv5_bot_' + num + '_' + Date.now(),
+      num: num,
+      title: cleanTitle,
+      code: '// ' + (cleanTitle ? ('Bot ' + num + ' - ' + cleanTitle) : ('Bot ' + num)) + '\n// Pega aquí tu código StratScript y pulsa "Compilar y Marcar Gráfico"\n',
+      tp: st.tp || '150',
+      sl: st.sl || '80',
+      ts: st.ts || '0',
+      lots: st.lots || '1.0',
+      risk: st.risk || 'pct',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    vault.bots.push(newBot);
+    vault.nextNum = num + 1;
+    vault.activeId = newBot.id;
+    saveVault(vault);
+
+    applyStateToEditor(newBot, false);
+    const r = getEditorRefs();
+    if (r.editor) {
+      r.editor.focus();
+      r.editor.select();
+    }
+    renderUI();
+    setStatus('Creado ' + formatLabel(newBot) + ' (listo para pegar)', 'ok');
+  }
+
+  function saveCurrentBot() {
+    const st = readCurrentState();
+    let active = getActiveBot();
+    if (!active) {
+      const num = vault.nextNum;
+      const titlePrompt = window.prompt(
+        'Guardar el código actual del editor en tu carpeta como Bot ' + num + '.\nEscribe un nombre opcional o déjalo vacío:',
+        ''
+      );
+      if (titlePrompt === null) return;
+      active = {
+        id: 'sv5_bot_' + num + '_' + Date.now(),
+        num: num,
+        title: titlePrompt.trim(),
+        code: st.code,
+        tp: st.tp,
+        sl: st.sl,
+        ts: st.ts,
+        lots: st.lots,
+        risk: st.risk,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      vault.bots.push(active);
+      vault.nextNum = num + 1;
+      vault.activeId = active.id;
+    } else {
+      active.code = st.code;
+      active.tp = st.tp;
+      active.sl = st.sl;
+      active.ts = st.ts;
+      active.lots = st.lots;
+      active.risk = st.risk;
+      active.updatedAt = Date.now();
+    }
+    saveVault(vault);
+    renderUI();
+    setStatus('Guardado: ' + formatLabel(active), 'ok');
+  }
+
+  function openBot(botId) {
+    if (!botId) {
+      persistActiveQuietly();
+      vault.activeId = null;
+      renderUI();
+      setStatus('Plantilla Base (tus bots siguen guardados)', 'warn');
+      return;
+    }
+    persistActiveQuietly();
+    const target = vault.bots.find(b => b.id === botId);
+    if (!target) return;
+    vault.activeId = target.id;
+    applyStateToEditor(target, true);
+    renderUI();
+    setStatus('Abierto: ' + formatLabel(target), 'ok');
+  }
+
+  function renameActiveBot() {
+    const active = getActiveBot();
+    if (!active) {
+      setStatus('Selecciona un bot guardado para renombrar', 'warn');
+      return;
+    }
+    const nextTitle = window.prompt('Nuevo nombre para Bot ' + active.num + ' (vacío = solo "Bot ' + active.num + '"):', active.title || '');
+    if (nextTitle === null) return;
+    active.title = nextTitle.trim();
+    active.updatedAt = Date.now();
+    saveVault(vault);
+    renderUI();
+    setStatus('Renombrado: ' + formatLabel(active), 'ok');
+  }
+
+  function deleteBot(botId) {
+    const targetId = botId || vault.activeId;
+    const target = vault.bots.find(b => b.id === targetId);
+    if (!target) {
+      setStatus('Plantillas base y Combo Campeón protegidos', 'warn');
+      return;
+    }
+    const ok = window.confirm('¿Eliminar definitivamente "' + formatLabel(target) + '" de StratView-5?\nEsta acción no se puede deshacer.');
+    if (!ok) return;
+
+    const deletedName = formatLabel(target);
+    vault.bots = vault.bots.filter(b => b.id !== target.id);
+    if (vault.activeId === target.id) {
+      vault.activeId = vault.bots.length > 0 ? vault.bots[vault.bots.length - 1].id : null;
+    }
+    saveVault(vault);
+
+    const nextActive = getActiveBot();
+    if (nextActive) {
+      applyStateToEditor(nextActive, false);
+    } else {
+      const r = getEditorRefs();
+      if (r.preset && typeof loadStrategyPreset === 'function') {
+        try { loadStrategyPreset(r.preset.value); } catch (e) {}
+      }
+    }
+    renderUI();
+    setStatus('Eliminado: ' + deletedName, 'err');
+  }
+
+  function toggleDrawer() {
+    drawerOpen = !drawerOpen;
+    renderUI();
+  }
+
+  function scheduleAutosave() {
+    const active = getActiveBot();
+    if (!active) return;
+    clearTimeout(autosaveTimer);
+    setStatus('Editando ' + formatLabel(active) + '...', 'warn');
+    autosaveTimer = setTimeout(() => {
+      persistActiveQuietly();
+      const cur = getActiveBot();
+      if (cur) setStatus('Auto-guardado: ' + formatLabel(cur), 'ok');
+    }, 1200);
+  }
+
+  function mountVaultBar() {
+    const r = getEditorRefs();
+    if (!r.subview || !r.split) return;
+    if (document.getElementById('sv5-bot-vault-bar')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'sv5-bot-vault-bar';
+    wrapper.className = 'bg-[#0e1420] border-b border-gray-800 px-3 py-1.5 flex flex-col gap-1.5 text-[11px] shrink-0';
+    wrapper.innerHTML =
+      '<div class="flex flex-wrap items-center justify-between gap-2">' +
+        '<div class="flex flex-wrap items-center gap-1.5 font-mono">' +
+          '<button type="button" onclick="window.SV5BotVault.toggleDrawer()" class="bg-[#1b2436] hover:bg-[#243149] text-amber-300 border border-amber-500/40 font-bold px-2 py-0.5 rounded flex items-center gap-1" title="Abrir/cerrar carpeta de bots guardados">' +
+            '<span>📂 Mis Bots (<b id="sv5-vault-count">0</b>)</span>' +
+          '</button>' +
+          '<select id="sv5-vault-select" onchange="window.SV5BotVault.openBot(this.value)" class="bg-[#090d16] text-emerald-300 border border-gray-700 rounded px-2 py-0.5 outline-none max-w-[260px]"></select>' +
+          '<button type="button" onclick="window.SV5BotVault.createNewBot()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-2.5 py-0.5 rounded shadow">+ Nuevo Bot</button>' +
+          '<button type="button" onclick="window.SV5BotVault.saveCurrentBot()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2.5 py-0.5 rounded">Guardar</button>' +
+          '<button type="button" id="sv5-vault-ren" onclick="window.SV5BotVault.renameActiveBot()" class="bg-[#1e222d] hover:bg-gray-700 text-gray-200 border border-gray-700 px-2 py-0.5 rounded">Renombrar</button>' +
+          '<button type="button" id="sv5-vault-del" onclick="window.SV5BotVault.deleteBot()" class="bg-rose-900/70 hover:bg-rose-600 text-rose-100 border border-rose-500/40 font-bold px-2 py-0.5 rounded">Eliminar</button>' +
+        '</div>' +
+        '<div class="flex items-center gap-2">' +
+          '<span id="sv5-vault-status" class="text-[10px] font-mono text-gray-400">Carpeta lista (Combo Campeón protegido)</span>' +
+        '</div>' +
+      '</div>' +
+      '<div id="sv5-vault-drawer" class="hidden pt-1 border-t border-gray-800/80 max-h-40 overflow-y-auto"></div>';
+
+    r.subview.insertBefore(wrapper, r.split);
+
+    if (r.preset) {
+      r.preset.addEventListener('change', () => {
+        if (vault.activeId) {
+          persistActiveQuietly();
+          vault.activeId = null;
+          renderUI();
+          setStatus('Plantilla base cargada (tus bots siguen guardados)', 'warn');
+        }
+      });
+    }
+
+    if (r.editor) r.editor.addEventListener('input', scheduleAutosave);
+    [r.tp, r.sl, r.ts, r.lots, r.risk].forEach(el => {
+      if (el) el.addEventListener('change', scheduleAutosave);
+    });
+
+    renderUI();
+    if (vault.bots.length > 0) {
+      setStatus(vault.bots.length + ' bot(s) guardados en tu carpeta', 'ok');
+    }
+  }
+
+  window.SV5BotVault = {
+    createNewBot,
+    saveCurrentBot,
+    openBot,
+    renameActiveBot,
+    deleteBot,
+    toggleDrawer,
+    listBots: () => vault.bots.slice()
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountVaultBar);
+  } else {
+    mountVaultBar();
+  }
+})();
   </script>
 </body>
 </html>
