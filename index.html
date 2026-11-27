@@ -8385,7 +8385,9 @@ function renderMachoAlfaSupervisionGrid() {
     "M9: Exportador .MQ5",    "M10: Bot Factory 0",     "M11: Fundamental IA",  "M12: Auto-Evolución",
     "M13: Cyber-Shield IA",   "M14: Voz & 20⊞ Matrix",  "M15: Barras MT5 HD",   "M16: Macho Alfa AGI",
     "M17: Suite +70 Tools",   "M18: Dual Fondeo/Real",  "M19: Prop Firms IA",   "M20: App Nativa PC",
-    "M21: AST ∞ Líneas",      "M22: Ticks 99.9%",       "M23: Multi-Mercados"
+ "M21: AST ≙ Líneas",    "M22: Ticks 99.9%",     "M23: Multi-Mercados",  "M24: Oráculo Costes",
+      "M25: Portfolio Parity","M26: Cisnes Negros",   "M27: Ejecución MT5",   "M28: Sintéticos IA",
+      "M29: Auditor DSR",     "M30: Trade Copier",    "M31: Cuartel Soberano"
   ];
   grid.innerHTML = all23.map(name => `
     <div class="bg-[#090d16] px-2 py-1 rounded border border-yellow-500/30 flex items-center justify-between">
@@ -8422,6 +8424,15 @@ function runModule16MachoAlfaMasterCycle() {
       m2El.innerText = `Enjambre M1-M31 activo: Fábrica M10, Matriz 20⊞, Tools M17, Dual M18, Prop-Firms M19, AST M21, Ticks M22, Multi-Mkt M23, Costes M24, Risk Parity M25, Cisnes M26, Gateway M27, Sintéticos M28, DSR M29, Copiador M30 & Soberano M31.`;
     }
   }
+  const m19Audit = (typeof window.getSV5M19PortfolioRecommendation === 'function') ? window.getSV5M19PortfolioRecommendation() : null;
+  const m24Audit = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? window.getSV5M24PortfolioCostAudit() : null;
+  const m26Audit = (typeof window.getSV5M26PortfolioStressAudit === 'function') ? window.getSV5M26PortfolioStressAudit() : null;
+  const m29Audit = (typeof window.getSV5M29PortfolioDSRAudit === 'function') ? window.getSV5M29PortfolioDSRAudit() : null;
+  const m30Audit = (typeof window.getSV5M30PortfolioCopierAudit === 'function') ? window.getSV5M30PortfolioCopierAudit() : null;
+  const m31PilaresOk = [Boolean(p && p.bots && p.bots.length), Boolean(m19Audit), Boolean(m24Audit), Boolean(m26Audit), Boolean(m29Audit), Boolean(m30Audit)].filter(Boolean).length;
+  if (m2El && m30Audit) {
+    m2El.innerText += ` | M30 AUM $${Math.round(m30Audit.totalBalance || 0).toLocaleString()} (${m30Audit.activeAccounts}/${m30Audit.totalAccounts} · ${m30Audit.overallShield}) | M31 ${m31PilaresOk}/6 Pilares`;
+  }
 
   appendMachoAlfaLog(`Supervisión Suprema completada: Los 31 módulos (M1 al M31) y sus motores cumplen al 100% su programación en index.html.`);
   if (p && p.bots && p.bots.length) {
@@ -8431,6 +8442,13 @@ function runModule16MachoAlfaMasterCycle() {
     appendMachoAlfaLog(`📐 Kelly Panel 5.4 (${s.kelly.asset} ${s.kelly.tf}): f*=${s.kelly.kellyFullPct.toFixed(2)}% | ½K=${s.kelly.kellyHalfPct.toFixed(2)}% | ¼K=${s.kelly.kellyQuarterPct.toFixed(2)}% | Riesgo activo M3: ${s.kelly.activeRiskPct.toFixed(2)}%.`);
   }
   appendMachoAlfaLog(`Misión 1 (Auditar Bots), Misión 2 (Portafolio Certificado & Fábrica) y Misión 3 (Protección Exclusiva del Creador M13) operando bajo Soberanía Total AGI.`);
+  if (m30Audit) {
+    const _lf = m30Audit.lotFloorCounts || { optimo: 0, viable: 0, alerta: 0 };
+    const _sh = m30Audit.shieldCounts || { blindado: 0, vigilancia: 0, riesgo: 0 };
+    const _ratiosOk = m30Audit.misalignedRatiosCount === 0 ? 'Ratios 1:1 OK' : `${m30Audit.misalignedRatiosCount} ratios desalineados`;
+    appendMachoAlfaLog(`🔗 M30 Copier (${m30Audit.gearLabel || m30Audit.gear}): AUM $${Math.round(m30Audit.totalBalance || 0).toLocaleString()} / Eq $${Math.round(m30Audit.totalEquity || 0).toLocaleString()} (${m30Audit.activeAccounts}/${m30Audit.totalAccounts} activas) | Riesgo $${Math.round(m30Audit.totalSwarmRiskUsd || 0).toLocaleString()}/ciclo | Piso 0.01: ${_lf.optimo}Ó/${_lf.viable}V/${_lf.alerta}A | Escudo M26: ${m30Audit.overallShield} (${_sh.blindado}/${m30Audit.activeAccounts} · ${_ratiosOk}).`);
+  }
+  appendMachoAlfaLog(`🏛️ M31 Cuartel Soberano: Gobernanza ${m31PilaresOk}/6 Pilares en Vivo (Portafolio+Kelly · M19 · M24 · M26 · M29 · M30) | Marcha: ${m30Audit ? (m30Audit.gearLabel || m30Audit.gear) : 'CHALLENGE 2.00%'} | Dossier JSON Maestro operativo.`);
 
   const verdictEl = document.getElementById('agent-verdict');
   if (verdictEl) {
@@ -8438,11 +8456,15 @@ function runModule16MachoAlfaMasterCycle() {
       ? `👑 [Macho Alfa AGI] 31/31 Módulos OK · Portafolio Certificado (${p.bots.length} bots @ ${p.globalRiskPct.toFixed(2)}% Global | $${Math.round(p.finalEq).toLocaleString()} | DD -${Math.abs(p.maxDDPct).toFixed(2)}%)${kellyTxt}.`
       : `👑 [Macho Alfa AGI] 31/31 Módulos supervisados, auto-sanados y operando al 100% bajo gobernanza soberana${kellyTxt}.`;
   }
+  if (verdictEl && m30Audit) {
+    verdictEl.innerText += ` | M30 AUM $${Math.round(m30Audit.totalBalance || 0).toLocaleString()} (${m30Audit.overallShield}) · M31 ${m31PilaresOk}/6 Pilares`;
+  }
 
   const healthBadge = document.getElementById('agi-agents-health');
   if (healthBadge) healthBadge.innerText = '31/31 AL 100%';
 
   if (typeof m31RenderCertifiedPortfolioCard === 'function') m31RenderCertifiedPortfolioCard();
+  if (typeof window.m30RenderCertifiedPortfolioCopierCard === 'function') window.m30RenderCertifiedPortfolioCopierCard();
 
   if (typeof showFloatingToast === 'function') {
     showFloatingToast('Macho Alfa AGI: Supervisión Soberana 31/31 Completa', 'success');
@@ -13630,6 +13652,7 @@ const p = s.portfolio;
         const m19 = (typeof window.getSV5M19PortfolioRecommendation === 'function') ? window.getSV5M19PortfolioRecommendation() : null;
         const m26 = (typeof window.getSV5M26PortfolioStressAudit === 'function') ? window.getSV5M26PortfolioStressAudit() : null;
         const m29 = (typeof window.getSV5M29PortfolioDSRAudit === 'function') ? window.getSV5M29PortfolioDSRAudit() : null;
+    const m30 = (typeof window.getSV5M30PortfolioCopierAudit === 'function') ? window.getSV5M30PortfolioCopierAudit() : null;
         const kellyLine = k
             ? `<div>• <b>Panel 5.4 (Kelly Bot Actual):</b> f* = <b>${k.kellyFullPct.toFixed(2)}%</b> | ½ Kelly = <b>${k.kellyHalfPct.toFixed(2)}%</b> | ¼ Kelly = <b>${k.kellyQuarterPct.toFixed(2)}%</b> (Riesgo activo M3: ${k.activeRiskPct.toFixed(2)}%, Payoff ${k.payoffR.toFixed(2)}x).</div>`
             : `<div>• <b>Panel 5.4 (Kelly):</b> Ejecuta M3/M5 para calcular Kelly del bot actual.</div>`;
@@ -13645,10 +13668,15 @@ const p = s.portfolio;
         const m29Line = (m29 && m29.hasPortfolio)
             ? `<div>• <b>Auditor Wall St. DSR M29:</b> <b>${m29.verdictShort}</b> | DSR <b>${m29.dsrProbPct.toFixed(1)}%</b> (SR Defl. <b>${m29.deflatedSR.toFixed(2)}</b> · Suerte <b>${m29.luckProbPct.toFixed(1)}%</b> · MinTRL <b>${m29.minTRLDays}d</b>).</div>`
             : '';
+    const m30Line = m30
+      ? `<div>🔗 <b>Trade Copier Clúster (M30 — ${m30.gear === 'live' ? 'LIVE 1%' : 'CHALLENGE 2%'}):</b> AUM $${Math.round(m30.totalBalance || 0).toLocaleString()} / Eq $${Math.round(m30.totalEquity || 0).toLocaleString()} (${m30.activeAccounts}/${m30.totalAccounts} activas) | Riesgo $${Math.round(m30.totalSwarmRiskUsd || 0).toLocaleString()}/ciclo ($${Math.round(m30.totalPerBotRiskUsd || 0).toLocaleString()}/bot) | Piso 0.01: ${(m30.lotFloorCounts && m30.lotFloorCounts.optimo) || 0} Ópt · ${(m30.lotFloorCounts && m30.lotFloorCounts.viable) || 0} Viab · ${(m30.lotFloorCounts && m30.lotFloorCounts.alerta) || 0} Alerta | Escudo M26: <b>${m30.overallShield}</b> (Día ${m30.worstActiveStressDayPct}% / DD ${m30.worstActiveStressDDPct}%)</div>`
+      : '';
+    const m31Pilares = [Boolean(p && p.bots && p.bots.length), Boolean(m19), Boolean(m24), Boolean(m26), Boolean(m29), Boolean(m30)].filter(Boolean).length;
+    const m31Line = `<div>🏛️ <b>Cuartel Soberano (M31):</b> Gobernanza <b>${m31Pilares}/6 Pilares en Vivo</b> | Marcha Activa: <b>${m30 ? (m30.gearLabel || m30.gear) : 'CHALLENGE 2.00%'}</b> | Dossier JSON Maestro listo (<button type="button" onclick="if(typeof m31GenerateExecutiveReport==='function')m31GenerateExecutiveReport();" class="underline text-amber-300 hover:text-amber-200 font-bold">Exportar Dossier</button>)</div>`;
 
         if (p && p.bots.length) {
             return `
-                <div class="font-bold text-emerald-400">🏆 Auditoría Soberana: Portafolio Certificado, Kelly, M19, M24, M26 &amp; M29</div>
+  <div class="font-bold text-emerald-400">🏆 Auditoría Soberana: Portafolio Certificado, Kelly, M19, M24, M26, M29, M30 &amp; M31</div>
                 <div>• <b>Bots Certificados:</b> ${p.bots.length} bots descorrelacionados (${p.bots.map(b => `${b.asset} ${b.tf}`).join(', ')})</div>
                 <div>• <b>Capital Final:</b> $${Math.round(p.finalEq).toLocaleString()} (${p.returnPct >= 0 ? '+' : ''}${p.returnPct.toFixed(1)}%) | <b>Ops:</b> ${p.totalTrades.toLocaleString()}</div>
                 <div>• <b>Riesgo Prop Firm:</b> Global <b>${p.globalRiskPct.toFixed(2)}%</b> (${p.perBotRiskPct.toFixed(3)}%/bot) | DD Máx <b>-${Math.abs(p.maxDDPct).toFixed(2)}%</b> | Peor Día <b>-${Math.abs(p.worstDayPct).toFixed(2)}%</b></div>
@@ -13658,6 +13686,8 @@ const p = s.portfolio;
                 ${m19Line}
                 ${m26Line}
                 ${m29Line}
+                ${m30Line}
+        ${m31Line}
                 <div class="text-sky-300">💡 <b>Protocolo 2 Marchas Prop Firm:</b> 2.00% Global en Challenge (Fase 1/2) y 1.00% Global en Cuenta Fondeada Live (~mitad de DD).</div>
                 <div class="pt-1"><button type="button" onclick="exportCertifiedPortfolioToMQL5()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">⚡ Exportar EA Multi-Perfil (.mq5)</button></div>
             `;
@@ -13711,6 +13741,37 @@ const p = s.portfolio;
             <div>Certifica primero tu portafolio en <b>Módulo 6 → Panel 6.5</b> para auditar Cisnes Negros (M26) y Deflated Sharpe Ratio (M29).</div>
         `;
     }
+  if (q.includes('copier') || q.includes('copiador') || q.includes('clúster') || q.includes('cluster') || q.includes('cuentas') || q.includes('aum') || q.includes('m30') || q.includes('m31') || q.includes('soberan') || q.includes('gobernanza') || q.includes('pilares') || q.includes('dossier')) {
+    const c30 = (typeof window.getSV5M30PortfolioCopierAudit === 'function') ? window.getSV5M30PortfolioCopierAudit() : null;
+    const c19 = (typeof window.getSV5M19PortfolioRecommendation === 'function') ? window.getSV5M19PortfolioRecommendation() : null;
+    const c24 = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? window.getSV5M24PortfolioCostAudit() : null;
+    const c26 = (typeof window.getSV5M26PortfolioStressAudit === 'function') ? window.getSV5M26PortfolioStressAudit() : null;
+    const c29 = (typeof window.getSV5M29PortfolioDSRAudit === 'function') ? window.getSV5M29PortfolioDSRAudit() : null;
+    const cPortOk = Boolean(s && s.portfolio && s.portfolio.bots && s.portfolio.bots.length);
+    const cPilares = [cPortOk, Boolean(c19), Boolean(c24), Boolean(c26), Boolean(c29), Boolean(c30)].filter(Boolean).length;
+    if (c30) {
+      const cLot = c30.lotFloorCounts || { optimo: 0, viable: 0, alerta: 0 };
+      const cShd = c30.shieldCounts || { blindado: 0, vigilancia: 0, riesgo: 0 };
+      const cRatiosTxt = c30.misalignedRatiosCount === 0 ? 'Ratios 1:1 OK' : `${c30.misalignedRatiosCount} ratios desalineados`;
+      const cGearTxt = c30.gearLabel || (c30.gear === 'live' ? 'LIVE 1.00% (0.091%/bot)' : 'CHALLENGE 2.00% (0.182%/bot)');
+      return `
+        <div class="font-bold text-emerald-400">🏛️ Telemetría Soberana M30 (Trade Copier) &amp; M31 (Gobernanza 6-Pilares)</div>
+        <div>🔗 <b>Clúster M30 (${cGearTxt}):</b> AUM <b>$${Math.round(c30.totalBalance || 0).toLocaleString()}</b> / Equity <b>$${Math.round(c30.totalEquity || 0).toLocaleString()}</b> (${c30.activeAccounts}/${c30.totalAccounts} activas · ${c30.isCopierRunning ? 'Copier ACTIVO' : 'Copier STANDBY'})</div>
+        <div>⚖️ <b>Riesgo Enjambre (${c30.botCount} bots):</b> $${Math.round(c30.totalSwarmRiskUsd || 0).toLocaleString()}/ciclo ($${Math.round(c30.totalPerBotRiskUsd || 0).toLocaleString()}/bot @ ${c30.basePerBotRiskPct}%) | Piso 0.01 M24: <b>${cLot.optimo} Ópt · ${cLot.viable} Viab · ${cLot.alerta} Alerta</b></div>
+        <div>🛡️ <b>Escudo M26 Clúster:</b> <b>${c30.overallShield}</b> (Peor Día <b>${c30.worstActiveStressDayPct}%</b> / DD <b>${c30.worstActiveStressDDPct}%</b> · ${cShd.blindado}/${c30.activeAccounts} blindadas · ${cRatiosTxt})</div>
+        <div>👑 <b>M31 Cuartel Soberano:</b> <b>${cPilares}/6 Pilares Activos</b> (Portafolio+Kelly · M19 ${c30.m19TopFirm || 'Prop'} · M24 Drag ${c30.m24AnnualDragPct}%/año · M26 · M29 DSR · M30 Clúster) | Dossier JSON Maestro listo.</div>
+        <div class="pt-1 flex flex-wrap gap-1.5">
+          <button type="button" data-m8-nav="1" onclick="(function(){var b=document.querySelector('button[onclick*=copier]:not([data-m8-nav])');if(b)b.click();if(typeof window.m30RenderCertifiedPortfolioCopierCard==='function')window.m30RenderCertifiedPortfolioCopierCard();})()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">🔗 Abrir M30 Copier</button>
+          <button type="button" data-m8-nav="1" onclick="(function(){var b=document.querySelector('button[onclick*=sovereign]:not([data-m8-nav])');if(b)b.click();if(typeof window.m31RenderCertifiedPortfolioCard==='function')window.m31RenderCertifiedPortfolioCard();})()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">🏛️ Abrir M31 Soberano</button>
+          <button type="button" data-m8-nav="1" onclick="if(typeof m31GenerateExecutiveReport==='function')m31GenerateExecutiveReport();" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">📄 Dossier JSON Maestro</button>
+        </div>
+      `;
+    }
+    return `
+      <div class="font-bold text-emerald-400">🏛️ Trade Copier M30 &amp; Cuartel Soberano M31</div>
+      <div>Abre <b>Módulo 30 (Trade Copier)</b> o <b>Módulo 31 (Cuartel Soberano)</b> para inicializar la telemetría del clúster y la matriz 6-Pilares.</div>
+    `;
+  }
   if (q.includes('por qué') || q.includes('porque') || q.includes('fall') || q.includes('pérdida') || q.includes('perdida') || q.includes('2024') || q.includes('2022')) {
     return `
       <div class="font-bold text-amber-400">🔍 Diagnóstico de Fallos y Racha Perdedora (${s.sym} - ${s.tf}):</div>
@@ -13735,6 +13796,7 @@ const _m24Sum = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? win
     const _m19Sum = (typeof window.getSV5M19PortfolioRecommendation === 'function') ? window.getSV5M19PortfolioRecommendation() : null;
     const _m26Sum = (typeof window.getSV5M26PortfolioStressAudit === 'function') ? window.getSV5M26PortfolioStressAudit() : null;
     const _m29Sum = (typeof window.getSV5M29PortfolioDSRAudit === 'function') ? window.getSV5M29PortfolioDSRAudit() : null;
+  const _m30Sum = (typeof window.getSV5M30PortfolioCopierAudit === 'function') ? window.getSV5M30PortfolioCopierAudit() : null;
     const extraM24M19 = (_m24Sum && _m24Sum.hasPortfolio)
         ? `<div class="text-sky-300">• <b>M24 Costes &amp; M19 Prop:</b> ${_m24Sum.entityName} ($${_m24Sum.accountSize.toLocaleString()}) · ${_m24Sum.lotFloorStatus.badge} · Drag -${_m24Sum.estAnnualDragPct.toFixed(2)}%/año${_m19Sum ? ` · Prop: ${_m19Sum.selectedFirmName}` : ''}</div>`
         : '';
@@ -13744,6 +13806,10 @@ const _m24Sum = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? win
     const extraPort = (s.portfolio && s.portfolio.bots.length)
         ? `<div class="text-emerald-300">• <b>Portafolio Certificado:</b> ${s.portfolio.bots.length} bots @ ${s.portfolio.globalRiskPct.toFixed(2)}% Global | $${Math.round(s.portfolio.finalEq).toLocaleString()} | DD -${Math.abs(s.portfolio.maxDDPct).toFixed(2)}% | PF ${s.portfolio.pf.toFixed(2)}</div>${extraM24M19}${extraM26M29}`
         : '';
+  const _m31PilaresSum = [Boolean(s && s.portfolio && s.portfolio.bots && s.portfolio.bots.length), Boolean(_m19Sum), Boolean(_m24Sum), Boolean(_m26Sum), Boolean(_m29Sum), Boolean(_m30Sum)].filter(Boolean).length;
+      const extraM30M31 = _m30Sum
+        ? `<div class="mt-1 text-emerald-300">🔗 <b>M30 Copier (${_m30Sum.gear === 'live' ? 'LIVE 1%' : 'CHALLENGE 2%'}):</b> AUM $${Math.round(_m30Sum.totalBalance || 0).toLocaleString()} (${_m30Sum.activeAccounts}/${_m30Sum.totalAccounts} activas) | Riesgo $${Math.round(_m30Sum.totalSwarmRiskUsd || 0).toLocaleString()}/ciclo | Escudo M26: <b>${_m30Sum.overallShield}</b> (Día ${_m30Sum.worstActiveStressDayPct}% / DD ${_m30Sum.worstActiveStressDDPct}%) | 🏛️ <b>M31 Soberano:</b> ${_m31PilaresSum}/6 Pilares Activos</div>`
+        : '';
 
   return `
     <div class="font-bold text-emerald-400">📊 Auditoría Instantánea del Backtest (${s.sym} | ${s.tf}):</div>
@@ -13752,6 +13818,9 @@ const _m24Sum = (typeof window.getSV5M24PortfolioCostAudit === 'function') ? win
     <div>• <b>Sharpe Ratio:</b> ${s.sharpe} | <b>Riesgo Ruina MC:</b> ${s.ruin}</div>
     ${extraKelly}
     ${extraPort}
+    ${extraM24M19}
+        ${extraM26M29}
+        ${extraM30M31}
     <div class="text-indigo-300">💡 <b>Recomendación IA:</b> Inyectar el filtro de volatilidad + Genoma Óptimo para elevar el Profit Factor y suavizar la Curva de Capital Bicolor.</div>
     <div class="pt-1"><button type="button" onclick="module8OneClickRewriteCode()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2 py-0.5 rounded text-[10px]">⚡ Optimizar y Reescribir Estrategia</button></div>
   `;
